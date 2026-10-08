@@ -5,6 +5,11 @@ and migration instructions here before each release.
 
 ## Unreleased
 
+### Added
+
+- Phoenix LiveView authentication with Argon2 password hashing, email magic links,
+  account settings, session management, and generated tests.
+
 ### Development
 
 - Contribution guidelines, Conventional Commits, and release policy.

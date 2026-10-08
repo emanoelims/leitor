@@ -40,6 +40,8 @@ defmodule Leitor.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:tidewave, "~> 0.9", only: [:dev]},
+      {:argon2_elixir, "~> 4.0"},
       {:phoenix, "~> 1.8.15"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},

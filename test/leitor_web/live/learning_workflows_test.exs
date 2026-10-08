@@ -22,6 +22,23 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     %{conn: log_in_user(conn, user), scope: Scope.for_user(user)}
   end
 
+  test "writing suggestions are opt-in and preserve the draft", %{conn: conn, scope: scope} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    refute has_element?(view, "#writing-title")
+    refute has_element?(view, ".writing-prompt")
+    refute has_element?(view, ".writing-privacy")
+    assert has_element?(view, "#app-header #writing-save-status", "0 words")
+
+    view |> form("#writing-form", writing: %{text: "My own draft stays here."}) |> render_change()
+    view |> element("#suggest-writing-title") |> render_click()
+    render_async(view)
+
+    assert has_element?(view, "#writing-title", "A place I would love to visit")
+    assert has_element?(view, "#writing_text", "My own draft stays here.")
+    assert has_element?(view, "#app-header #writing-save-status", "5 words")
+    assert Learning.recent_attempts(scope) == []
+  end
+
   test "public readers can paste and navigate, but cannot save without an account" do
     {:ok, view, _} = live(build_conn(), ~p"/")
     view |> element("button", "Paste text") |> render_click()

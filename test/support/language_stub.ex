@@ -4,6 +4,9 @@ defmodule Leitor.LanguageStub do
 
   def generate(_model, prompt, _schema) do
     cond do
+      String.contains?(prompt, "Suggest one fresh writing title") ->
+        {:ok, %{"title" => "A place I would love to visit"}}
+
       String.contains?(prompt, "unavailable") ->
         {:error, :unavailable}
 

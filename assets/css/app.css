@@ -2445,3 +2445,8 @@ audio {
 .auth-card .action { white-space:normal; text-align:center; }
 
 .auth-page { padding-inline:0; }
+
+.writing-header-status { display:flex; flex-direction:column; gap:2px; margin:0 8px 0 0; color:var(--muted); font-size:11px; line-height:1.35; }
+.writing-title { margin:0; font-size:var(--document-font-size); line-height:var(--document-line-height); font-weight:600; }
+#writing-title-region:empty { display:none; }
+@media(max-width:600px) { .writing-save-label { display:none; } .writing-header-status { margin-right:auto; } }

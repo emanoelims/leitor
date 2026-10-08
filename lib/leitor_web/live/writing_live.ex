@@ -11,6 +11,8 @@ defmodule LeitorWeb.WritingLive do
      socket
      |> assign(
        page_title: "Writing",
+       writing_title: nil,
+       generating_title: false,
        form: to_form(%{"text" => ""}, as: :writing),
        feedback: nil,
        feedback_text: nil,
@@ -32,6 +34,15 @@ defmodule LeitorWeb.WritingLive do
   end
 
   @impl true
+  def handle_event("suggest-title", _, %{assigns: %{generating_title: true}} = socket), do: {:noreply, socket}
+
+  def handle_event("suggest-title", _, socket) do
+    title = socket.assigns.writing_title
+
+    {:noreply,
+     socket |> assign(generating_title: true) |> start_async(:writing_title, fn -> Language.writing_title(title) end)}
+  end
+
   def handle_event("edit", %{"writing" => %{"text" => text}}, socket) do
     {:noreply, socket |> editor(text) |> assign(save_status: "Unsaved changes")}
   end
@@ -179,6 +190,21 @@ defmodule LeitorWeb.WritingLive do
     do: {:noreply, socket |> cancel_async(:question) |> assign(answer: nil, asking: false)}
 
   @impl true
+  def handle_async(:writing_title, {:ok, {:ok, %{"title" => title}}}, socket) when is_binary(title) do
+    if String.trim(title) != "" and String.length(title) <= 100 do
+      {:noreply, assign(socket, writing_title: String.trim(title), generating_title: false)}
+    else
+      handle_async(:writing_title, {:error, :invalid_response}, socket)
+    end
+  end
+
+  def handle_async(:writing_title, _failure, socket) do
+    {:noreply,
+     socket
+     |> assign(generating_title: false)
+     |> put_flash(:error, "Could not suggest a title. Please try again.")}
+  end
+
   def handle_async(:feedback, {:ok, {:ok, feedback}}, socket) do
     case Learning.create_attempt(socket.assigns.current_scope, %{
            kind: "writing",
@@ -250,6 +276,26 @@ defmodule LeitorWeb.WritingLive do
       context_detail={"Paragraph #{@active_paragraph + 1} of #{@paragraph_count}"}
     >
       <:header_controls>
+        <p id="writing-save-status" class="writing-header-status" role="status">
+          <span>{@word_count} words</span><span>{@save_status}</span>
+        </p>
+        <button
+          id="suggest-writing-title"
+          type="button"
+          class="layer-button"
+          phx-click="suggest-title"
+          disabled={@generating_title}
+          aria-label={
+            if @generating_title, do: "Suggesting a writing title", else: "Suggest a writing title"
+          }
+          aria-busy={to_string(@generating_title)}
+          title="Suggest a writing title"
+        >
+          <.icon
+            name={if @generating_title, do: "hero-arrow-path", else: "hero-light-bulb"}
+            class={["size-[18px]", @generating_title && "animate-spin"]}
+          />
+        </button>
         <details
           id="writing-history"
           class="writing-history"
@@ -311,13 +357,14 @@ defmodule LeitorWeb.WritingLive do
           name="intent"
           value="save"
           id="save-draft"
-        ><.icon name="hero-bookmark" class="size-4" /> Save draft</button>
+          aria-label="Save draft"
+          title="Save draft"
+        ><.icon name="hero-bookmark" class="size-4" />
+        <span class="writing-save-label">Save draft</span></button>
       </:header_controls>
       <h1 class="sr-only">Writing</h1>
-      <div class="writing-prompt row wrap">
-        <span class="eyebrow">Today's prompt</span><p class="muted">
-          Describe a small moment that stayed with you.
-        </p>
+      <div id="writing-title-region" aria-live="polite">
+        <h2 :if={@writing_title} id="writing-title" class="writing-title">{@writing_title}</h2>
       </div>
       <.form
         for={@form}
@@ -347,12 +394,9 @@ defmodule LeitorWeb.WritingLive do
           spellcheck="false"
         />
       </.form>
-      <div class="writing-status row between wrap">
-        <p id="writing-help" class="sr-only">
-          Enter starts a new paragraph. The tutor works on the paragraph under your cursor.
-        </p>
-        <p id="writing-save-status" role="status">{@word_count} words · {@save_status}</p>
-      </div>
+      <p id="writing-help" class="sr-only">
+        Enter starts a new paragraph. The tutor works on the paragraph under your cursor.
+      </p>
       <section :if={@feedback} id="writing-feedback" class="stack" aria-live="polite">
         <div class="row between wrap">
           <p class="eyebrow">Paragraph {@feedback_index + 1} · Feedback</p><p>
@@ -433,9 +477,6 @@ defmodule LeitorWeb.WritingLive do
           <span class="dock-arrow"><.icon name="hero-check" class="size-4" /></span>
         </button>
       </StudyComponents.reading_toolbar>
-      <p class="writing-privacy">
-        Only the current paragraph is sent to Anthropic when you ask or review.
-      </p>
     </Layouts.app>
     """
   end

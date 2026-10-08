@@ -1,12 +1,13 @@
 defmodule LeitorWeb.UserAuthTest do
   use LeitorWeb.ConnCase, async: true
 
-  alias Phoenix.LiveView
+  import Leitor.AccountsFixtures
+
   alias Leitor.Accounts
   alias Leitor.Accounts.Scope
   alias LeitorWeb.UserAuth
-
-  import Leitor.AccountsFixtures
+  alias Phoenix.LiveView
+  alias Phoenix.Socket.Broadcast
 
   @remember_me_cookie "_leitor_web_user_remember_me"
   @remember_me_cookie_max_age 60 * 60 * 24 * 14
@@ -109,7 +110,7 @@ defmodule LeitorWeb.UserAuthTest do
       # the conn is already logged in and has the remember_me cookie set,
       # now we log in again and even without explicitly setting remember_me,
       # the cookie should be set again
-      conn = conn |> UserAuth.log_in_user(user, %{})
+      conn = UserAuth.log_in_user(conn, user, %{})
       assert %{value: signed_token, max_age: max_age} = conn.resp_cookies[@remember_me_cookie]
       assert signed_token != get_session(conn, :user_token)
       assert max_age == @remember_me_cookie_max_age
@@ -143,7 +144,7 @@ defmodule LeitorWeb.UserAuthTest do
       |> put_session(:live_socket_id, live_socket_id)
       |> UserAuth.log_out_user()
 
-      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect", topic: ^live_socket_id}
+      assert_receive %Broadcast{event: "disconnect", topic: ^live_socket_id}
     end
 
     test "works even if user is already logged out", %{conn: conn} do
@@ -247,7 +248,7 @@ defmodule LeitorWeb.UserAuthTest do
     end
 
     test "assigns nil to current_scope assign if there isn't a user_token", %{conn: conn} do
-      session = conn |> get_session()
+      session = get_session(conn)
 
       {:cont, updated_socket} =
         UserAuth.on_mount(:mount_current_scope, %{}, session, %LiveView.Socket{})
@@ -281,7 +282,7 @@ defmodule LeitorWeb.UserAuthTest do
     end
 
     test "redirects to login page if there isn't a user_token", %{conn: conn} do
-      session = conn |> get_session()
+      session = get_session(conn)
 
       socket = %LiveView.Socket{
         endpoint: LeitorWeb.Endpoint,
@@ -308,11 +309,11 @@ defmodule LeitorWeb.UserAuthTest do
     end
 
     test "redirects when authentication is too old", %{conn: conn, user: user} do
-      eleven_minutes_ago = DateTime.utc_now(:second) |> DateTime.add(-11, :minute)
+      eleven_minutes_ago = :second |> DateTime.utc_now() |> DateTime.shift(minute: -11)
       user = %{user | authenticated_at: eleven_minutes_ago}
       user_token = Accounts.generate_user_session_token(user)
       {user, token_inserted_at} = Accounts.get_user_by_session_token(user_token)
-      assert DateTime.compare(token_inserted_at, user.authenticated_at) == :gt
+      assert DateTime.after?(token_inserted_at, user.authenticated_at)
       session = conn |> put_session(:user_token, user_token) |> get_session()
 
       socket = %LiveView.Socket{
@@ -387,12 +388,12 @@ defmodule LeitorWeb.UserAuthTest do
 
       UserAuth.disconnect_sessions(tokens)
 
-      assert_receive %Phoenix.Socket.Broadcast{
+      assert_receive %Broadcast{
         event: "disconnect",
         topic: "users_sessions:dG9rZW4x"
       }
 
-      assert_receive %Phoenix.Socket.Broadcast{
+      assert_receive %Broadcast{
         event: "disconnect",
         topic: "users_sessions:dG9rZW4y"
       }

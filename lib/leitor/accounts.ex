@@ -1,86 +1,70 @@
 defmodule Leitor.Accounts do
   @moduledoc """
-  The Accounts context.
+  Registers users, validates credentials, and manages authentication tokens.
+
+  `Leitor.Accounts.User` owns account data and changesets. Web session handling
+  lives in `LeitorWeb.UserAuth`. Token expiry and revocation are enforced here
+  and in `Leitor.Accounts.UserToken`.
   """
 
   import Ecto.Query, warn: false
+
+  alias Leitor.Accounts.User
+  alias Leitor.Accounts.UserNotifier
+  alias Leitor.Accounts.UserToken
   alias Leitor.Repo
 
-  alias Leitor.Accounts.{User, UserToken, UserNotifier}
-
-  ## Database getters
-
   @doc """
-  Gets a user by email.
-
-  ## Examples
-
-      iex> get_user_by_email("foo@example.com")
-      %User{}
-
-      iex> get_user_by_email("unknown@example.com")
-      nil
-
+  Finds a user by email, returning `nil` when no account matches.
   """
+  @spec get_user_by_email(User.email()) :: User.t() | nil
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: email)
   end
 
   @doc """
-  Gets a user by email and password.
+  Finds a user whose email and password match.
 
-  ## Examples
-
-      iex> get_user_by_email_and_password("foo@example.com", "correct_password")
-      %User{}
-
-      iex> get_user_by_email_and_password("foo@example.com", "invalid_password")
-      nil
-
+  Returns `nil` for unknown accounts or invalid passwords. Verification performs
+  work for missing accounts to reduce timing differences.
   """
-  def get_user_by_email_and_password(email, password)
-      when is_binary(email) and is_binary(password) do
+  @spec get_user_by_email_and_password(User.email(), User.password()) :: User.t() | nil
+  def get_user_by_email_and_password(email, password) when is_binary(email) and is_binary(password) do
     user = Repo.get_by(User, email: email)
     if User.valid_password?(user, password), do: user
   end
 
   @doc """
-  Gets a single user.
+  Finds a user by UUID.
 
-  Raises `Ecto.NoResultsError` if the User does not exist.
-
-  ## Examples
-
-      iex> get_user!(123)
-      %User{}
-
-      iex> get_user!(456)
-      ** (Ecto.NoResultsError)
-
+  Raises `Ecto.NoResultsError` when no account matches. Malformed IDs may raise
+  `Ecto.Query.CastError`.
   """
+  @spec get_user!(Ecto.UUID.t()) :: User.t()
   def get_user!(id), do: Repo.get!(User, id)
 
-  ## User registration
-
   @doc """
-  Registers a user.
+  Registers an unconfirmed account with a validated, unique email.
+
+  Returns `{:ok, user}` or `{:error, changeset}`. Registration does not set a
+  password or send an email; login instructions are delivered separately.
 
   ## Examples
 
-      iex> register_user(%{field: value})
-      {:ok, %User{}}
+      iex> {:ok, user} = Leitor.Accounts.register_user(%{email: "registration@example.com"})
+      iex> {user.email, user.confirmed_at, user.hashed_password}
+      {"registration@example.com", nil, nil}
 
-      iex> register_user(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
+      iex> {:error, changeset} = Leitor.Accounts.register_user(%{})
+      iex> Keyword.has_key?(changeset.errors, :email)
+      true
   """
+  @spec register_user(User.attrs()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t(User.t())}
   def register_user(attrs) do
     %User{}
     |> User.email_changeset(attrs)
     |> Repo.insert()
   end
-
-  ## Settings
 
   @doc """
   Checks whether the user is in sudo mode.
@@ -88,25 +72,21 @@ defmodule Leitor.Accounts do
   The user is in sudo mode when the last authentication was done no further
   than 20 minutes ago. The limit can be given as second argument in minutes.
   """
+  @spec sudo_mode?(User.t() | nil, integer()) :: boolean()
   def sudo_mode?(user, minutes \\ -20)
 
   def sudo_mode?(%User{authenticated_at: ts}, minutes) when is_struct(ts, DateTime) do
-    DateTime.after?(ts, DateTime.utc_now() |> DateTime.add(minutes, :minute))
+    DateTime.after?(ts, DateTime.shift(DateTime.utc_now(), minute: minutes))
   end
 
   def sudo_mode?(_user, _minutes), do: false
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for changing the user email.
+  Builds an email changeset without persisting it.
 
-  See `Leitor.Accounts.User.email_changeset/3` for a list of supported options.
-
-  ## Examples
-
-      iex> change_user_email(user)
-      %Ecto.Changeset{data: %User{}}
-
+  See `Leitor.Accounts.User.email_changeset/3` for validation options.
   """
+  @spec change_user_email(User.t(), User.attrs(), User.email_options()) :: Ecto.Changeset.t(User.t())
   def change_user_email(user, attrs \\ %{}, opts \\ []) do
     User.email_changeset(user, attrs, opts)
   end
@@ -116,6 +96,7 @@ defmodule Leitor.Accounts do
 
   If the token matches, the user email is updated and the token is deleted.
   """
+  @spec update_user_email(User.t(), UserToken.email_token()) :: {:ok, User.t()} | {:error, :transaction_aborted}
   def update_user_email(user, token) do
     context = "change:#{user.email}"
 
@@ -133,45 +114,41 @@ defmodule Leitor.Accounts do
   end
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for changing the user password.
+  Builds a password changeset without persisting it.
 
-  See `Leitor.Accounts.User.password_changeset/3` for a list of supported options.
+  See `Leitor.Accounts.User.password_changeset/3` for validation and hashing options.
 
   ## Examples
 
-      iex> change_user_password(user)
-      %Ecto.Changeset{data: %User{}}
-
+      iex> changeset = Leitor.Accounts.change_user_password(%Leitor.Accounts.User{}, %{password: "short"}, hash_password: false)
+      iex> changeset.valid?
+      false
   """
+  @spec change_user_password(User.t(), User.attrs(), User.password_options()) :: Ecto.Changeset.t(User.t())
   def change_user_password(user, attrs \\ %{}, opts \\ []) do
     User.password_changeset(user, attrs, opts)
   end
 
   @doc """
-  Updates the user password.
+  Validates and updates a password, revoking all of the user's stored tokens.
 
-  Returns a tuple with the updated user, as well as a list of expired tokens.
-
-  ## Examples
-
-      iex> update_user_password(user, %{password: ...})
-      {:ok, {%User{}, [...]}}
-
-      iex> update_user_password(user, %{password: "too short"})
-      {:error, %Ecto.Changeset{}}
-
+  Returns `{:ok, {user, expired_tokens}}` after a successful transaction, or
+  `{:error, changeset}` when validation fails. The returned user has no plaintext
+  password. Callers can disconnect existing LiveView sessions using the revoked
+  tokens and `LeitorWeb.UserAuth.disconnect_sessions/1`.
   """
+  @spec update_user_password(User.t(), User.attrs()) ::
+          {:ok, {User.t(), [UserToken.t()]}} | {:error, Ecto.Changeset.t(User.t())}
   def update_user_password(user, attrs) do
     user
     |> User.password_changeset(attrs)
     |> update_user_and_delete_all_tokens()
   end
 
-  ## Session
-
   @doc """
   Generates a session token.
   """
+  @spec generate_user_session_token(User.t()) :: UserToken.session_token()
   def generate_user_session_token(user) do
     {token, user_token} = UserToken.build_session_token(user)
     Repo.insert!(user_token)
@@ -183,6 +160,7 @@ defmodule Leitor.Accounts do
 
   If the token is valid `{user, token_inserted_at}` is returned, otherwise `nil` is returned.
   """
+  @spec get_user_by_session_token(UserToken.session_token()) :: {User.t(), DateTime.t()} | nil
   def get_user_by_session_token(token) do
     {:ok, query} = UserToken.verify_session_token_query(token)
     Repo.one(query)
@@ -191,6 +169,7 @@ defmodule Leitor.Accounts do
   @doc """
   Gets the user with the given magic link token.
   """
+  @spec get_user_by_magic_link_token(UserToken.email_token()) :: User.t() | nil
   def get_user_by_magic_link_token(token) do
     with {:ok, query} <- UserToken.verify_magic_link_token_query(token),
          {user, _token} <- Repo.one(query) do
@@ -218,6 +197,8 @@ defmodule Leitor.Accounts do
      source of security pitfalls. See the "Mixing magic link and password registration" section of
      `mix help phx.gen.auth`.
   """
+  @spec login_user_by_magic_link(UserToken.email_token()) ::
+          {:ok, {User.t(), [UserToken.t()]}} | {:error, :not_found | Ecto.Changeset.t(User.t())}
   def login_user_by_magic_link(token) do
     {:ok, query} = UserToken.verify_magic_link_token_query(token)
 
@@ -246,15 +227,16 @@ defmodule Leitor.Accounts do
     end
   end
 
-  @doc ~S"""
-  Delivers the update email instructions to the given user.
+  @doc """
+  Stores an email-change token and delivers instructions to the user's new email.
 
-  ## Examples
-
-      iex> deliver_user_update_email_instructions(user, current_email, &url(~p"/users/settings/confirm-email/#{&1}"))
-      {:ok, %{to: ..., body: ...}}
-
+  `current_email` identifies the previous address. The URL callback receives
+  the encoded token and must return an absolute URL. Returns `{:ok, email}` or
+  the mailer's `{:error, reason}`. The token is stored before delivery, so a
+  delivery error does not roll back its insertion.
   """
+  @spec deliver_user_update_email_instructions(User.t(), User.email(), (UserToken.email_token() -> String.t())) ::
+          {:ok, Swoosh.Email.t()} | {:error, term()}
   def deliver_user_update_email_instructions(%User{} = user, current_email, update_email_url_fun)
       when is_function(update_email_url_fun, 1) do
     {encoded_token, user_token} = UserToken.build_email_token(user, "change:#{current_email}")
@@ -266,8 +248,9 @@ defmodule Leitor.Accounts do
   @doc """
   Delivers the magic link login instructions to the given user.
   """
-  def deliver_login_instructions(%User{} = user, magic_link_url_fun)
-      when is_function(magic_link_url_fun, 1) do
+  @spec deliver_login_instructions(User.t(), (UserToken.email_token() -> String.t())) ::
+          {:ok, Swoosh.Email.t()} | {:error, term()}
+  def deliver_login_instructions(%User{} = user, magic_link_url_fun) when is_function(magic_link_url_fun, 1) do
     {encoded_token, user_token} = UserToken.build_email_token(user, "login")
     Repo.insert!(user_token)
     UserNotifier.deliver_login_instructions(user, magic_link_url_fun.(encoded_token))
@@ -276,12 +259,11 @@ defmodule Leitor.Accounts do
   @doc """
   Deletes the signed token with the given context.
   """
+  @spec delete_user_session_token(UserToken.session_token()) :: :ok
   def delete_user_session_token(token) do
     Repo.delete_all(from(UserToken, where: [token: ^token, context: "session"]))
     :ok
   end
-
-  ## Token helper
 
   defp update_user_and_delete_all_tokens(changeset) do
     Repo.transact(fn ->

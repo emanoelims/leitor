@@ -17,17 +17,20 @@ defmodule LeitorWeb.ConnCase do
 
   use ExUnit.CaseTemplate
 
+  alias Leitor.Accounts.Scope
+
   using do
     quote do
-      # The default endpoint for testing
-      @endpoint LeitorWeb.Endpoint
-
       use LeitorWeb, :verified_routes
+
+      import LeitorWeb.ConnCase
+      import Phoenix.ConnTest
 
       # Import conveniences for testing with connections
       import Plug.Conn
-      import Phoenix.ConnTest
-      import LeitorWeb.ConnCase
+
+      # The default endpoint for testing
+      @endpoint LeitorWeb.Endpoint
     end
   end
 
@@ -46,12 +49,12 @@ defmodule LeitorWeb.ConnCase do
   """
   def register_and_log_in_user(%{conn: conn} = context) do
     user = Leitor.AccountsFixtures.user_fixture()
-    scope = Leitor.Accounts.Scope.for_user(user)
+    scope = Scope.for_user(user)
 
     opts =
       context
       |> Map.take([:token_authenticated_at])
-      |> Enum.into([])
+      |> Enum.to_list()
 
     %{conn: log_in_user(conn, user, opts), user: user, scope: scope}
   end

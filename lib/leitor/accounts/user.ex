@@ -1,5 +1,7 @@
 defmodule Leitor.Accounts.User do
+  @moduledoc "Account data and changesets for email registration and password authentication."
   use Ecto.Schema
+
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -14,6 +16,24 @@ defmodule Leitor.Accounts.User do
     timestamps(type: :utc_datetime)
   end
 
+  @typedoc "A user, including a newly built user whose fields may not yet be populated."
+  @type t() :: %__MODULE__{}
+
+  @typedoc "An email address supplied for account lookup or registration; validation is separate."
+  @type email() :: String.t()
+
+  @typedoc "A plaintext password supplied for authentication; validation is separate."
+  @type password() :: String.t()
+
+  @typedoc "Untrusted attributes passed to account changesets, before validation."
+  @type attrs() :: %{optional(atom() | String.t()) => term()}
+
+  @typedoc "Options controlling email uniqueness validation."
+  @type email_options() :: [validate_unique: boolean()]
+
+  @typedoc "Options controlling password hashing during validation."
+  @type password_options() :: [hash_password: boolean()]
+
   @doc """
   A user changeset for registering or changing the email.
 
@@ -25,6 +45,7 @@ defmodule Leitor.Accounts.User do
       uniqueness of the email, useful when displaying live validations.
       Defaults to `true`.
   """
+  @spec email_changeset(t(), attrs(), email_options()) :: Ecto.Changeset.t(t())
   def email_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:email])
@@ -35,9 +56,7 @@ defmodule Leitor.Accounts.User do
     changeset =
       changeset
       |> validate_required([:email])
-      |> validate_format(:email, ~r/^[^@,;\s]+@[^@,;\s]+$/,
-        message: "must have the @ sign and no spaces"
-      )
+      |> validate_format(:email, ~r/^[^@,;\s]+@[^@,;\s]+$/, message: "must have the @ sign and no spaces")
       |> validate_length(:email, max: 160)
 
     if Keyword.get(opts, :validate_unique, true) do
@@ -73,6 +92,7 @@ defmodule Leitor.Accounts.User do
       validations on a LiveView form), this option can be set to `false`.
       Defaults to `true`.
   """
+  @spec password_changeset(t(), attrs(), password_options()) :: Ecto.Changeset.t(t())
   def password_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:password])
@@ -109,6 +129,7 @@ defmodule Leitor.Accounts.User do
   @doc """
   Confirms the account by setting `confirmed_at`.
   """
+  @spec confirm_changeset(t()) :: Ecto.Changeset.t(t())
   def confirm_changeset(user) do
     now = DateTime.utc_now(:second)
     change(user, confirmed_at: now)
@@ -120,6 +141,7 @@ defmodule Leitor.Accounts.User do
   If there is no user or the user doesn't have a password, we call
   `Argon2.no_user_verify/0` to avoid timing attacks.
   """
+  @spec valid_password?(t() | nil, password() | nil) :: boolean()
   def valid_password?(%Leitor.Accounts.User{hashed_password: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Argon2.verify_pass(password, hashed_password)

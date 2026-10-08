@@ -1,4 +1,5 @@
 defmodule LeitorWeb.UserLive.Login do
+  @moduledoc false
   use LeitorWeb, :live_view
 
   alias Leitor.Accounts

@@ -14,5 +14,5 @@ description = "Start the Phoenix server"
 run = "mix phx.server"
 
 [tasks.precommit]
-description = "Check compilation, dependencies, formatting, and tests"
+description = "Check compilation, dependencies, formatting, Credo, Doctor, docs, Dialyzer, and tests"
 run = "mix precommit"

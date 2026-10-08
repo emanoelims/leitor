@@ -20,11 +20,27 @@ defmodule Leitor.Accounts.Scope do
 
   defstruct user: nil
 
+  @typedoc "The caller context, optionally containing a user."
+  @type t() :: %__MODULE__{user: User.t() | nil}
+
   @doc """
   Creates a scope for the given user.
 
-  Returns nil if no user is given.
+  Returns `nil` if no user is given.
+
+  ## Examples
+
+      iex> user = %Leitor.Accounts.User{email: "reader@example.com"}
+      iex> scope = Leitor.Accounts.Scope.for_user(user)
+      iex> scope.user.email
+      "reader@example.com"
+
+      iex> Leitor.Accounts.Scope.for_user(nil)
+      nil
   """
+  @spec for_user(User.t() | nil) :: t() | nil
+  def for_user(user)
+
   def for_user(%User{} = user) do
     %__MODULE__{user: user}
   end

@@ -1,8 +1,10 @@
 defmodule LeitorWeb.UserAuth do
+  @moduledoc "Manages user sessions and authentication for controllers and LiveViews."
+
   use LeitorWeb, :verified_routes
 
-  import Plug.Conn
   import Phoenix.Controller
+  import Plug.Conn
 
   alias Leitor.Accounts
   alias Leitor.Accounts.Scope
@@ -84,8 +86,6 @@ defmodule LeitorWeb.UserAuth do
 
       if token = conn.cookies[@remember_me_cookie] do
         {token, conn |> put_token_in_session(token) |> put_session(:user_remember_me, true)}
-      else
-        nil
       end
     end
   end
@@ -152,8 +152,7 @@ defmodule LeitorWeb.UserAuth do
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}, _),
     do: write_remember_me_cookie(conn, token)
 
-  defp maybe_write_remember_me_cookie(conn, token, _params, true),
-    do: write_remember_me_cookie(conn, token)
+  defp maybe_write_remember_me_cookie(conn, token, _params, true), do: write_remember_me_cookie(conn, token)
 
   defp maybe_write_remember_me_cookie(conn, _token, _params, _), do: conn
 

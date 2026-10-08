@@ -1,9 +1,10 @@
 defmodule LeitorWeb.UserLive.Settings do
+  @moduledoc false
   use LeitorWeb, :live_view
 
-  on_mount {LeitorWeb.UserAuth, :require_sudo_mode}
-
   alias Leitor.Accounts
+
+  on_mount {LeitorWeb.UserAuth, :require_sudo_mode}
 
   @impl true
   def render(assigns) do
@@ -133,7 +134,7 @@ defmodule LeitorWeb.UserLive.Settings do
         )
 
         info = "A link to confirm your email change has been sent to the new address."
-        {:noreply, socket |> put_flash(:info, info)}
+        {:noreply, put_flash(socket, :info, info)}
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}

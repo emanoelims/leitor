@@ -2,6 +2,7 @@ defmodule LeitorWeb.UserSessionControllerTest do
   use LeitorWeb.ConnCase, async: true
 
   import Leitor.AccountsFixtures
+
   alias Leitor.Accounts
 
   setup do

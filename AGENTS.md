@@ -3,7 +3,29 @@ This is a web application written using the Phoenix web framework.
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
+- `mix format` uses Styler for Elixir and Phoenix's HTML formatter for HEEx. Review Styler rewrites for behavior changes, especially in control flow and configuration; preserve domain contracts and run `mix precommit` after formatting.
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
+
+### Typespecs and static analysis
+
+- Follow the project's typespec policy in `CONTRIBUTING.md`, based on the [official Elixir typespecs reference](https://elixir.hexdocs.pm/typespecs.html).
+- Prefer meaningful domain types such as `User.email()` and `User.password()` over repeated primitive types in public business contracts. Define them in the module that owns the concept and document public types with `@typedoc`.
+- Add accurate `@spec` declarations to new or changed public domain/context functions. Describe return values, including `nil` and error tuples. Do not add boilerplate specs to framework callbacks or private helpers merely for coverage.
+- Use `@typep` for private types and `@opaque` only when callers should not depend on the representation. Type aliases are not validation or nominal types; use changesets, guards, and constructors to enforce invariants.
+- Keep contracts readable with named arguments, composed types, and structured parameters when appropriate. Do not create aliases without domain meaning or use `any()` to hide a type mismatch.
+- Elixir's inferred types and traditional typespecs are separate systems. Keep useful contracts even when the compiler can infer the underlying types.
+- `mix precommit` runs strict Credo and Dialyzer checks. Fix findings rather than broadly disabling checks or suppressing warnings; document any narrowly justified exception.
+- Doctor also enforces the documented domain scope and thresholds in `.doctor.exs`; ExDoc must build with `--warnings-as-errors`. Keep public docs, types, contracts, and tests aligned. Do not hide APIs or exclude domain modules merely to pass coverage.
+
+### Documentation, doctests, and control flow
+
+- Follow the documentation policy in `CONTRIBUTING.md`, based on [Doctests, patterns, and with](https://elixir.hexdocs.pm/docs-tests-and-with.md).
+- Write documentation in English. Explain module responsibilities with `@moduledoc` and public domain functions with `@doc`; describe behavior, meaningful options, return values, and relevant errors. Use `@impl` for callbacks and `@doc false` only for intentionally internal public functions.
+- Include realistic `## Examples` for public behavior when useful. Keep deterministic examples executable through `doctest Module` in the appropriate test module. Use fully qualified calls or explicit aliases and setup; never present placeholders as executable doctests.
+- Indent doctest expressions by four spaces, use `iex>` and `...>` prompts, and separate independent examples with blank lines. Use `@doc ~S"""` when examples must preserve literal escapes.
+- Doctests keep documentation accurate; retain unit and integration tests for validation, edge cases, persistence, and side effects. Use the SQL sandbox for database examples and isolated names/supervised processes for shared resources.
+- Prefer pattern matching and function clauses for distinct input shapes. Use `with` for dependent operations that can fail; allow useful errors to propagate or explicitly translate them with `else`. Do not hide distinct failures behind a blanket catch-all without a documented domain reason.
+- Maintain `guides/authentication-contracts.md` when changing authentication behavior. Use existing focused tests as evidence and add regression cases for changed behavior. Run `mix test --cover --warnings-as-errors` before completing changes; the 83 percent floor includes domain and web application code and excludes only test helpers.
 
 ### Phoenix v1.8 guidelines
 

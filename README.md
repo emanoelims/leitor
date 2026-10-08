@@ -15,7 +15,14 @@ mise run dev
 Visit [`localhost:4000`](http://localhost:4000), or the port configured in
 `mise.local.toml`. Mise uses Elixir `1.20.4-otp-29` and Erlang/OTP `29`.
 
-Run `mise run precommit` before submitting changes.
+Run `mise run precommit` before submitting changes. It checks compilation,
+dependencies, formatting with Styler and the HEEx formatter, strict Credo analysis,
+Doctor, documentation generation, Dialyzer, and tests (including doctests).
+The first Dialyzer run builds a cache and can take several minutes.
+
+Generate developer documentation with `mise exec -- mix docs --warnings-as-errors`
+and open `doc/index.html`. Run `mise exec -- mix test --cover --warnings-as-errors`
+for the line coverage report in `cover/`.
 
 ## Authentication
 
@@ -36,7 +43,9 @@ Ready to run in production? Please [check our deployment guides](https://phoenix
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for PR rules, Conventional Commits,
-semantic versioning, and Elixir/Phoenix checks.
+semantic versioning, domain typespecs, documentation and doctest patterns, and
+Elixir/Phoenix checks. The [authentication contracts](guides/authentication-contracts.md)
+connect current behavior to its test evidence and document its limits.
 
 ## Local Tidewave MCP
 

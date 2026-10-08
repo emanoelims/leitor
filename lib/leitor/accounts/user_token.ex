@@ -1,6 +1,10 @@
 defmodule Leitor.Accounts.UserToken do
+  @moduledoc "Builds and verifies stored tokens for user sessions and email authentication."
   use Ecto.Schema
+
   import Ecto.Query
+
+  alias Leitor.Accounts.User
   alias Leitor.Accounts.UserToken
 
   @hash_algorithm :sha256
@@ -19,10 +23,22 @@ defmodule Leitor.Accounts.UserToken do
     field :context, :string
     field :sent_to, :string
     field :authenticated_at, :utc_datetime
-    belongs_to :user, Leitor.Accounts.User
+    belongs_to :user, User
 
     timestamps(type: :utc_datetime, updated_at: false)
   end
+
+  @typedoc "A persisted authentication token or a token awaiting insertion."
+  @type t() :: %__MODULE__{}
+
+  @typedoc "Random bytes stored in the signed session or remember-me cookie."
+  @type session_token() :: binary()
+
+  @typedoc "A URL-safe token delivered by email; the database stores its hash."
+  @type email_token() :: String.t()
+
+  @typedoc "The purpose of a token, such as login or an email change."
+  @type context() :: String.t()
 
   @doc """
   Generates a token that will be stored in a signed place,
@@ -43,6 +59,7 @@ defmodule Leitor.Accounts.UserToken do
   and devices in the UI and allow users to explicitly expire any
   session they deem invalid.
   """
+  @spec build_session_token(User.t()) :: {session_token(), t()}
   def build_session_token(user) do
     token = :crypto.strong_rand_bytes(@rand_size)
     dt = user.authenticated_at || DateTime.utc_now(:second)
@@ -57,6 +74,7 @@ defmodule Leitor.Accounts.UserToken do
   The token is valid if it matches the value in the database and it has
   not expired (after @session_validity_in_days).
   """
+  @spec verify_session_token_query(session_token()) :: {:ok, Ecto.Query.t()}
   def verify_session_token_query(token) do
     query =
       from token in by_token_and_context_query(token, "session"),
@@ -80,6 +98,7 @@ defmodule Leitor.Accounts.UserToken do
   Users can easily adapt the existing code to provide other types of delivery methods,
   for example, by phone numbers.
   """
+  @spec build_email_token(User.t(), context()) :: {email_token(), t()}
   def build_email_token(user, context) do
     build_hashed_token(user, context, user.email)
   end
@@ -106,6 +125,7 @@ defmodule Leitor.Accounts.UserToken do
   database. This function also checks whether the token has expired. The context
   of a magic link token is always "login".
   """
+  @spec verify_magic_link_token_query(email_token()) :: {:ok, Ecto.Query.t()} | :error
   def verify_magic_link_token_query(token) do
     case Base.url_decode64(token, padding: false) do
       {:ok, decoded_token} ->
@@ -136,6 +156,7 @@ defmodule Leitor.Accounts.UserToken do
   database and if it has not expired (after @change_email_validity_in_days).
   The context must always start with "change:".
   """
+  @spec verify_change_email_token_query(email_token(), context()) :: {:ok, Ecto.Query.t()} | :error
   def verify_change_email_token_query(token, "change:" <> _ = context) do
     case Base.url_decode64(token, padding: false) do
       {:ok, decoded_token} ->

@@ -1,8 +1,10 @@
 defmodule Leitor.Accounts.UserNotifier do
+  @moduledoc "Delivers account authentication and email change instructions."
+
   import Swoosh.Email
 
-  alias Leitor.Mailer
   alias Leitor.Accounts.User
+  alias Leitor.Mailer
 
   # Delivers the email using the application mailer.
   defp deliver(recipient, subject, body) do
@@ -21,6 +23,7 @@ defmodule Leitor.Accounts.UserNotifier do
   @doc """
   Deliver instructions to update a user email.
   """
+  @spec deliver_update_email_instructions(User.t(), String.t()) :: {:ok, Swoosh.Email.t()} | {:error, term()}
   def deliver_update_email_instructions(user, url) do
     deliver(user.email, "Update email instructions", """
 
@@ -41,6 +44,7 @@ defmodule Leitor.Accounts.UserNotifier do
   @doc """
   Deliver instructions to log in with a magic link.
   """
+  @spec deliver_login_instructions(User.t(), String.t()) :: {:ok, Swoosh.Email.t()} | {:error, term()}
   def deliver_login_instructions(user, url) do
     case user do
       %User{confirmed_at: nil} -> deliver_confirmation_instructions(user, url)

@@ -50,12 +50,15 @@ jobs:
         with:
           persist-credentials: false
       - uses: jdx/mise-action@v4
+      - name: Resolve BEAM cache version
+        id: beam
+        run: elixir -e 'IO.puts("version=#{System.version()}-#{:erlang.system_info(:version)}")' >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
         with:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-beam-${{ hashFiles('mise.toml', 'mix.lock') }}
+          key: ${{ runner.os }}-beam-${{ steps.beam.outputs.version }}-${{ hashFiles('mise.toml', 'mix.lock') }}
       - name: Install Hex and Rebar
         run: |
           mix local.hex --force

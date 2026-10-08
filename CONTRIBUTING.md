@@ -1,6 +1,8 @@
 # Contribuindo
 
-Use as versões de Erlang/OTP e Elixir em `mise.toml`. Execute `mise install`,
+Use Elixir da série `1.20` e Erlang/OTP da série `29`, configurados em
+`mise.toml`. O mise permite atualizações dentro dessas séries; execute
+`mise upgrade` para atualizar as instalações locais. Execute `mise install`,
 depois `mise run setup`. Para iniciar o Phoenix, use `mise run dev`. Antes de
 abrir um PR, execute `mise run precommit` (executa `mix precommit`).
 

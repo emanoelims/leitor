@@ -5,7 +5,7 @@ defmodule Leitor.MixProject do
     [
       app: :leitor,
       version: "0.1.0",
-      elixir: "~> 1.17",
+      elixir: "~> 1.20.0",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),

@@ -10,7 +10,7 @@ This is a web application written using the Phoenix web framework.
 ### Tidewave MCP workflow
 
 - Follow the [official Tidewave MCP guide](https://tidewave.hexdocs.pm/mcp.md). When connected to this project's development server, use Tidewave proactively for runtime evaluation, installed documentation, database inspection, and request debugging; do not wait for the user to request it explicitly.
-- Use the server and tool definitions exposed in the current session. Tidewave runs only in development. Start the app with `mise run dev` when needed, and use the port supplied by mise (`4000` by default, overridden by `mise.local.toml`). Confirm the connection targets this checkout before inspecting runtime state, especially with multiple projects or worktrees.
+- Use the server and tool definitions exposed in the current session. Tidewave runs only in development. Start the app with `mise run dev` when needed, and use the port supplied by mise (`8080` by default, overridden by `mise.local.toml`). Confirm the connection targets this checkout before inspecting runtime state, especially with multiple projects or worktrees.
 - If Tidewave tools are unavailable or a connection fails, report that limitation briefly and continue useful work with repository files, installed dependency sources, and mise commands. Do not claim a runtime or browser check was performed when it was not. Do not change the user's MCP registration or port merely to bypass a missing connection.
 
 #### Runtime, documentation, and source

@@ -12,7 +12,7 @@ mise run setup
 mise run dev
 ```
 
-Visit [`localhost:4000`](http://localhost:4000), or the port configured in
+Visit [`localhost:8080`](http://localhost:8080), or the port configured in
 `mise.local.toml`. Mise uses Elixir `1.20.4-otp-29` and Erlang/OTP `29`.
 
 Run `mise run precommit` before submitting changes. It checks compilation,
@@ -53,8 +53,8 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 Tidewave runs inside the Phoenix development server and is enabled only in
 development. The project MCP configuration is `.mcp.json`. Its URL uses
-`${PORT:-4000}`: clients supporting this syntax read `PORT` from their
-inherited environment, falling back to `4000`.
+`${PORT:-8080}`: clients supporting this syntax read `PORT` from their
+inherited environment, falling back to `8080`.
 
 Mise supplies the same `PORT` to Phoenix through `config/runtime.exs`.
 Start the server with `mise run dev`. In another terminal, start a compatible
@@ -75,6 +75,24 @@ Restart both Phoenix and the MCP client after changing the port. An already
 running desktop client does not automatically inherit the mise environment.
 The client must support project `.mcp.json` files and URL variable expansion;
 this file alone does not register a server globally in Codex.
+
+For Codex, register Tidewave globally using the effective mise environment:
+
+```sh
+mise run mcp:register
+```
+
+This stores a resolved URL in Codex's global configuration, currently
+`http://localhost:8080/tidewave/mcp` with the default port. The shell expands
+`PORT` when registration runs; the saved URL does not change automatically.
+After changing the effective port, restart Phoenix, run
+`mise run mcp:register` again, and reconnect or restart the Codex client.
+Mise supplies variables to commands it launches; it cannot update the environment
+of an already running desktop client. A local `PORT` setting overrides the
+project default and overrides an exported value. To use `export PORT=...`,
+remove the local `PORT` entry first; the project default only applies when
+`PORT` is unset. Check the effective port with `mise exec -- printenv PORT`
+before registering.
 
 `AGENTS.md` describes when to use Tidewave's runtime evaluation, installed docs,
 source lookup, logs, SQL inspection, browser automation, and design canvas.

@@ -20,7 +20,7 @@ if System.get_env("PHX_SERVER") do
   config :leitor, LeitorWeb.Endpoint, server: true
 end
 
-config :leitor, LeitorWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+config :leitor, LeitorWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "8080"))]
 
 if config_env() == :dev do
   # Reload browser tabs when matching files change.

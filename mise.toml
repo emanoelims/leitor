@@ -3,7 +3,7 @@ erlang = "29"
 elixir = "1.20.4-otp-29"
 
 [env]
-PORT = { default = "4000" }
+PORT = { default = "8080" }
 
 [tasks.setup]
 description = "Set up dependencies, database, and assets"
@@ -16,3 +16,7 @@ run = "mix phx.server"
 [tasks.precommit]
 description = "Check compilation, dependencies, formatting, Credo, Doctor, docs, Dialyzer, and tests"
 run = "mix precommit"
+
+[tasks."mcp:register"]
+description = "Register Tidewave globally in Codex using the effective mise port"
+run = 'codex mcp add tidewave --url "http://localhost:${PORT}/tidewave/mcp"'

@@ -35,7 +35,7 @@ This is a web application written using the Phoenix web framework.
 #### Verification and multiple servers
 
 - Keep dependency management, generators, formatting, compilation, migrations, Doctor, ExDoc, Dialyzer, and ExUnit in their normal mise/Mix workflows. Runtime experiments do not replace `mix precommit`, coverage checks, regression tests, or reproducible changes in source control.
-- The project's HTTP MCP URL is defined in `.mcp.json`; keep it aligned with the server's mise `PORT`. For simultaneous worktrees with different ports, Tidewave offers the optional `mix tidewave.proxy` STDIO task, which adds a port argument to tool calls. Read `mix help tidewave.proxy` before proposing a configuration change; the current HTTP setup remains the default.
+- MCP client registration is optional and personal; the repository does not provide `.mcp.json` or register servers automatically. When a contributor configures Tidewave, align their URL with the server's mise `PORT`. For simultaneous worktrees with different ports, Tidewave offers the optional `mix tidewave.proxy` STDIO task, which adds a port argument to tool calls. Read `mix help tidewave.proxy` before proposing a configuration change; the current HTTP setup remains the default.
 
 ### Official Elixir anti-patterns
 

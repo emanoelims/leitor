@@ -39,3 +39,6 @@ npm-debug.log
 # Personal mise overrides may contain local paths or secrets.
 /mise.local.toml
 /mise.*.local.toml
+
+# Personal MCP client configuration
+/.mcp.json

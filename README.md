@@ -49,56 +49,35 @@ connect current behavior to its test evidence and document its limits.
 
 Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
-## Local Tidewave MCP
+## Optional Tidewave MCP
 
-Tidewave runs inside the Phoenix development server and is enabled only in
-development. The project MCP configuration is `.mcp.json`. Its URL uses
-`${PORT:-8080}`: clients supporting this syntax read `PORT` from their
-inherited environment, falling back to `8080`.
+Tidewave is available inside the Phoenix development server only in development.
+Each contributor configures their own MCP client; the repository does not ship
+an MCP registration or modify global client settings.
 
-Mise supplies the same `PORT` to Phoenix through `config/runtime.exs`.
-Start the server with `mise run dev`. In another terminal, start a compatible
-MCP client from this directory with mise, for example:
+Start Phoenix with `mise run dev`. The default endpoint is
+`http://localhost:8080/tidewave/mcp`. To connect Codex globally, optionally run:
 
 ```sh
-mise exec -- claude
+codex mcp add tidewave --url http://localhost:8080/tidewave/mcp
 ```
 
-To use another port, set `PORT` in the ignored `mise.local.toml`:
+To use another port, set `PORT` in the ignored `mise.local.toml` and configure
+your MCP client with the same port:
 
 ```toml
 [env]
-PORT = "4010"
+PORT = "8081"
 ```
 
-Restart both Phoenix and the MCP client after changing the port. An already
-running desktop client does not automatically inherit the mise environment.
-The client must support project `.mcp.json` files and URL variable expansion;
-this file alone does not register a server globally in Codex.
+Check the effective port with `mise exec -- printenv PORT`. A local `PORT`
+entry overrides an exported value; remove the entry to use `export PORT=...`
+instead. Restart Phoenix after changing its port and update your personal MCP
+registration separately. A running desktop client does not automatically inherit
+the mise environment or update a saved URL.
 
-For Codex, register Tidewave globally using the effective mise environment:
-
-```sh
-mise run mcp:register
-```
-
-This stores a resolved URL in Codex's global configuration, currently
-`http://localhost:8080/tidewave/mcp` with the default port. The shell expands
-`PORT` when registration runs; the saved URL does not change automatically.
-After changing the effective port, restart Phoenix, run
-`mise run mcp:register` again, and reconnect or restart the Codex client.
-Mise supplies variables to commands it launches; it cannot update the environment
-of an already running desktop client. A local `PORT` setting overrides the
-project default and overrides an exported value. To use `export PORT=...`,
-remove the local `PORT` entry first; the project default only applies when
-`PORT` is unset. Check the effective port with `mise exec -- printenv PORT`
-before registering.
-
-`AGENTS.md` describes when to use Tidewave's runtime evaluation, installed docs,
-source lookup, logs, SQL inspection, browser automation, and design canvas.
-Browser tools need a connected browser; follow their help and connection guidance,
-including opening `/tidewave` when requested. Runtime tools use the development
-app and database. They complement the test and quality checks.
+`AGENTS.md` describes how to use Tidewave when connected. Runtime tools use the
+development app and database and complement the test and quality checks.
 
 See the [Tidewave MCP guide](https://tidewave.hexdocs.pm/mcp.md) for connection
 troubleshooting and the optional proxy for worktrees running on different ports.

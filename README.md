@@ -75,3 +75,12 @@ Restart both Phoenix and the MCP client after changing the port. An already
 running desktop client does not automatically inherit the mise environment.
 The client must support project `.mcp.json` files and URL variable expansion;
 this file alone does not register a server globally in Codex.
+
+`AGENTS.md` describes when to use Tidewave's runtime evaluation, installed docs,
+source lookup, logs, SQL inspection, browser automation, and design canvas.
+Browser tools need a connected browser; follow their help and connection guidance,
+including opening `/tidewave` when requested. Runtime tools use the development
+app and database. They complement the test and quality checks.
+
+See the [Tidewave MCP guide](https://tidewave.hexdocs.pm/mcp.md) for connection
+troubleshooting and the optional proxy for worktrees running on different ports.

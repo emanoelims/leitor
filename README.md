@@ -163,12 +163,28 @@ and outside clicks.
 
 ### Paragraph writing
 
-Writing uses a continuous plain-text editor. Enter starts a paragraph; blank
-lines are preserved but do not count as paragraphs. The cursor selects the
-paragraph sent to the tutor for questions and feedback. Applying a suggestion
-replaces only that paragraph, preserving the surrounding text and line breaks.
-Changed paragraphs must be reviewed again before a suggestion can be applied.
-Save the entire document with Save draft or Cmd/Ctrl+S; previous drafts and
-feedback are available from the header's history button. Reading and writing
-share the `StudyComponents.reading_toolbar/1` function component, also shown
-in `/dev/componentes`.
+Writing uses an inline Tiptap editor with Markdown persistence and an MDEx-rendered
+preview. Type `/` at the start of a paragraph to insert text, headings, lists,
+checklists, quotes, code blocks, or dividers. Filter by typing, choose with ↑/↓ and
+Enter, and dismiss with Escape. Markdown shortcuts such as `## `, `- `, `> `,
+`**bold**`, and `*italic*` render as you type. Pasted Markdown supports the same
+blocks. Cmd/Ctrl+Z undoes changes; Cmd/Ctrl+S saves the draft.
+
+The cursor selects the prose paragraph sent to the tutor, including headings and
+list items. Code blocks and dividers are excluded. Applying a suggestion replaces
+only that paragraph; changed paragraphs must be reviewed again. The eye button
+opens the server-rendered preview. Saved drafts and feedback remain available in
+the header's history menu. Existing plain-text drafts retain their literal text;
+new edits save as Markdown. Reading and writing share the same document measure
+and `StudyComponents.reading_toolbar/1` function component.
+
+User drafts are untrusted Markdown: MDEx sanitizes HTML, escapes raw tags, and
+never compiles HEEx or evaluates Phoenix components. MDEx's HEEx/component support
+is reserved for trusted application templates. This editor supports the blocks
+listed above, not every MDEx extension (for example, tables and embedded components).
+
+Run browser regression tests against a development server using
+`npm --prefix assets run test:browser` (install Chromium once with
+`cd assets && npx playwright install chromium`). Set `BASE_URL` for another port.
+Tests create isolated accounts through the development mailbox; no external email
+is sent. Screenshots and browser artifacts are written to the ignored `tmp/` folder.

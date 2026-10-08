@@ -34,7 +34,7 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     render_async(view)
 
     assert has_element?(view, "#writing-title", "A place I would love to visit")
-    assert has_element?(view, "#writing_text", "My own draft stays here.")
+    assert_draft(view, "My own draft stays here.")
     assert has_element?(view, "#app-header #writing-save-status", "5 words")
     assert Learning.recent_attempts(scope) == []
   end
@@ -89,12 +89,12 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     view |> element("#review-correction-0") |> render_click()
     assert [%{term: "went", category: "error"}] = Learning.list_entries(scope)
     render_hook(view, "apply", %{})
-    assert has_element?(view, "textarea", "She went to school yesterday.")
+    assert_draft(view, "She went to school yesterday.")
     render_submit(view, "save", %{"writing" => %{"text" => "My draft"}})
     assert length(Learning.recent_attempts(scope)) == 2
     view |> form("#writing-form", writing: %{text: "unavailable"}) |> render_submit()
     assert render_async(view) =~ "Your text is preserved"
-    assert has_element?(view, "textarea", "unavailable")
+    assert_draft(view, "unavailable")
   end
 
   test "paragraph feedback preserves adjacent text, blank lines and Unicode", %{conn: conn, scope: scope} do
@@ -112,7 +112,7 @@ defmodule LeitorWeb.LearningWorkflowsTest do
       index: 1
     })
 
-    assert has_element?(view, "#writing_text", "An edited evening.")
+    assert_draft(view, "An edited evening.")
   end
 
   test "stale feedback never replaces a paragraph edited after requesting review", %{conn: conn} do
@@ -120,7 +120,7 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     view |> form("#writing-form", writing: %{text: "She go to school yesterday."}) |> render_submit()
     render_async(view)
     assert render_hook(view, "apply", %{"text" => "She visited her sister."}) =~ "This paragraph has changed"
-    assert has_element?(view, "#writing_text", "She visited her sister.")
+    assert_draft(view, "She visited her sister.")
     refute has_element?(view, "#writing-feedback")
   end
 
@@ -188,10 +188,10 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     {:ok, view, _} = live(conn, ~p"/write")
     render_submit(view, "ask", %{"tutor" => %{"text" => "She go yesterday.", "question" => "Why past tense?"}})
     assert render_async(view) =~ "Yesterday calls for the simple past."
-    assert has_element?(view, "#writing_text", "She go yesterday.")
+    assert_draft(view, "She go yesterday.")
     render_submit(view, "ask", %{"tutor" => %{"text" => "She go yesterday.", "question" => "unavailable"}})
     assert render_async(view) =~ "The tutor is unavailable"
-    assert has_element?(view, "#writing_text", "She go yesterday.")
+    assert_draft(view, "She go yesterday.")
   end
 
   test "the private library validates imports, filters live updates, and deletes only owned texts", %{
@@ -288,5 +288,53 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     render_click(view, "delete", %{"id" => first.id})
     refute has_element?(view, ".jar-words button")
     assert [%{term: "london"}] = Learning.list_entries(scope)
+  end
+
+  test "Markdown drafts persist their format and review only the selected list item", %{conn: conn, scope: scope} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    text = "# Café\n\n- She go to school yesterday.\n- Keep **this** item.\n\n```elixir\nraise :example\n```"
+    render_submit(view, "feedback", %{"writing" => %{"text" => text, "format" => "markdown", "paragraph" => "1"}})
+    render_async(view)
+    assert [%{result: %{"format" => "markdown", "paragraph_index" => 1}}] = Learning.recent_attempts(scope)
+    render_hook(view, "apply", %{"text" => text, "format" => "markdown"})
+    corrected = String.replace(text, "She go", "She went")
+    assert_push_event(view, "writing-applied", %{text: ^corrected, index: 1})
+    render_submit(view, "save", %{"writing" => %{"text" => corrected, "format" => "markdown"}})
+    draft = Enum.find(Learning.recent_attempts(scope), &(&1.kind == "draft"))
+    assert draft.result["format"] == "markdown"
+    render_click(view, "load", %{"id" => draft.id})
+    assert_push_event(view, "writing-loaded", %{text: ^corrected, format: "markdown"})
+    view |> element("#writing-preview-toggle") |> render_click()
+    assert has_element?(view, "#writing-preview h1", "Café")
+    assert has_element?(view, "#writing-preview strong", "this")
+    assert has_element?(view, "#writing-preview pre", "raise :example")
+  end
+
+  test "code selections cannot submit prose feedback or replace the last paragraph", %{conn: conn, scope: scope} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    render_hook(view, "paragraph", %{"index" => -1})
+
+    assert render_submit(view, "feedback", %{
+             "writing" => %{"text" => "Text\n\n```\ncode\n```", "format" => "markdown", "paragraph" => "-1"}
+           }) =~ "Write between"
+
+    assert Learning.recent_attempts(scope) == []
+  end
+
+  test "switching draft format invalidates previous feedback", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    render_submit(view, "feedback", %{"writing" => %{"text" => "She go to school yesterday."}})
+    render_async(view)
+
+    assert render_hook(view, "apply", %{"text" => "She go to school yesterday.", "format" => "markdown"}) =~
+             "Review it again"
+
+    refute has_element?(view, "#writing-feedback")
+  end
+
+  defp assert_draft(view, text) do
+    view |> element("#writing-preview-toggle") |> render_click()
+    assert has_element?(view, "#writing-preview", text)
+    view |> element("#writing-preview-toggle") |> render_click()
   end
 end

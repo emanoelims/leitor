@@ -73,6 +73,7 @@ defmodule Leitor.MixProject do
       {:heroicons,
        github: "tailwindlabs/heroicons", tag: "v2.2.0", sparse: "optimized", app: false, compile: false, depth: 1},
       {:swoosh, "~> 1.16"},
+      {:mdex, "~> 0.14.2"},
       {:req_llm, "~> 1.26"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},

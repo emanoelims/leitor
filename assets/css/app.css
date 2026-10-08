@@ -2456,3 +2456,42 @@ audio {
   .writing-header-status ~ .icon-button,
   .writing-header-status ~ .writing-history > summary { width:32px; height:32px; flex-shrink:0; }
 }
+
+/* Writing uses the same measure and typography as the reader. */
+.writing-prose { font-size:var(--document-font-size); line-height:var(--document-line-height); color:var(--ink); overflow-wrap:anywhere; }
+.writing-rich-editor { min-height:12rem; outline:none; caret-color:var(--ink); }
+.writing-prose > * + * { margin-top:.8em; }
+.writing-prose p { margin-bottom:0; }
+.writing-prose h1,.writing-prose h2,.writing-prose h3 { font-weight:600; line-height:1.4; margin-top:1.3em; }
+.writing-prose h1 { font-size:1.3em; }
+.writing-prose h2 { font-size:1.15em; }
+.writing-prose h3 { font-size:1.05em; }
+.writing-prose > :first-child { margin-top:0; }
+.writing-prose ul,.writing-prose ol { padding-left:1.4em; }
+.writing-prose ul { list-style:disc; }
+.writing-prose ol { list-style:decimal; }
+.writing-prose li + li { margin-top:.2em; }
+.writing-prose li p { margin:0; }
+.writing-prose blockquote { background:none; border-radius:0; padding-top:0; padding-bottom:0; border-left:2px solid var(--line); padding-left:1em; color:var(--muted); }
+.writing-prose code { font-family:monospace; font-size:.85em; background:var(--card); border-radius:4px; padding:.1em .25em; }
+.writing-prose pre { white-space:pre-wrap; background:var(--card); border:1px solid var(--line); padding:1em; border-radius:8px; font-size:.85em; }
+.writing-prose pre code { padding:0; background:none; font-size:inherit; }
+.writing-prose hr { border:0; border-top:1px solid var(--line); margin:1.5em 0; }
+.writing-prose a { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
+.writing-prose ul[data-type="taskList"] { list-style:none; padding-left:0; }
+.writing-prose li[data-type="taskItem"] { display:flex; align-items:baseline; gap:.6em; }
+.writing-prose li[data-type="taskItem"] > div { flex:1; min-width:0; }
+.writing-prose input[type="checkbox"] { accent-color:var(--accent); cursor:pointer; }
+.writing-rich-editor .is-editor-empty:first-child::before { content:attr(data-placeholder); color:var(--muted); opacity:.65; float:left; pointer-events:none; height:0; }
+.writing-block-menu { position:fixed; z-index:80; width:min(280px, calc(100vw - 24px)); max-height:min(420px, 60dvh); overflow:auto; padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--paper); box-shadow:0 12px 40px #0002; font-size:13px; }
+.writing-block-menu[hidden],.writing-block-menu button[hidden] { display:none; }
+.writing-block-menu .eyebrow { padding:5px 8px 8px; }
+.writing-block-menu button { display:flex; align-items:center; gap:10px; width:100%; padding:8px; border-radius:6px; text-align:left; }
+.writing-block-menu button[aria-selected="true"],.writing-block-menu button:hover { background:var(--card); }
+.writing-block-menu button span { flex:1; }
+.writing-block-menu small { color:var(--muted); font-family:monospace; }
+.writing-block-help { font-size:10px; color:var(--muted); padding:8px 6px 2px; }
+#writing-preview-toggle[aria-pressed="true"] { color:var(--accent); background:var(--card); }
+
+.writing-limit-message { color:var(--danger); font-size:13px; margin-top:12px; }
+.writing-limit-message:empty { display:none; }

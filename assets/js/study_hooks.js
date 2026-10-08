@@ -81,7 +81,11 @@ export const ShadowingRecorder = {
 
 export const WritingQuestion = {
   mounted() {
-    this.sync = () => {this.el.querySelector('[name="tutor[text]"]').value = document.querySelector('#writing_text').value; this.el.querySelector('[name="tutor[paragraph]"]').value = document.querySelector('#writing-paragraph').value}
+    this.sync = () => {
+      this.el.querySelector('[name="tutor[format]"]').value = document.querySelector('#writing-format').value
+      this.el.querySelector('[name="tutor[text]"]').value = document.querySelector('#writing_text').value
+      this.el.querySelector('[name="tutor[paragraph]"]').value = document.querySelector('#writing-paragraph').value
+    }
     this.el.addEventListener('submit', this.sync, true)
   },
   destroyed() {this.el.removeEventListener('submit', this.sync, true)}

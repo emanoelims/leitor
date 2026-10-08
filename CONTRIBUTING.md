@@ -117,6 +117,19 @@ public promises and their evidence in the
 [authentication contract register](guides/authentication-contracts.md). Add
 resource ownership contracts when resource contexts are introduced.
 
+## Elixir anti-patterns
+
+Use the [official Elixir anti-pattern guides](https://elixir.hexdocs.pm/what-anti-patterns.md)
+alongside the repository rules in `AGENTS.md`. They cover code, API design,
+processes, and metaprogramming. Apply the relevant recommendations to new and
+changed code, considering the documented exceptions and the affected callers.
+
+An anti-pattern alone does not justify a rewrite. Explain the behavior,
+contract, or maintenance problem before proposing a refactor, keep it within
+scope, and preserve intentional framework conventions. In reviews, distinguish
+correctness findings from optional design suggestions. Automated checks support
+this review but cannot replace it.
+
 ## Typespecs
 
 Use the [official Elixir typespecs reference](https://elixir.hexdocs.pm/typespecs.html)

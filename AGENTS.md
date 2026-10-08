@@ -37,6 +37,17 @@ This is a web application written using the Phoenix web framework.
 - Keep dependency management, generators, formatting, compilation, migrations, Doctor, ExDoc, Dialyzer, and ExUnit in their normal mise/Mix workflows. Runtime experiments do not replace `mix precommit`, coverage checks, regression tests, or reproducible changes in source control.
 - The project's HTTP MCP URL is defined in `.mcp.json`; keep it aligned with the server's mise `PORT`. For simultaneous worktrees with different ports, Tidewave offers the optional `mix tidewave.proxy` STDIO task, which adds a port argument to tool calls. Read `mix help tidewave.proxy` before proposing a configuration change; the current HTTP setup remains the default.
 
+### Official Elixir anti-patterns
+
+- Follow the [official anti-pattern guidance](https://elixir.hexdocs.pm/what-anti-patterns.md) when implementing and reviewing changes. Read the relevant category: [code](https://elixir.hexdocs.pm/code-anti-patterns.md), [design](https://elixir.hexdocs.pm/design-anti-patterns.md), [processes](https://elixir.hexdocs.pm/process-anti-patterns.md), or [metaprogramming](https://elixir.hexdocs.pm/macro-anti-patterns.md).
+- Apply the guidance in context, including its documented exceptions. An anti-pattern is a signal to investigate, not an automatic requirement to rewrite existing code. Keep refactoring within the requested scope.
+- Make input shapes, required map keys, and return contracts explicit. Prefer pattern matching and guards for internal invariants, deliberate optional-key access, and boolean operators for boolean contracts. Validate external input at boundaries and handle expected failures explicitly.
+- Keep error handling close to its source; avoid ambiguous `with` error translations, catch-all branches that hide unexpected results, and exceptions used for routine control flow. Preserve intentional bang APIs and Phoenix exceptions that represent HTTP responses.
+- Group related parameters and model structured domain data with suitable maps, tuples, or structs. Named types improve contracts but do not provide runtime validation. Avoid overlapping boolean states, unrelated function clauses, and options that obscure return shapes.
+- Use processes for runtime needs such as state ownership, concurrency, and fault isolation. Encapsulate process protocols, supervise long-lived workers, and extract only necessary data before capturing it in task closures.
+- Prefer functions to unnecessary macros; keep generated code small and compile-time dependencies explicit and tracked. Preserve legitimate framework `use` calls. Investigate recompilation or memory costs before prescribing performance refactors.
+- During code review, explain the affected contract, reachable failure, or concrete maintenance cost. Keep optional design suggestions separate from correctness findings; Credo and Dialyzer do not replace this contextual review.
+
 ### Typespecs and static analysis
 
 - Follow the project's typespec policy in `CONTRIBUTING.md`, based on the [official Elixir typespecs reference](https://elixir.hexdocs.pm/typespecs.html).

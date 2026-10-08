@@ -45,7 +45,7 @@ defmodule LeitorWeb.Shell do
               aria-label="Listen to the sentence"
               phx-click={JS.dispatch("leitor:speak", detail: %{text: @speech})}
             ><.icon name="hero-speaker-wave" class="size-4" /></button>
-            <span class="context-title">{@section_title}</span><span
+            <span class="context-title" title={@section_title}>{@section_title}</span><span
               :if={@context_detail}
               class="context-detail"
             >{@context_detail}</span>

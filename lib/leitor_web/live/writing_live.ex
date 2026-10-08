@@ -272,7 +272,7 @@ defmodule LeitorWeb.WritingLive do
       current_scope={@current_scope}
       active="write"
       class="page writing-page"
-      context_title="Writing"
+      context_title={@writing_title || "Writing"}
       context_detail={"Paragraph #{@active_paragraph + 1} of #{@paragraph_count}"}
     >
       <:header_controls>

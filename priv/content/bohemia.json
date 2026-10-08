@@ -1,0 +1,659 @@
+[
+  {
+    "tense": "Simple Present",
+    "translation": "Para Sherlock Holmes, ela é sempre a mulher.",
+    "focus": {
+      "title": "The emphatic “the”",
+      "body": "When “the” is stressed and pronounced /ðiː/, it means the one above all others. Doyle italicized “the woman”: for Holmes, one woman stands apart.",
+      "pattern": "the + stressed noun = the one above all others"
+    },
+    "chunks": [
+      [
+        "To Sherlock Holmes",
+        "Adverbial"
+      ],
+      [
+        "she",
+        "Subject"
+      ],
+      [
+        "is",
+        "Verb"
+      ],
+      [
+        "always",
+        "Adverb"
+      ],
+      [
+        "the woman",
+        "Subject complement"
+      ]
+    ],
+    "tokens": [
+      [
+        "To",
+        "prep",
+        "/tuː/",
+        "para (na visão de)",
+        "Used to show whose opinion or point of view is meant.",
+        "Aqui \"to\" não indica direção: introduz o ponto de vista. \"To me\" = \"para mim, na minha opinião\"."
+      ],
+      [
+        "Sherlock Holmes",
+        "proper",
+        "/ˈʃɜːlɒk ˈhəʊmz/",
+        "Sherlock Holmes",
+        "Fictional detective created by Arthur Conan Doyle, first published in 1887.",
+        "Nome próprio: não leva artigo. O \"l\" de Holmes é mudo."
+      ],
+      [
+        "she",
+        "pron",
+        "/ʃiː/",
+        "ela",
+        "Third person singular feminine subject pronoun.",
+        "Pronome sujeito. Refere-se a Irene Adler, que o narrador só nomeia na frase 4: um recurso de suspense."
+      ],
+      [
+        "is",
+        "verb",
+        "/ɪz/",
+        "é",
+        "Third person singular present form of \"be\".",
+        "Simple Present de \"to be\" + \"always\": uma verdade permanente, não um estado passageiro."
+      ],
+      [
+        "always",
+        "adv",
+        "/ˈɔːlweɪz/",
+        "sempre",
+        "At all times; on every occasion.",
+        "Advérbio de frequência vem DEPOIS de \"be\" (she is always) e ANTES dos outros verbos (she always says)."
+      ],
+      [
+        "the",
+        "det",
+        "/ðiː/ (tônico)",
+        "a (a única)",
+        "Definite article; stressed, it means \"the best or most important\".",
+        "Normalmente se lê /ðə/. Lido /ðiː/ e com ênfase, transforma \"woman\" em \"A mulher\", única. É o ponto central da frase."
+      ],
+      [
+        "woman",
+        "noun",
+        "/ˈwʊmən/",
+        "mulher",
+        "An adult female human being.",
+        "Plural irregular: women /ˈwɪmɪn/. Repare que só a pronúncia da primeira sílaba muda."
+      ],
+      [
+        ".",
+        null
+      ]
+    ]
+  },
+  {
+    "tense": "Present Perfect",
+    "translation": "Raramente o ouvi mencioná-la por qualquer outro nome.",
+    "focus": {
+      "title": "A perception verb + an infinitive without “to”",
+      "body": "After hear, see, watch, and feel, a second verb can take its base form without “to”: I heard him mention her. The present perfect “have heard” looks back over their acquaintance up to now.",
+      "pattern": "have + seldom + heard + object + base verb"
+    },
+    "chunks": [
+      [
+        "I",
+        "Subject"
+      ],
+      [
+        "have seldom heard",
+        "Verb"
+      ],
+      [
+        "him",
+        "Object"
+      ],
+      [
+        "mention her",
+        "Subordinate clause"
+      ],
+      [
+        "under any other name",
+        "Adverbial"
+      ]
+    ],
+    "tokens": [
+      [
+        "I",
+        "pron",
+        "/aɪ/",
+        "eu",
+        "First person singular subject pronoun.",
+        "O narrador: Dr. John Watson. \"I\" é sempre maiúsculo em inglês, em qualquer posição."
+      ],
+      [
+        "have",
+        "aux",
+        "/hæv/",
+        "tenho (auxiliar)",
+        "Auxiliary verb used to form the perfect tenses.",
+        "Auxiliar do Present Perfect: have + particípio. Liga o passado ao presente: \"em todo o tempo que convivo com ele, até hoje\"."
+      ],
+      [
+        "seldom",
+        "adv",
+        "/ˈseldəm/",
+        "raramente",
+        "Not often; rarely.",
+        "Mais formal e literário que \"rarely\". Fica entre o auxiliar e o particípio: have seldom heard."
+      ],
+      [
+        "heard",
+        "verb",
+        "/hɜːd/",
+        "ouvido",
+        "Past participle of \"hear\".",
+        "Irregular: hear, heard, heard. Cuidado: \"heard\" rima com \"bird\", não com \"hear\"."
+      ],
+      [
+        "him",
+        "pron",
+        "/hɪm/",
+        "o (ele)",
+        "Object form of \"he\".",
+        "Pronome objeto. Depois do verbo usa-se him, nunca he: I heard him."
+      ],
+      [
+        "mention",
+        "verb",
+        "/ˈmenʃən/",
+        "mencionar",
+        "To refer to something briefly.",
+        "Forma base, sem \"to\", porque vem depois de um verbo de percepção (heard). \"I heard him to mention\" estaria errado."
+      ],
+      [
+        "her",
+        "pron",
+        "/hɜː/",
+        "a (ela)",
+        "Object form of \"she\".",
+        "Aqui é objeto (mention her). Na frase 3, \"her sex\", a mesma palavra é possessivo. Mesma forma, função diferente."
+      ],
+      [
+        "under",
+        "prep",
+        "/ˈʌndə/",
+        "sob, por",
+        "Used to show the name or title someone uses.",
+        "\"Under a name\" = \"sob um nome\", mesma imagem do português."
+      ],
+      [
+        "any",
+        "det",
+        "/ˈeni/",
+        "qualquer",
+        "One of a set, no matter which.",
+        "Em frase de sentido negativo (seldom), \"any other\" funciona como \"nenhum outro\"."
+      ],
+      [
+        "other",
+        "adj",
+        "/ˈʌðə/",
+        "outro",
+        "Different from the one already mentioned.",
+        "Como adjetivo não vai para o plural: other names, nunca \"others names\"."
+      ],
+      [
+        "name",
+        "noun",
+        "/neɪm/",
+        "nome",
+        "The word by which a person is known.",
+        "Substantivo contável. Também é verbo: to name = nomear."
+      ],
+      [
+        ".",
+        null
+      ]
+    ]
+  },
+  {
+    "tense": "Simple Present",
+    "translation": "Aos olhos dele, ela ofusca e predomina sobre todo o seu sexo.",
+    "focus": {
+      "title": "Two verbs sharing one object",
+      "body": "“Eclipses and predominates” share the object “the whole of her sex.” Modern English usually says “predominates over.” The direct transitive use reflects the story’s Victorian setting.",
+      "pattern": "subject + verb-s + and + verb-s + object"
+    },
+    "chunks": [
+      [
+        "In his eyes",
+        "Adverbial"
+      ],
+      [
+        "she",
+        "Subject"
+      ],
+      [
+        "eclipses and predominates",
+        "Verb"
+      ],
+      [
+        "the whole of her sex",
+        "Object"
+      ]
+    ],
+    "tokens": [
+      [
+        "In",
+        "prep",
+        "/ɪn/",
+        "em, aos",
+        "Expressing a point of view.",
+        "Parte da expressão fixa \"in his eyes\" = \"na opinião dele\"."
+      ],
+      [
+        "his",
+        "det",
+        "/hɪz/",
+        "dele, seus",
+        "Possessive determiner for \"he\".",
+        "O possessivo concorda com o DONO (he → his), não com a coisa possuída. Por isso \"his eyes\", mesmo sendo plural."
+      ],
+      [
+        "eyes",
+        "noun",
+        "/aɪz/",
+        "olhos",
+        "Plural of \"eye\", the organ of sight.",
+        "Plural regular, mas o -s soa /z/ depois de som vocálico."
+      ],
+      [
+        "she",
+        "pron",
+        "/ʃiː/",
+        "ela",
+        "Third person singular feminine subject pronoun.",
+        "Mesmo sujeito da frase 1. O inglês não omite sujeito como o português (\"ofusca\")."
+      ],
+      [
+        "eclipses",
+        "verb",
+        "/ɪˈklɪpsɪz/",
+        "ofusca, eclipsa",
+        "To make someone seem less important by comparison.",
+        "Terceira pessoa: depois de som sibilante (/s/) o -es vira sílaba extra /ɪz/."
+      ],
+      [
+        "and",
+        "conj",
+        "/ænd/",
+        "e",
+        "Used to connect words of the same kind.",
+        "Coordena dois verbos que compartilham sujeito e objeto."
+      ],
+      [
+        "predominates",
+        "verb",
+        "/prɪˈdɒmɪneɪts/",
+        "predomina sobre",
+        "To be the strongest or most noticeable element.",
+        "Uso arcaico, sem preposição. No inglês atual: predominates OVER something."
+      ],
+      [
+        "the",
+        "det",
+        "/ðə/",
+        "o, a",
+        "Definite article.",
+        "Aqui é o \"the\" comum, átono /ðə/. Compare com o \"the\" enfático da frase 1."
+      ],
+      [
+        "whole",
+        "noun",
+        "/həʊl/",
+        "totalidade",
+        "All of something; the entire thing.",
+        "\"The whole of\" = \"todo o\". O \"w\" é mudo: soa igual a \"hole\" (buraco)."
+      ],
+      [
+        "of",
+        "prep",
+        "/əv/",
+        "de",
+        "Expressing the relationship between a part and a whole.",
+        "Átono, quase sempre /əv/. O \"f\" soa /v/."
+      ],
+      [
+        "her",
+        "det",
+        "/hɜː/",
+        "seu (dela)",
+        "Possessive determiner for \"she\".",
+        "Aqui é possessivo (her sex). Na frase 2 era pronome objeto (mention her)."
+      ],
+      [
+        "sex",
+        "noun",
+        "/seks/",
+        "sexo (as mulheres)",
+        "Either of the two main categories, male and female.",
+        "No inglês vitoriano, \"her sex\" = \"as mulheres em geral\"."
+      ],
+      [
+        ".",
+        null
+      ]
+    ]
+  },
+  {
+    "tense": "Simple Past",
+    "translation": "Não que ele sentisse por Irene Adler alguma emoção semelhante ao amor.",
+    "focus": {
+      "title": "“It was not that…”: rejecting an explanation",
+      "body": "Here, “it” is a dummy subject: English requires a grammatical subject even without a particular person or thing. This structure rejects an obvious explanation before offering another.",
+      "pattern": "It + was not + that + clause"
+    },
+    "chunks": [
+      [
+        "It",
+        "Subject"
+      ],
+      [
+        "was not",
+        "Verb"
+      ],
+      [
+        "that he felt any emotion akin to love for Irene Adler",
+        "Subordinate clause"
+      ]
+    ],
+    "tokens": [
+      [
+        "It",
+        "pron",
+        "/ɪt/",
+        "(sem tradução)",
+        "Used as the subject of a sentence when there is no real subject.",
+        "Sujeito expletivo, vazio de significado. Em português ele simplesmente some: \"Não que…\"."
+      ],
+      [
+        "was",
+        "verb",
+        "/wɒz/",
+        "era",
+        "First and third person singular past of \"be\".",
+        "Simple Past de \"to be\": I/he/she/it was; you/we/they were."
+      ],
+      [
+        "not",
+        "adv",
+        "/nɒt/",
+        "não",
+        "Used to make a verb negative.",
+        "Com \"be\" a negação vem direto depois do verbo, sem \"did\": was not (wasn't)."
+      ],
+      [
+        "that",
+        "conj",
+        "/ðət/",
+        "que",
+        "Introducing a subordinate clause.",
+        "Conjunção, lida átona /ðət/. Como pronome demonstrativo (\"that book\") seria tônica /ðæt/."
+      ],
+      [
+        "he",
+        "pron",
+        "/hiː/",
+        "ele",
+        "Third person singular masculine subject pronoun.",
+        "Sujeito da oração subordinada: Holmes."
+      ],
+      [
+        "felt",
+        "verb",
+        "/felt/",
+        "sentia, sentiu",
+        "Past tense of \"feel\".",
+        "Irregular: feel, felt, felt. Não confunda com fell (caiu), de fall."
+      ],
+      [
+        "any",
+        "det",
+        "/ˈeni/",
+        "alguma, qualquer",
+        "Used in negative contexts to mean \"even one\".",
+        "Em frase negativa, \"any\" = \"nenhuma\" / \"qualquer\". Em afirmativa usaríamos \"some\"."
+      ],
+      [
+        "emotion",
+        "noun",
+        "/ɪˈməʊʃən/",
+        "emoção",
+        "A strong feeling such as love, fear or anger.",
+        "Cognato verdadeiro. A sílaba tônica é a segunda: e-MO-tion."
+      ],
+      [
+        "akin",
+        "adj",
+        "/əˈkɪn/",
+        "semelhante, aparentado",
+        "Of similar character.",
+        "Sempre seguido de \"to\": akin to = parecido com. Vem de \"of kin\", \"do mesmo sangue\"."
+      ],
+      [
+        "to",
+        "prep",
+        "/tə/",
+        "a",
+        "Used after \"akin\" to introduce the thing compared.",
+        "Preposição exigida por \"akin\". Não é o \"to\" do infinitivo."
+      ],
+      [
+        "love",
+        "noun",
+        "/lʌv/",
+        "amor",
+        "A strong feeling of deep affection.",
+        "Aqui é substantivo: vem depois de preposição e não tem sujeito. Em \"I love\" seria verbo. A posição define a classe."
+      ],
+      [
+        "for",
+        "prep",
+        "/fɔː/",
+        "por",
+        "Indicating the person a feeling is directed at.",
+        "Emoção + for + pessoa: love for, respect for, feelings for."
+      ],
+      [
+        "Irene Adler",
+        "proper",
+        "/aɪˈriːni ˈædlə/",
+        "Irene Adler",
+        "Character in \"A Scandal in Bohemia\" (1891), the only woman to outwit Holmes.",
+        "Nome próprio, revelado só agora: Doyle segura o nome por três frases."
+      ],
+      [
+        ".",
+        null
+      ]
+    ]
+  },
+  {
+    "tense": "Simple Past",
+    "translation": "Ele era, creio eu, a máquina de raciocínio e observação mais perfeita que o mundo já viu.",
+    "focus": null,
+    "chunks": [
+      [
+        "He",
+        "Subject"
+      ],
+      [
+        "was",
+        "Verb"
+      ],
+      [
+        "I take it",
+        "Adverbial"
+      ],
+      [
+        "the most perfect reasoning and observing machine",
+        "Subject complement"
+      ],
+      [
+        "that the world has seen",
+        "Subordinate clause"
+      ]
+    ],
+    "tokens": [
+      [
+        "He",
+        "pron",
+        "/hiː/",
+        "ele",
+        "Third person singular masculine subject pronoun.",
+        "Holmes, de novo como sujeito."
+      ],
+      [
+        "was",
+        "verb",
+        "/wɒz/",
+        "era",
+        "Past of \"be\".",
+        "Simple Past de \"to be\"."
+      ],
+      [
+        ",",
+        null
+      ],
+      [
+        "I",
+        "pron",
+        "/aɪ/",
+        "eu",
+        "First person singular subject pronoun.",
+        "Watson interrompe a frase para opinar."
+      ],
+      [
+        "take",
+        "verb",
+        "/teɪk/",
+        "suponho (take it)",
+        "To understand or assume something.",
+        "\"I take it\" = \"presumo, creio eu\". Expressão fixa, entra entre vírgulas."
+      ],
+      [
+        "it",
+        "pron",
+        "/ɪt/",
+        "(isso)",
+        "Object pronoun referring to a fact.",
+        "Parte da expressão \"I take it\"."
+      ],
+      [
+        ",",
+        null
+      ],
+      [
+        "the",
+        "det",
+        "/ðə/",
+        "a",
+        "Definite article.",
+        "Superlativo pede \"the\": the most perfect."
+      ],
+      [
+        "most",
+        "adv",
+        "/məʊst/",
+        "mais",
+        "Used to form the superlative of adjectives.",
+        "Superlativo de adjetivo longo: the most + adjetivo. Curto seria -est (the fastest)."
+      ],
+      [
+        "perfect",
+        "adj",
+        "/ˈpɜːfɪkt/",
+        "perfeita",
+        "Having all the required qualities.",
+        "Tônica na primeira sílaba como adjetivo (PER-fect); como verbo, na segunda (to per-FECT)."
+      ],
+      [
+        "reasoning",
+        "adj",
+        "/ˈriːzənɪŋ/",
+        "de raciocínio",
+        "Using logic to think.",
+        "Forma -ing usada como adjetivo antes do substantivo: reasoning machine."
+      ],
+      [
+        "and",
+        "conj",
+        "/ənd/",
+        "e",
+        "Used to connect words of the same kind.",
+        "Liga dois adjetivos em -ing."
+      ],
+      [
+        "observing",
+        "adj",
+        "/əbˈzɜːvɪŋ/",
+        "de observação",
+        "Noticing things carefully.",
+        "Também -ing com função de adjetivo."
+      ],
+      [
+        "machine",
+        "noun",
+        "/məˈʃiːn/",
+        "máquina",
+        "A device that performs a task.",
+        "O \"ch\" soa /ʃ/, herança do francês."
+      ],
+      [
+        "that",
+        "pron",
+        "/ðət/",
+        "que",
+        "Relative pronoun.",
+        "Pronome relativo: retoma \"machine\"."
+      ],
+      [
+        "the",
+        "det",
+        "/ðə/",
+        "o",
+        "Definite article.",
+        "\"The world\": único, sempre com artigo."
+      ],
+      [
+        "world",
+        "noun",
+        "/wɜːld/",
+        "mundo",
+        "The earth and all the people on it.",
+        "Pronúncia difícil: o /ɜːl/ junto. Treine \"wurld\"."
+      ],
+      [
+        "has",
+        "aux",
+        "/həz/",
+        "já (tem)",
+        "Auxiliary for the perfect tenses.",
+        "Present Perfect com superlativo: \"o mais X que já existiu\"."
+      ],
+      [
+        "seen",
+        "verb",
+        "/siːn/",
+        "visto",
+        "Past participle of \"see\".",
+        "Irregular: see, saw, seen."
+      ],
+      [
+        ".",
+        null
+      ]
+    ]
+  }
+]

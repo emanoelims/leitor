@@ -12,6 +12,7 @@ defmodule Leitor.Application do
       Leitor.Repo,
       {DNSCluster, query: Application.get_env(:leitor, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Leitor.PubSub},
+      LeitorWeb.Presence,
       # Start a worker by calling: Leitor.Worker.start_link(arg)
       # {Leitor.Worker, arg},
       # Start to serve requests, typically the last entry

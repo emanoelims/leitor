@@ -14,7 +14,7 @@ defmodule LeitorWeb.UserLive.SettingsTest do
         |> live(~p"/users/settings")
 
       assert html =~ "Change Email"
-      assert html =~ "Save Password"
+      refute html =~ "Save Password"
     end
 
     test "redirects if user is not logged in", %{conn: conn} do
@@ -90,74 +90,12 @@ defmodule LeitorWeb.UserLive.SettingsTest do
     end
   end
 
-  describe "update password form" do
-    setup %{conn: conn} do
-      user = user_fixture()
-      %{conn: log_in_user(conn, user), user: user}
-    end
+  describe "password settings are unavailable" do
+    setup :register_and_log_in_user
 
-    test "updates the user password", %{conn: conn, user: user} do
-      new_password = valid_user_password()
-
-      {:ok, lv, _html} = live(conn, ~p"/users/settings")
-
-      form =
-        form(lv, "#password_form", %{
-          "user" => %{
-            "email" => user.email,
-            "password" => new_password,
-            "password_confirmation" => new_password
-          }
-        })
-
-      render_submit(form)
-
-      new_password_conn = follow_trigger_action(form, conn)
-
-      assert redirected_to(new_password_conn) == ~p"/users/settings"
-
-      assert get_session(new_password_conn, :user_token) != get_session(conn, :user_token)
-
-      assert Phoenix.Flash.get(new_password_conn.assigns.flash, :info) =~
-               "Password updated successfully"
-
-      assert Accounts.get_user_by_email_and_password(user.email, new_password)
-    end
-
-    test "renders errors with invalid data (phx-change)", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/users/settings")
-
-      result =
-        lv
-        |> element("#password_form")
-        |> render_change(%{
-          "user" => %{
-            "password" => "too short",
-            "password_confirmation" => "does not match"
-          }
-        })
-
-      assert result =~ "Save Password"
-      assert result =~ "should be at least 12 character(s)"
-      assert result =~ "does not match password"
-    end
-
-    test "renders errors with invalid data (phx-submit)", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/users/settings")
-
-      result =
-        lv
-        |> form("#password_form", %{
-          "user" => %{
-            "password" => "too short",
-            "password_confirmation" => "does not match"
-          }
-        })
-        |> render_submit()
-
-      assert result =~ "Save Password"
-      assert result =~ "should be at least 12 character(s)"
-      assert result =~ "does not match password"
+    test "does not expose password controls", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/users/settings")
+      refute has_element?(view, "#password_form")
     end
   end
 

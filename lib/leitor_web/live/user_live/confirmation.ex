@@ -8,7 +8,7 @@ defmodule LeitorWeb.UserLive.Confirmation do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm">
+      <div class="auth-card stack mx-auto max-w-lg">
         <div class="text-center">
           <.header>Welcome {@user.email}</.header>
         </div>
@@ -78,13 +78,6 @@ defmodule LeitorWeb.UserLive.Confirmation do
             </.button>
           <% end %>
         </.form>
-
-        <p
-          :if={!@user.confirmed_at}
-          class="mt-8 rounded-lg border border-slate-200 p-4 text-sm text-slate-600"
-        >
-          Tip: If you prefer passwords, you can enable them in the user settings.
-        </p>
       </div>
     </Layouts.app>
     """

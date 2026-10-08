@@ -7,13 +7,17 @@ input, concurrent schedule, or deployment configuration.
 
 | ID | Contract | Existing test evidence |
 | --- | --- | --- |
-| AUTH-001 | Registration requires a valid, unique email and creates an unconfirmed account without a password. | `test/leitor/accounts_test.exs`: `register_user/1`, including case-insensitive uniqueness. |
-| AUTH-002 | Password changes validate length and confirmation, hash the accepted password, clear plaintext data, and revoke the user's tokens. | `test/leitor/accounts_test.exs`: `change_user_password/3`, `update_user_password/2`, and password lookup. |
+| AUTH-001 | Registration requires a valid, unique email and creates an unconfirmed account without a password. The login form also registers first-time email addresses and sends the same generic success message. | `test/leitor/accounts_test.exs`: `register_user/1`, including case-insensitive uniqueness. |
+| AUTH-002 | Legacy context password operations retain validation, hashing, and token revocation. Browser password login is rejected, and password settings are not exposed. | `test/leitor/accounts_test.exs`: `change_user_password/3`, `update_user_password/2`, and password lookup. |
 | AUTH-003 | Session lookups reject unknown and expired tokens; logout removes the session token. | `test/leitor/accounts_test.exs`: session lookup and deletion; `test/leitor_web/user_auth_test.exs`: `logout_user/1`. |
 | AUTH-004 | A confirmed user's magic link can be consumed once. Confirmation of an unconfirmed account revokes existing tokens. An unconfirmed account with a password cannot log in through a magic link. | `test/leitor/accounts_test.exs`: `login_user_by_magic_link/1`; session controller magic-link tests. |
 | AUTH-005 | Email changes require a valid, unexpired token for the current email context. Rejected changes preserve the stored email and tokens. | `test/leitor/accounts_test.exs`: `update_user_email/2`; settings confirmation tests. |
 | AUTH-006 | Protected routes require authentication. Settings require authentication within the last 10 minutes. | `test/leitor_web/user_auth_test.exs`: `require_authenticated_user/2`, `on_mount :require_authenticated`, and `on_mount :require_sudo_mode`; `test/leitor_web/live/user_live/settings_test.exs`: `Settings page`. |
 | AUTH-007 | Caller scopes retain the supplied user; an absent user produces no scope. | `test/leitor/accounts/scope_test.exs`: executable `Scope.for_user/1` examples. |
+
+| AUTH-008 | Only the landing page and ephemeral reader are public. Saved reading and learning workspaces require an authenticated scope. | `learning_workflows_test.exs`, `study_collaboration_test.exs`, and generated resource LiveView tests. |
+| AUTH-009 | Texts, vocabulary, attempts, and hosted room management are filtered by scope; caller-supplied ownership is never cast. | `library_test.exs`, `learning_test.exs`, `study_test.exs`: ownership cases. |
+| AUTH-010 | An authenticated invitee can join a private room and send a bounded message. Only the host advances or closes it; closure revokes access. Participant metadata omits email. | Context and LiveView `study_collaboration_test.exs`: two-user synchronization, rejection, chat, and closure. |
 
 ## Boundaries and limits
 
@@ -23,9 +27,12 @@ validation. `Leitor.Accounts.UserToken` owns token construction and expiry queri
 The context's default sudo window is 20 minutes; the settings hook explicitly
 uses the stricter 10-minute window.
 
-There are no reader resource contexts yet. Resource ownership and cross-user
-authorization must receive their own contracts and tests when those features are
-introduced; authentication alone does not establish resource authorization.
+`Library`, `Learning`, and `Study` enforce resource ownership independently of
+route authentication. A room invitation is a capability for collaboration, not
+permission to mutate the host's resources. Protected LiveViews share the existing
+`:require_authenticated_user` session; public reading uses `:current_user`.
+The password context remains for existing account compatibility and its tests;
+there is no browser password authentication or update endpoint.
 
 Email delivery is tested through Swoosh's test adapter. These tests do not prove
 production mail delivery. SQL sandbox tests isolate database changes; they do not

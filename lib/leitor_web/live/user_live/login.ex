@@ -8,103 +8,44 @@ defmodule LeitorWeb.UserLive.Login do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm space-y-4">
-        <div class="text-center">
-          <.header>
-            <p>Log in</p>
-            <:subtitle>
-              <%= if @current_scope do %>
-                You need to reauthenticate to perform sensitive actions on your account.
-              <% else %>
-                Don't have an account? <.link
-                  navigate={~p"/users/register"}
-                  class="font-semibold text-brand hover:underline"
-                  phx-no-format
-                >Sign up</.link> for an account now.
-              <% end %>
-            </:subtitle>
-          </.header>
+      <div class="auth-grid auth-page">
+        <div>
+          <p class="eyebrow">Keep a little of what you learn.</p><h1 class="hero-title">
+            A sentence today.<br />Your story tomorrow.
+          </h1><p class="muted heading-subtitle">
+            Save words, revisit mistakes, and see your English grow. Reading is always open to everyone.
+          </p>
         </div>
-
-        <div
-          :if={local_mail_adapter?()}
-          class="flex gap-3 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900"
-        >
-          <.icon name="hero-information-circle" class="size-6 shrink-0" />
-          <div>
-            <p>You are running the local mail adapter.</p>
-            <p>
-              To see sent emails, visit <.link href="/dev/mailbox" class="underline">the mailbox page</.link>.
-            </p>
-          </div>
-        </div>
-
-        <.form
-          :let={f}
-          for={@form}
-          id="login_form_magic"
-          action={~p"/users/log-in"}
-          phx-submit="submit_magic"
-        >
-          <.input
-            readonly={!!@current_scope}
-            field={f[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-          <.button
-            id="magic-link-submit"
-            class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
-          >
-            Log in with email <span aria-hidden="true">→</span>
-          </.button>
-        </.form>
-
-        <div class="my-8 border-t border-slate-200">or</div>
-
-        <.form
-          :let={f}
-          for={@form}
-          id="login_form_password"
-          action={~p"/users/log-in"}
-          phx-submit="submit_password"
-          phx-trigger-action={@trigger_submit}
-        >
-          <.input
-            readonly={!!@current_scope}
-            field={f[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-          />
-          <.input
-            field={@form[:password]}
-            type="password"
-            label="Password"
-            autocomplete="current-password"
-            spellcheck="false"
-          />
-          <.button
-            id="password-login-remember"
-            class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
-            name={@form[:remember_me].name}
-            value="true"
-          >
-            Log in and stay logged in <span aria-hidden="true">→</span>
-          </.button>
-          <.button
-            id="password-login-submit"
-            class="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
-          >
-            Log in only this time
-          </.button>
-        </.form>
+        <section class="auth-card stack">
+          <h2>{if @current_scope, do: "Confirm it's you", else: "Make yourself at home."}</h2>
+          <p class="muted">
+            {if @current_scope,
+              do: "You need to reauthenticate to perform sensitive actions on your account.",
+              else: "One email. One magic link. No password to remember."}
+          </p>
+          <.form for={@form} id="login_form_magic" phx-submit="submit_magic" class="stack">
+            <.input
+              readonly={!!@current_scope}
+              field={@form[:email]}
+              type="email"
+              label="Email"
+              autocomplete="email"
+              spellcheck="false"
+              required
+              maxlength="160"
+              phx-mounted={JS.focus()}
+            />
+            <.button id="magic-link-submit" phx-disable-with="Sending your link…">Log in with email
+            <.icon name="hero-arrow-right" class="size-4" /></.button>
+          </.form>
+          <p class="muted text-sm">
+            New here? Your first link creates your account. Sign up and log in happen in the same step.
+          </p>
+          <p :if={local_mail_adapter?()} class="muted text-sm">
+            Development email is available in <.link href="/dev/mailbox" class="text-link">the mailbox page</.link>.
+          </p>
+          <.link navigate={~p"/read"} class="text-link">Keep reading without an account</.link>
+        </section>
       </div>
     </Layouts.app>
     """
@@ -122,12 +63,17 @@ defmodule LeitorWeb.UserLive.Login do
   end
 
   @impl true
-  def handle_event("submit_password", _params, socket) do
-    {:noreply, assign(socket, :trigger_submit, true)}
-  end
-
   def handle_event("submit_magic", %{"user" => %{"email" => email}}, socket) do
-    if user = Accounts.get_user_by_email(email) do
+    email = if socket.assigns.current_scope, do: socket.assigns.current_scope.user.email, else: String.trim(email)
+
+    user =
+      Accounts.get_user_by_email(email) ||
+        case Accounts.register_user(%{email: email}) do
+          {:ok, user} -> user
+          {:error, _changeset} -> Accounts.get_user_by_email(email)
+        end
+
+    if user do
       Accounts.deliver_login_instructions(
         user,
         &url(~p"/users/log-in/#{&1}")
@@ -135,7 +81,7 @@ defmodule LeitorWeb.UserLive.Login do
     end
 
     info =
-      "If your email is in our system, you will receive instructions for logging in shortly."
+      "If your email is valid, a sign-in link will arrive shortly. Check your inbox."
 
     {:noreply,
      socket

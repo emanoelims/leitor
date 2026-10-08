@@ -19,8 +19,6 @@ defmodule LeitorWeb.Router do
 
   scope "/", LeitorWeb do
     pipe_through :browser
-
-    get "/", PageController, :home
   end
 
   # Other scopes may use custom stacks.
@@ -52,11 +50,36 @@ defmodule LeitorWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{LeitorWeb.UserAuth, :require_authenticated}] do
+      live "/read/:id", ReaderLive, :saved
+      live "/library", LibraryLive, :index
+      live "/lessons", LessonsLive, :index
+      live "/lessons/:id", LessonsLive, :show
+      live "/vocabulary", VocabularyLive, :index
+      live "/review", ReviewLive, :index
+      live "/write", WritingLive, :index
+      live "/practice", PracticeLive, :index
+      live "/progress", ProgressLive, :index
+      live "/rooms", StudyLobbyLive, :index
+      live "/rooms/:code", StudyRoomLive, :show
+      live "/manage/rooms", RoomLive.Index, :index
+      live "/manage/rooms/new", RoomLive.Form, :new
+      live "/manage/rooms/:id", RoomLive.Show, :show
+      live "/manage/rooms/:id/edit", RoomLive.Form, :edit
+      live "/texts", TextLive.Index, :index
+      live "/texts/new", TextLive.Form, :new
+      live "/texts/:id", TextLive.Show, :show
+      live "/texts/:id/edit", TextLive.Form, :edit
+      live "/entries", EntryLive.Index, :index
+      live "/entries/new", EntryLive.Form, :new
+      live "/entries/:id", EntryLive.Show, :show
+      live "/entries/:id/edit", EntryLive.Form, :edit
+      live "/attempts", AttemptLive.Index, :index
+      live "/attempts/new", AttemptLive.Form, :new
+      live "/attempts/:id", AttemptLive.Show, :show
+      live "/attempts/:id/edit", AttemptLive.Form, :edit
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
-
-    post "/users/update-password", UserSessionController, :update_password
   end
 
   scope "/", LeitorWeb do
@@ -64,6 +87,13 @@ defmodule LeitorWeb.Router do
 
     live_session :current_user,
       on_mount: [{LeitorWeb.UserAuth, :mount_current_scope}] do
+      live "/", ReaderLive, :home
+      live "/read", ReaderLive, :sample
+
+      if Application.compile_env(:leitor, :dev_routes) do
+        live "/dev/componentes", ComponentGalleryLive, :index
+      end
+
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
       live "/users/log-in/:token", UserLive.Confirmation, :new

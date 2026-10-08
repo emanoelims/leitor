@@ -88,8 +88,10 @@ defmodule LeitorWeb do
       # HTML escaping functionality
       import Phoenix.HTML
 
-      # Common modules used in templates
       alias LeitorWeb.Layouts
+
+      # Common modules used in templates
+      alias LeitorWeb.StudyComponents
       alias Phoenix.LiveView.JS
 
       # Routes generation with the ~p sigil

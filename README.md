@@ -26,9 +26,70 @@ for the line coverage report in `cover/`.
 
 ## Authentication
 
-Register at `/users/register` and open `/dev/mailbox` to view development emails.
-Authentication supports email magic links and passwords hashed with Argon2.
-Set a password from `/users/settings` after confirming your account.
+Open `/users/log-in` and enter your email. The same magic-link flow creates a
+new account or signs in an existing one. Open `/dev/mailbox` for development
+emails. Password login and password settings are not exposed. Email changes
+require a recent login. Public deployment also requires a production Swoosh
+adapter and a verified sender; the development mailbox does not deliver email.
+
+## Reading and learning
+
+`/` and `/read` support anonymous reading, pasted text, and document imports.
+Anonymous content stays in the current LiveView; sign in before saving it.
+Accounts unlock a private library, word and expression jars, spaced review,
+writing feedback, dictation, shadowing, rewriting, lesson materials, and progress.
+Progress comes from saved activity rather than demonstration numbers.
+
+Import TXT, EPUB, DOCX, text-based PDF, or clear JPG/PNG photos (up to 10 MB).
+PDF extraction requires `pdftotext`; photo OCR requires Tesseract with English
+language data. On macOS, `brew install poppler tesseract` supplies both. Missing
+tools or unreadable files produce a recoverable import error. Import chapters
+separately: extracted text is limited to 300,000 bytes and PDF import to 200 pages.
+
+In the reader, use Left/Right arrows to move between sentences. Tab and Enter
+operate word buttons and controls; Escape dismisses dialogs. Select an expression
+with the mouse or enable expression selection and choose its first and last word
+with the keyboard. Browser speech supplies pronunciation. Shadowing uses microphone
+permission and local audio playback; audio is never uploaded or stored. It records
+practice time, without claiming automatic pronunciation scoring.
+
+Create a private room at `/rooms` and share its invitation with signed-in readers.
+The host controls the shared sentence; Phoenix Presence tracks participants.
+Chat is temporary, limited to 50 displayed messages, and does not expose email
+addresses. Closing a room revokes its invitation.
+
+Reusable function components are demonstrated at `/dev/componentes` in development.
+The warm palette, typography, contextual header, jars, and activity layouts follow
+the approved prototypes. Google Fonts are loaded through stylesheet links.
+
+## Language tutor
+
+ReqLLM sends text to Anthropic only when a learner requests analysis, feedback,
+a lesson guide, or an explanation. Set credentials in the environment or the
+ignored `mise.local.toml`; never commit them:
+
+```toml
+[env]
+ANTHROPIC_API_KEY = "your-personal-key"
+LEITOR_ANALYSIS_MODEL = "anthropic:claude-haiku-5-5"
+LEITOR_FEEDBACK_MODEL = "anthropic:claude-sonnet-5-5"
+```
+
+These model settings are also the defaults. Analysis favors the lighter model;
+writing feedback uses Sonnet. Override either setting to evaluate another
+Anthropic model. Restart the development server after changing its environment.
+Provider failures preserve the learner's text and allow retrying. Structured
+responses are schema validated, and sentence analysis must preserve the original
+words and punctuation. AI suggestions still require the learner's judgment.
+Lesson guides analyze the first 12,000 characters and remain saved with the lesson.
+
+## Persistence
+
+`Library`, `Learning`, and `Study` follow generated Phoenix context boundaries and
+receive `Accounts.Scope` first. Ownership is enforced in queries and mutations;
+room guests receive only invitation-authorized collaboration operations. New
+application records use Ecto's native UUID v7 generation. Migrations preserve
+existing account identities. Run `mise exec -- mix ecto.migrate` after updating.
 
 Ready to run in production? Please [check our deployment guides](https://phoenix.hexdocs.pm/deployment.html).
 

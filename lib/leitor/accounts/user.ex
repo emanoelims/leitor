@@ -4,7 +4,7 @@ defmodule Leitor.Accounts.User do
 
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @primary_key {:id, Ecto.UUID, autogenerate: [version: 7]}
   @foreign_key_type :binary_id
   schema "users" do
     field :email, :string

@@ -1,0 +1,358 @@
+<Layouts.app
+  flash={@flash}
+  current_scope={@current_scope}
+  class={if @mode == :home, do: "page home-page", else: "reader-page"}
+  context_title={if @mode == :read, do: @title}
+  context_detail={if @mode == :read, do: "Sentence #{@index + 1} of #{length(@sentences)}"}
+  speech={if @mode == :read, do: @sentence.body}
+>
+  <:header_controls>
+    <div :if={@mode == :read} class="row reading-layers" role="group" aria-label="Reading layers">
+      <button
+        :for={
+          {layer, key, label, icon} <- [
+            {"colors", :colors, "Colors", "hero-swatch"},
+            {"only_new", :only_new, "Only new", "hero-eye"},
+            {"structure", :structure, "Structure", "hero-adjustments-horizontal"},
+            {"translation", :translation, "Translation", "hero-language"}
+          ]
+        }
+        id={"toggle-#{layer}"}
+        type="button"
+        class={["layer-button", Map.get(assigns, key) && "active"]}
+        phx-click="toggle"
+        phx-value-layer={layer}
+        aria-label={label}
+        title={label}
+        aria-pressed={Map.get(assigns, key)}
+      ><.icon name={icon} class="size-[18px]" /><span :if={Map.get(assigns, key)}>{label}</span></button>
+    </div>
+  </:header_controls>
+  <%= if @mode == :home do %>
+    <h1 class="hero-title">What shall we<br />read today?</h1>
+    <section
+      class="import-panel stack"
+      aria-label="Import a reading"
+      phx-drop-target={@uploads.document.ref}
+    >
+      <div class="row between wrap">
+        <div class="row">
+          <span class="import-icon"><.icon name="hero-arrow-up-tray" class="size-6" /></span><div>
+            <h2>Drop a book or document here</h2><p class="muted">
+              PDF, EPUB, DOCX or TXT. Ready to study, sentence by sentence.
+            </p>
+          </div>
+        </div>
+        <div class="row">
+          <button
+            id="paste-toggle"
+            type="button"
+            class="action action-ghost"
+            phx-click="paste"
+            aria-expanded={@paste_open}
+          >{if @paste_open, do: "Close text", else: "Paste text"}</button><label
+            for={@uploads.document.ref}
+            class="action action-primary upload-label"
+          >Choose a file</label>
+        </div>
+      </div>
+      <.form
+        :if={@paste_open}
+        for={@form}
+        id="reading-form"
+        phx-change="validate"
+        phx-submit="prepare"
+        class="stack"
+      >
+        <.input
+          field={@form[:title]}
+          label="Title (optional)"
+          placeholder="Give your reading a name"
+          maxlength="180"
+        />
+        <.input
+          field={@form[:body]}
+          type="textarea"
+          label="English text"
+          placeholder="Paste a chapter, article, documentation…"
+          required
+          maxlength="300000"
+        />
+        <div class="row between wrap">
+          <p class="muted text-sm">Read freely. Create an account whenever you want to save.</p><.button
+            id="prepare-reading"
+            variant="primary"
+            phx-disable-with="Preparing…"
+          >Prepare reading</.button>
+        </div>
+      </.form>
+      <.form
+        for={%{}}
+        id="document-form"
+        phx-change="validate-upload"
+        phx-submit="upload"
+        class="row between wrap"
+      >
+        <.live_file_input
+          upload={@uploads.document}
+          class="accessible-file"
+          aria-label="Choose a document"
+        />
+        <div :for={entry <- @uploads.document.entries} class="row">
+          <span>{entry.client_name} · {entry.progress}%</span><button
+            type="button"
+            class="text-link"
+            phx-click="cancel-upload"
+            phx-value-ref={entry.ref}
+          >Remove</button>
+        </div>
+        <p :for={error <- upload_errors(@uploads.document)} class="notice-error">
+          Upload error: {error}
+        </p>
+        <.button
+          :if={@uploads.document.entries != []}
+          id="import-document"
+          variant="primary"
+          phx-disable-with="Importing…"
+        >Import document</.button>
+      </.form>
+    </section>
+    <div class="grid-3 home-cards">
+      <.link id="sample-reading" navigate={~p"/read"} class="surface surface-dark stack"><p class="eyebrow">
+        Continue reading
+      </p><div>
+        <h2>A Scandal in Bohemia</h2><p class="muted mt-1">Arthur Conan Doyle · 1891</p>
+      </div><div class="row between">
+        <StudyComponents.progress value={1} max={5} label="Sample reading" /><span class="text-sm whitespace-nowrap">Sentence 1 of 5</span>
+      </div></.link>
+      <.link navigate={~p"/review"} class="surface stack"><p class="eyebrow">Today's review</p><div class="row items-baseline">
+        <span class="home-count">{@due_count}</span><span class="muted">words from your jars</span>
+      </div><span class="text-sm font-bold">Start reviewing →</span></.link>
+      <.link navigate={~p"/write"} class="surface stack"><p class="eyebrow">Write</p><h2 class="!text-[22px]">
+        What's a small thing you learned today?
+      </h2><span class="text-sm font-bold">Open a draft →</span></.link>
+    </div>
+    <section :if={@current_scope} class="stack mt-10" aria-label="Your texts">
+      <div class="row between">
+        <h2 class="eyebrow !mb-0">Your texts</h2><.link
+          navigate={~p"/library"}
+          class="text-link text-sm"
+        >All texts</.link>
+      </div><div id="home-library" phx-update="stream">
+        <article :for={{id, text} <- @streams.home_library} id={id} class="library-row">
+          <.link navigate={~p"/read/#{text.id}"} class="row between w-full"><span>{text.title}</span><span class="muted text-sm">Sentence {text.position +
+            1} <span aria-hidden="true">↗</span></span></.link>
+        </article>
+      </div>
+    </section>
+    <div class="row between wrap mt-10">
+      <p class="muted text-sm">No account needed to read. Your words stay yours.</p><.link
+        navigate={~p"/rooms"}
+        class="action action-small"
+      ><.icon name="hero-user-group" class="size-4" />Study together</.link>
+    </div>
+  <% else %>
+    <h1 class="sr-only">{@title} · Sentence {@index + 1}</h1>
+    <div id="reader" phx-hook="ReaderKeyboard" data-sentence={@sentence.body} class="reader-flow">
+      <p :if={@phrase_mode} class="notice" role="status">
+        {if @phrase_start,
+          do: "Now choose the last word of the expression.",
+          else: "Choose the first and last words. Tab and Enter work too."}
+      </p>
+      <div class="sentence-neighbor">
+        <button
+          :if={@index > 0}
+          class="lyric"
+          phx-click="move"
+          phx-value-direction="previous"
+          aria-label="Read the previous sentence"
+        >{Enum.at(@sentences, @index - 1).body}</button>
+      </div>
+      <div
+        :if={!@structure || @sentence.chunks == []}
+        id="current-sentence"
+        class="sentence"
+        lang="en"
+      >
+        <%= for {token, index} <- Enum.with_index(@sentence.tokens) do %>
+          <%= if token.category == "punctuation" do %>
+            <span class="punctuation">{token.word}</span>
+          <% else %>
+            <button
+              id={"word-#{index}"}
+              type="button"
+              class={[
+                "token",
+                @colors && !(@only_new && MapSet.member?(@known, String.downcase(token.word))) &&
+                  "colored pos-#{token.category}",
+                @only_new && MapSet.member?(@known, String.downcase(token.word)) && "known"
+              ]}
+              phx-click={JS.push_focus() |> JS.push("select")}
+              phx-value-index={index}
+              aria-label={"Explore #{token.word}"}
+            ><span>{token.word}</span><small :if={
+              @colors && token.category != "word" &&
+                !(@only_new && MapSet.member?(@known, String.downcase(token.word)))
+            }>{token.category}</small></button>
+          <% end %>
+        <% end %>
+      </div>
+      <div
+        :if={@structure && @sentence.chunks != []}
+        id="sentence-structure"
+        class="sentence-chunks"
+      >
+        <div :for={[text, role] <- @sentence.chunks} class="sentence-chunk">
+          <span>{text}</span><p>{role}</p>
+        </div>
+      </div>
+      <p
+        :if={@translation && @sentence.translation}
+        id="sentence-translation"
+        class="reader-translation"
+        lang="pt-BR"
+      >
+        {@sentence.translation}
+      </p>
+      <div :if={@colors} class="row wrap legend">
+        <span><i class="legend-dot pos-noun"></i>Nouns</span><span><i class="legend-dot pos-verb"></i>Verbs</span><span><i class="legend-dot pos-adj"></i>Adjectives</span><span><i class="legend-dot pos-adv"></i>Adverbs</span><span><i class="legend-dot pos-pron"></i>Pronouns</span><span><i class="legend-dot pos-prep"></i>Prepositions</span>
+      </div>
+      <div class="sentence-neighbor">
+        <button
+          :if={@index < length(@sentences) - 1}
+          class="lyric"
+          phx-click="move"
+          phx-value-direction="next"
+          aria-label="Read the next sentence"
+        >{Enum.at(@sentences, @index + 1).body}</button>
+      </div>
+      <section :if={@sentence.focus} class="sentence-focus stack" aria-label="Sentence focus">
+        <p class="eyebrow">Sentence focus</p><h2>{@sentence.focus.title}</h2><p>
+          {@sentence.focus.body}
+        </p><code class="pattern">{@sentence.focus.pattern}</code>
+      </section>
+      <div class="row between wrap reader-tools">
+        <button
+          id="select-phrase"
+          class={["action action-small", @phrase_mode && "active"]}
+          phx-click="phrase-mode"
+          aria-pressed={@phrase_mode}
+        ><.icon name="hero-cursor-arrow-rays" class="size-4" />Select an expression</button>
+        <button
+          id="analyze-sentence"
+          class="action action-small"
+          phx-click="analyze"
+          disabled={@busy}
+        >{if @busy, do: "Thinking…", else: "Analyze with the tutor"}</button><div class="row wrap">
+          <.link
+            :if={@text}
+            navigate={~p"/practice?#{%{mode: "dictation", text: @text.id, sentence: @index}}"}
+            class="action action-small"
+          >Practice <.icon name="hero-arrow-up-right" class="size-4" /></.link><button
+            :if={!@text}
+            id="practice-reading"
+            class="action action-small"
+            phx-click="practice"
+          >Practice <.icon name="hero-arrow-up-right" class="size-4" /></button><button
+            :if={!@text}
+            id="save-reading"
+            class="action action-small"
+            phx-click="save-text"
+          ><.icon name="hero-bookmark" class="size-4" />Save reading</button>
+        </div>
+      </div>
+      <p :if={@index == length(@sentences) - 1} class="muted text-sm">
+        You've reached the end. Revisit a sentence or practice what you've learned.
+      </p>
+      <div :if={@answer} id="tutor-answer" class="tutor-answer" role="status">
+        <p class="eyebrow">About this sentence</p><p>{@answer}</p>
+      </div>
+      <nav class="reader-dock" aria-label="Reading controls">
+        <button
+          id="previous-sentence"
+          class="icon-button"
+          disabled={@index == 0}
+          phx-click="move"
+          phx-value-direction="previous"
+          aria-label="Previous sentence"
+        ><.icon name="hero-arrow-left" class="size-5" /></button><.form
+          for={@question_form}
+          id="sentence-question"
+          phx-submit="ask"
+          class="dock-question"
+        >
+          <.icon name="hero-sparkles" class="size-4" /><.input
+            field={@question_form[:question]}
+            id="ask-input"
+            placeholder="Ask about this sentence…"
+            aria-label="Ask about this sentence"
+            class="dock-input"
+            required
+            maxlength="500"
+          /><button
+            id="ask-tutor"
+            type="submit"
+            class="icon-button"
+            aria-label="Send question"
+            disabled={@busy}
+          ><.icon name="hero-arrow-up" class="size-4" /></button>
+        </.form><button
+          id="next-sentence"
+          class="action action-primary"
+          disabled={@index == length(@sentences) - 1}
+          phx-click="move"
+          phx-value-direction="next"
+        >Next<span class="dock-arrow"><.icon name="hero-arrow-right" class="size-4" /></span></button>
+      </nav>
+      <p class="reader-note">
+        ← → to move · Esc to close · Tutor responses use AI and can make mistakes.
+      </p>
+    </div>
+    <StudyComponents.dialog
+      :if={@selected}
+      id="word-dialog"
+      title={@selected.word}
+      on_close={JS.push("close")}
+    >
+      <div class="row">
+        <StudyComponents.chip category={@selected.category}>
+          {@selected.category}
+        </StudyComponents.chip><span :if={@selected.ipa != ""} class="mono muted">{@selected.ipa}</span>
+      </div>
+      <p class="definition" lang="pt-BR">
+        {if @selected.meaning == "", do: "Explore this word", else: @selected.meaning}
+      </p>
+      <div class="stack">
+        <div :if={@selected.definition != ""}>
+          <p class="eyebrow">Dictionary</p><p>{@selected.definition}</p>
+        </div><div>
+          <p class="eyebrow">In this sentence</p><p class="muted">{@sentence.body}</p>
+        </div>
+      </div>
+      <div class="row mt-6">
+        <button
+          type="button"
+          class="action"
+          phx-click={JS.dispatch("leitor:speak", detail: %{text: @selected.word})}
+        ><.icon name="hero-speaker-wave" class="size-4" />Listen</button><button
+          id="mark-known"
+          type="button"
+          class="action"
+          phx-click="save-word"
+          phx-value-status="known"
+        >I know this</button><button
+          id="save-word"
+          type="button"
+          class="action action-primary"
+          phx-click="save-word"
+          phx-value-status="learning"
+        >{if MapSet.member?(@saved, String.downcase(@selected.word)),
+          do: "Saved ✓",
+          else: "Save word"}</button>
+      </div>
+      <p :if={!@current_scope} class="footer-note">
+        Log in with email to keep your words and reading history.
+      </p>
+    </StudyComponents.dialog>
+  <% end %>
+</Layouts.app>

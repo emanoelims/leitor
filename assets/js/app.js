@@ -23,13 +23,14 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/leitor"
+import {ReaderKeyboard, ShadowingRecorder, WritingQuestion} from "./study_hooks"
 import topbar from "../vendor/topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, ReaderKeyboard, ShadowingRecorder, WritingQuestion},
 })
 
 // Show progress bar on live navigation and form submits
@@ -81,3 +82,24 @@ if (process.env.NODE_ENV === "development") {
   })
 }
 
+
+window.addEventListener("leitor:speak", ({detail}) => {
+  const notify = () => {
+    const status = document.getElementById("speech-status")
+    if (status) {status.querySelector('p').textContent = "Audio is unavailable. Check your browser's speech support and try again."; status.hidden = false}
+  }
+  if (!window.speechSynthesis) {notify(); return}
+  speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(detail.text)
+  utterance.lang = "en-US"
+  utterance.rate = detail.rate || 0.85
+  utterance.onerror = event => {if (!["canceled", "interrupted"].includes(event.error)) notify()}
+  speechSynthesis.speak(utterance)
+})
+window.addEventListener("phx:page-loading-start", () => window.speechSynthesis?.cancel())
+try {document.documentElement.dataset.theme = localStorage.getItem("leitor:theme") || "light"} catch (_) {}
+window.addEventListener("leitor:theme", () => {
+  const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"
+  document.documentElement.dataset.theme = theme
+  try {localStorage.setItem("leitor:theme", theme)} catch (_) {}
+})

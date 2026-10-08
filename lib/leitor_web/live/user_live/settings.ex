@@ -10,70 +10,31 @@ defmodule LeitorWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="text-center">
+      <div class="auth-card stack mx-auto max-w-lg">
         <.header>
           Account Settings
-          <:subtitle>Manage your account email address and password settings</:subtitle>
+          <:subtitle>Manage your account email address</:subtitle>
         </.header>
       </div>
 
-      <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-        <.input
-          field={@email_form[:email]}
-          type="email"
-          label="Email"
-          autocomplete="username"
-          spellcheck="false"
-          required
-        />
-        <.button
-          id="update-email-submit"
-          class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
-          phx-disable-with="Changing..."
-        >Change Email</.button>
-      </.form>
-
-      <div class="my-8 border-t border-slate-200" />
-
-      <.form
-        for={@password_form}
-        id="password_form"
-        action={~p"/users/update-password"}
-        method="post"
-        phx-change="validate_password"
-        phx-submit="update_password"
-        phx-trigger-action={@trigger_submit}
-      >
-        <.input
-          field={@password_form[:email]}
-          type="hidden"
-          id="hidden_user_email"
-          spellcheck="false"
-          value={@current_email}
-        />
-        <.input
-          field={@password_form[:password]}
-          type="password"
-          label="New password"
-          autocomplete="new-password"
-          spellcheck="false"
-          required
-        />
-        <.input
-          field={@password_form[:password_confirmation]}
-          type="password"
-          label="Confirm new password"
-          autocomplete="new-password"
-          spellcheck="false"
-        />
-        <.button
-          id="update-password-submit"
-          class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
-          phx-disable-with="Saving..."
-        >
-          Save Password
-        </.button>
-      </.form>
+      <div class="auth-card mx-auto max-w-lg">
+        <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
+          <.input
+            field={@email_form[:email]}
+            type="email"
+            label="Email"
+            autocomplete="username"
+            spellcheck="false"
+            required
+          />
+          <.button
+            id="update-email-submit"
+            class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+            phx-disable-with="Changing..."
+          >Change Email</.button>
+        </.form>
+        <.link href={~p"/users/log-out"} method="delete" class="action mt-6">Log out</.link>
+      </div>
     </Layouts.app>
     """
   end
@@ -95,13 +56,11 @@ defmodule LeitorWeb.UserLive.Settings do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
     email_changeset = Accounts.change_user_email(user, %{}, validate_unique: false)
-    password_changeset = Accounts.change_user_password(user, %{}, hash_password: false)
 
     socket =
       socket
       |> assign(:current_email, user.email)
       |> assign(:email_form, to_form(email_changeset))
-      |> assign(:password_form, to_form(password_changeset))
       |> assign(:trigger_submit, false)
 
     {:ok, socket}
@@ -138,32 +97,6 @@ defmodule LeitorWeb.UserLive.Settings do
 
       changeset ->
         {:noreply, assign(socket, :email_form, to_form(changeset, action: :insert))}
-    end
-  end
-
-  def handle_event("validate_password", params, socket) do
-    %{"user" => user_params} = params
-
-    password_form =
-      socket.assigns.current_scope.user
-      |> Accounts.change_user_password(user_params, hash_password: false)
-      |> Map.put(:action, :validate)
-      |> to_form()
-
-    {:noreply, assign(socket, password_form: password_form)}
-  end
-
-  def handle_event("update_password", params, socket) do
-    %{"user" => user_params} = params
-    user = socket.assigns.current_scope.user
-    true = Accounts.sudo_mode?(user)
-
-    case Accounts.change_user_password(user, user_params) do
-      %{valid?: true} = changeset ->
-        {:noreply, assign(socket, trigger_submit: true, password_form: to_form(changeset))}
-
-      changeset ->
-        {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
     end
   end
 end

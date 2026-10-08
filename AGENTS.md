@@ -3,6 +3,7 @@ This is a web application written using the Phoenix web framework.
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
+- Keep workflow Actions pinned to full commit SHAs and use least required permissions. Preserve the required check names `Conventions` and `Elixir checks` unless the repository's branch rules are updated alongside them. Run `mix hex.audit` separately for dependency changes; it requires network access and also runs in CI.
 - `mix format` uses Styler for Elixir and Phoenix's HTML formatter for HEEx. Review Styler rewrites for behavior changes, especially in control flow and configuration; preserve domain contracts and run `mix precommit` after formatting.
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 

@@ -7,6 +7,8 @@ pin explicitly when adopting a new release.
 
 Run `mise install`, then `mise run setup`. Start Phoenix with `mise run dev`.
 Before opening a PR, run `mise run precommit`, which executes `mix precommit`.
+Also run `mise exec -- mix test --cover --warnings-as-errors` to check the
+coverage floor and test compilation warnings.
 Mise tasks automatically use the configured tools. For individual commands,
 use `mise exec -- mix <task>`. See the
 [mise documentation](https://mise.jdx.dev/getting-started.html) for installation
@@ -21,6 +23,17 @@ on `main`. Administrators can bypass PR, review, and status check requirements.
 
 Merges use squash: the PR title becomes the commit subject on `main`. Keep the
 title up to date and wait for `Conventions` and `Elixir checks` to pass.
+
+Use the issue forms for reproducible bugs and concrete feature proposals. PRs
+should explain the resulting behavior, applicable documentation and tests, and
+any database migration or authentication/authorization impact. Focus each PR on
+one subject and run the nearest tests while working.
+
+CI cancels obsolete runs, limits job runtime, pins Actions to immutable commits,
+and uses caches keyed by the BEAM versions, test environment, and lockfile.
+Dependabot proposes weekly Mix and GitHub Actions updates using allowed
+Conventional Commit prefixes. Review its PRs and let the same required checks
+validate them; updates are not merged automatically.
 
 ## Conventional Commits
 
@@ -58,6 +71,10 @@ For a release, open a PR titled `chore(release): prepare X.Y.Z`, update
 and passing CI on `main`, create tag `vX.Y.Z` at the corresponding commit.
 CI checks that the tag matches `mix.exs` exactly. Prereleases may use
 `X.Y.Z-rc.1`. Version increments are reviewed manually; publishing is not automated.
+Do not move or reuse release tags. Keep the changelog curated manually using
+Added, Changed, Deprecated, Removed, Fixed, and Security as applicable, omitting
+empty categories. Deployment automation will be defined with the deployment
+target; this application is not published as a Hex package.
 
 ## Elixir and Phoenix
 
@@ -67,7 +84,13 @@ ending in `?`, and functions ending in `!` for raising variants where applicable
 Use Phoenix contexts for business logic and keep it separate from the web layer.
 CI requires formatting, compilation without project warnings, no unused lockfile
 dependencies, strict Credo checks, Doctor, documentation builds without warnings,
-Dialyzer analysis, and passing tests.
+Dialyzer analysis, dependency auditing, and passing tests with coverage.
+
+The CI audit uses `mix hex.audit` to check for known advisories and retired Hex
+dependencies. Run `mise exec -- mix hex.audit` separately when changing
+dependencies. This check needs network access and is separate from the local
+`precommit` alias. A clean result is not a guarantee that every dependency is
+free of vulnerabilities. Document and review any necessary exception narrowly.
 
 `mix format` uses [Styler](https://github.com/adobe/elixir-styler) for Elixir
 and `Phoenix.LiveView.HTMLFormatter` for HEEx. Styler automatically organizes
@@ -208,6 +231,12 @@ useful non-matching results or translating them explicitly with `else`. Prefer a
 simple `case` for one branching operation and a pipeline for straightforward
 transformations. Preserve meaningful error distinctions rather than silently
 collapsing failures into one generic result.
+
+## Security reports
+
+Follow [SECURITY.md](SECURITY.md) and use the repository's private security
+advisory form. Never include credentials, session cookies, tokens, or personal
+data in public issues, logs, screenshots, or test fixtures.
 
 References:
 

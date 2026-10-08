@@ -90,7 +90,7 @@ defmodule Leitor.MixProject do
       main: "readme",
       source_ref: "main",
       formatters: ["html"],
-      extras: ["README.md", "CONTRIBUTING.md", "CHANGELOG.md", "guides/authentication-contracts.md"],
+      extras: ["README.md", "CONTRIBUTING.md", "CHANGELOG.md", "SECURITY.md", "guides/authentication-contracts.md"],
       groups_for_modules: [
         Accounts: [Leitor.Accounts, Leitor.Accounts.User, Leitor.Accounts.Scope],
         "Authentication internals": [Leitor.Accounts.UserToken, Leitor.Accounts.UserNotifier],

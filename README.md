@@ -47,6 +47,8 @@ semantic versioning, domain typespecs, documentation and doctest patterns, and
 Elixir/Phoenix checks. The [authentication contracts](guides/authentication-contracts.md)
 connect current behavior to its test evidence and document its limits.
 
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
 ## Local Tidewave MCP
 
 Tidewave runs inside the Phoenix development server and is enabled only in

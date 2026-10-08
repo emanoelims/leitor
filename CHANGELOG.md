@@ -18,6 +18,10 @@ categories. Entries are curated manually and are not generated from Git history.
 - Credo and Dialyzer analysis, Styler formatting, Doctor documentation checks,
   ExDoc developer documentation, and executable account examples.
 - Authentication contract register and an 83 percent line coverage floor.
+- Weekly Dependabot updates, issue forms, expanded PR guidance, and private
+  vulnerability reporting with a security policy.
+- CI dependency auditing, documentation and coverage gates, immutable Action
+  references, job timeouts, and cancellation of obsolete runs.
 
 ### Changed
 

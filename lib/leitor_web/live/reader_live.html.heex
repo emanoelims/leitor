@@ -16,9 +16,11 @@
           phx-click="toggle"
           phx-value-layer="colors"
           aria-label="Colors"
+          title="Colors"
           aria-pressed={@colors}
-        ><.icon name="hero-swatch" class="size-[18px]" /><span>Colors</span></button>
+        ><.icon name="hero-swatch" class="size-[18px]" /><span :if={@colors}>Colors</span></button>
         <details
+          :if={@colors}
           id="color-guide"
           class="color-guide"
           phx-window-keydown={

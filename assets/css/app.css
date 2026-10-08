@@ -2330,7 +2330,7 @@ audio {
 .reader-page .tutor-answer { position:fixed; bottom:96px; left:50%; transform:translateX(-50%); width:min(640px,calc(100% - 32px)); max-height:45vh; overflow:auto; z-index:29; }
 .colors-control { display:flex; align-items:center; position:relative; border-radius:999px; }
 .colors-control.active { background:var(--soft); }
-.colors-control>.layer-button { color:var(--ink); padding-right:6px; }
+.colors-control.active>.layer-button { color:var(--ink); padding-right:6px; }
 .color-guide summary,.reader-more summary { list-style:none; display:grid; place-items:center; cursor:pointer; border-radius:50%; }
 .color-guide summary::-webkit-details-marker,.reader-more summary::-webkit-details-marker { display:none; }
 .color-guide summary { width:30px; height:36px; color:var(--muted); }

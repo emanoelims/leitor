@@ -277,12 +277,12 @@ defmodule LeitorWeb.WritingLive do
     >
       <:header_controls>
         <p id="writing-save-status" class="writing-header-status" role="status">
-          <span>{@word_count} words</span><span>{@save_status}</span>
+          <span>{@word_count} words</span><span aria-hidden="true">·</span><span>{@save_status}</span>
         </p>
         <button
           id="suggest-writing-title"
           type="button"
-          class="layer-button"
+          class="icon-button"
           phx-click="suggest-title"
           disabled={@generating_title}
           aria-label={
@@ -307,12 +307,11 @@ defmodule LeitorWeb.WritingLive do
         >
           <summary
             id="writing-history-toggle"
-            class="layer-button"
+            class="icon-button"
             aria-label="Writing history"
             title="Writing history"
           >
             <.icon name="hero-clock" class="size-[18px]" />
-            <span class="history-label">History</span>
           </summary>
           <span
             id="writing-history-positioner"
@@ -352,15 +351,16 @@ defmodule LeitorWeb.WritingLive do
         <button
           type="submit"
           form="writing-form"
-          class="layer-button"
+          class="icon-button"
           disabled={@busy}
           name="intent"
           value="save"
           id="save-draft"
           aria-label="Save draft"
           title="Save draft"
-        ><.icon name="hero-bookmark" class="size-4" />
-        <span class="writing-save-label">Save draft</span></button>
+        >
+          <.icon name="hero-bookmark" class="size-4" />
+        </button>
       </:header_controls>
       <h1 class="sr-only">Writing</h1>
       <div id="writing-title-region" aria-live="polite">
@@ -410,10 +410,12 @@ defmodule LeitorWeb.WritingLive do
             </p>
             <button
               id={"review-correction-#{index}"}
-              class="text-link"
+              class="icon-button"
+              aria-label="Turn correction into a review card"
+              title="Turn correction into a review card"
               phx-click="review"
               phx-value-index={index}
-            >Turn into a review card</button>
+            ><.icon name="hero-arrow-path" class="size-5" /></button>
           </article>
         </div>
         <div class="writing-suggestion stack">
@@ -422,9 +424,11 @@ defmodule LeitorWeb.WritingLive do
           </p>
           <button
             id="apply-correction"
-            class="action"
+            class="icon-button"
+            aria-label="Use this version"
+            title="Use this version"
             phx-click={JS.dispatch("writing:apply", to: "#writing_text")}
-          >Use this version</button>
+          ><.icon name="hero-check-circle" class="size-5" /></button>
           <p :for={alternative <- @feedback["alternatives"]}>{alternative}</p>
         </div>
       </section>
@@ -435,6 +439,7 @@ defmodule LeitorWeb.WritingLive do
             class="icon-button"
             phx-click="close-answer"
             aria-label="Close answer"
+            title="Close answer"
           ><.icon name="hero-x-mark" class="size-4" /></button>
         </div>
         <p>{if @asking, do: "Thinking…", else: @answer}</p>
@@ -459,7 +464,12 @@ defmodule LeitorWeb.WritingLive do
             maxlength="500"
             required
           />
-          <button class="icon-button" disabled={@asking} aria-label="Ask the tutor"><.icon
+          <button
+            class="icon-button"
+            disabled={@asking}
+            aria-label="Ask the tutor"
+            title="Ask the tutor"
+          ><.icon
             name="hero-arrow-up"
             class="size-4"
           /></button>
@@ -471,10 +481,13 @@ defmodule LeitorWeb.WritingLive do
           class="action action-primary"
           disabled={@busy}
           aria-label="Review current paragraph"
-          phx-disable-with="Reviewing…"
+          title="Review current paragraph"
+          aria-busy={to_string(@busy)}
         >
-          <span class="toolbar-action-label">{if @busy, do: "Reviewing…", else: "Review"}</span>
-          <span class="dock-arrow"><.icon name="hero-check" class="size-4" /></span>
+          <.icon
+            name={if @busy, do: "hero-arrow-path", else: "hero-check"}
+            class={["size-5", @busy && "animate-spin"]}
+          />
         </button>
       </StudyComponents.reading_toolbar>
     </Layouts.app>

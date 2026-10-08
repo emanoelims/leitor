@@ -8,10 +8,64 @@
 >
   <:header_controls>
     <div :if={@mode == :read} class="row reading-layers" role="group" aria-label="Reading layers">
+      <div class={["colors-control", @colors && "active"]}>
+        <button
+          id="toggle-colors"
+          type="button"
+          class="layer-button"
+          phx-click="toggle"
+          phx-value-layer="colors"
+          aria-label="Colors"
+          aria-pressed={@colors}
+        ><.icon name="hero-swatch" class="size-[18px]" /><span>Colors</span></button>
+        <details
+          id="color-guide"
+          class="color-guide"
+          phx-window-keydown={
+            JS.focus(to: "#color-guide[open] > summary")
+            |> JS.remove_attribute("open", to: "#color-guide")
+          }
+          phx-key="Escape"
+        >
+          <summary
+            id="color-guide-trigger"
+            aria-label="What the colors mean"
+            title="What the colors mean"
+          >
+            <.icon name="hero-information-circle" class="size-4" />
+          </summary>
+          <section
+            class="color-guide-panel"
+            aria-labelledby="color-guide-title"
+            phx-click-away={JS.remove_attribute("open", to: "#color-guide")}
+          >
+            <h2 id="color-guide-title">A little color, a little context.</h2>
+            <p>Each color marks a word's role in the sentence.</p>
+            <ul>
+              <li :for={
+                {category, label} <- [
+                  {"noun", "Nouns & names"},
+                  {"verb", "Verbs & auxiliaries"},
+                  {"adj", "Adjectives"},
+                  {"adv", "Adverbs"},
+                  {"pron", "Pronouns"},
+                  {"prep", "Prepositions & determiners"},
+                  {"conj", "Conjunctions"},
+                  {"expression", "Expressions"}
+                ]
+              }>
+                <span class={["legend-dot", "pos-#{category}"]} aria-hidden="true"></span>{label}
+              </li>
+            </ul>
+            <p>
+              With Colors off, hover over a word or focus it with your keyboard to reveal its color.
+            </p>
+          </section>
+        </details>
+      </div>
       <button
         :for={
           {layer, key, label, icon} <- [
-            {"colors", :colors, "Colors", "hero-swatch"},
             {"only_new", :only_new, "Only new", "hero-eye"},
             {"structure", :structure, "Structure", "hero-adjustments-horizontal"},
             {"translation", :translation, "Translation", "hero-language"}
@@ -182,18 +236,15 @@
               id={"word-#{index}"}
               type="button"
               class={[
-                "token",
+                "token pos-#{token.category}",
                 @colors && !(@only_new && MapSet.member?(@known, String.downcase(token.word))) &&
-                  "colored pos-#{token.category}",
+                  "colored",
                 @only_new && MapSet.member?(@known, String.downcase(token.word)) && "known"
               ]}
               phx-click={JS.push_focus() |> JS.push("select")}
               phx-value-index={index}
               aria-label={"Explore #{token.word}"}
-            ><span>{token.word}</span><small :if={
-              @colors && token.category != "word" &&
-                !(@only_new && MapSet.member?(@known, String.downcase(token.word)))
-            }>{token.category}</small></button>
+            ><span>{token.word}</span></button>
           <% end %>
         <% end %>
       </div>
@@ -214,9 +265,6 @@
       >
         {@sentence.translation}
       </p>
-      <div :if={@colors} class="row wrap legend">
-        <span><i class="legend-dot pos-noun"></i>Nouns</span><span><i class="legend-dot pos-verb"></i>Verbs</span><span><i class="legend-dot pos-adj"></i>Adjectives</span><span><i class="legend-dot pos-adv"></i>Adverbs</span><span><i class="legend-dot pos-pron"></i>Pronouns</span><span><i class="legend-dot pos-prep"></i>Prepositions</span>
-      </div>
       <div class="sentence-neighbor">
         <button
           :if={@index < length(@sentences) - 1}
@@ -226,48 +274,70 @@
           aria-label="Read the next sentence"
         >{Enum.at(@sentences, @index + 1).body}</button>
       </div>
-      <section :if={@sentence.focus} class="sentence-focus stack" aria-label="Sentence focus">
-        <p class="eyebrow">Sentence focus</p><h2>{@sentence.focus.title}</h2><p>
-          {@sentence.focus.body}
-        </p><code class="pattern">{@sentence.focus.pattern}</code>
-      </section>
-      <div class="row between wrap reader-tools">
-        <button
-          id="select-phrase"
-          class={["action action-small", @phrase_mode && "active"]}
-          phx-click="phrase-mode"
-          aria-pressed={@phrase_mode}
-        ><.icon name="hero-cursor-arrow-rays" class="size-4" />Select an expression</button>
-        <button
-          id="analyze-sentence"
-          class="action action-small"
-          phx-click="analyze"
-          disabled={@busy}
-        >{if @busy, do: "Thinking…", else: "Analyze with the tutor"}</button><div class="row wrap">
-          <.link
-            :if={@text}
-            navigate={~p"/practice?#{%{mode: "dictation", text: @text.id, sentence: @index}}"}
-            class="action action-small"
-          >Practice <.icon name="hero-arrow-up-right" class="size-4" /></.link><button
-            :if={!@text}
-            id="practice-reading"
-            class="action action-small"
-            phx-click="practice"
-          >Practice <.icon name="hero-arrow-up-right" class="size-4" /></button><button
-            :if={!@text}
-            id="save-reading"
-            class="action action-small"
-            phx-click="save-text"
-          ><.icon name="hero-bookmark" class="size-4" />Save reading</button>
+      <details :if={@sentence.focus} id={"sentence-note-#{@index}"} class="sentence-insight">
+        <summary>
+          <.icon name="hero-light-bulb" class="size-4" />Reading note<.icon
+            name="hero-chevron-down"
+            class="size-3"
+          />
+        </summary>
+        <div class="sentence-insight-body">
+          <h2>{@sentence.focus.title}</h2><p>{@sentence.focus.body}</p><code class="pattern">{@sentence.focus.pattern}</code>
         </div>
-      </div>
+      </details>
       <p :if={@index == length(@sentences) - 1} class="muted text-sm">
         You've reached the end. Revisit a sentence or practice what you've learned.
       </p>
       <div :if={@answer} id="tutor-answer" class="tutor-answer" role="status">
         <p class="eyebrow">About this sentence</p><p>{@answer}</p>
       </div>
-      <nav class="reader-dock" aria-label="Reading controls">
+      <nav id="reading-toolbar" class="reader-dock" aria-label="Reading controls">
+        <details
+          id="reader-more"
+          class="reader-more"
+          phx-window-keydown={
+            JS.focus(to: "#reader-more[open] > summary")
+            |> JS.remove_attribute("open", to: "#reader-more")
+          }
+          phx-key="Escape"
+        >
+          <summary aria-label="More reading tools" title="More reading tools">
+            <.icon name="hero-ellipsis-horizontal" class="size-5" />
+          </summary>
+          <div
+            class="reader-more-panel"
+            phx-click-away={JS.remove_attribute("open", to: "#reader-more")}
+          >
+            <button
+              id="select-phrase"
+              class={["action action-small", @phrase_mode && "active"]}
+              phx-click="phrase-mode"
+              aria-pressed={@phrase_mode}
+            ><.icon name="hero-cursor-arrow-rays" class="size-4" />Select an expression</button>
+            <button
+              id="analyze-sentence"
+              class="action action-small"
+              phx-click="analyze"
+              disabled={@busy}
+            >{if @busy, do: "Thinking…", else: "Analyze with the tutor"}</button><div class="row wrap">
+              <.link
+                :if={@text}
+                navigate={~p"/practice?#{%{mode: "dictation", text: @text.id, sentence: @index}}"}
+                class="action action-small"
+              >Practice <.icon name="hero-arrow-up-right" class="size-4" /></.link><button
+                :if={!@text}
+                id="practice-reading"
+                class="action action-small"
+                phx-click="practice"
+              >Practice <.icon name="hero-arrow-up-right" class="size-4" /></button><button
+                :if={!@text}
+                id="save-reading"
+                class="action action-small"
+                phx-click="save-text"
+              ><.icon name="hero-bookmark" class="size-4" />Save reading</button>
+            </div>
+          </div>
+        </details>
         <button
           id="previous-sentence"
           class="icon-button"
@@ -298,13 +368,17 @@
           ><.icon name="hero-arrow-up" class="size-4" /></button>
         </.form><button
           id="next-sentence"
+          aria-label="Next sentence"
           class="action action-primary"
           disabled={@index == length(@sentences) - 1}
           phx-click="move"
           phx-value-direction="next"
-        >Next<span class="dock-arrow"><.icon name="hero-arrow-right" class="size-4" /></span></button>
+        ><span class="next-label">Next</span><span class="dock-arrow"><.icon
+          name="hero-arrow-right"
+          class="size-4"
+        /></span></button>
       </nav>
-      <p class="reader-note">
+      <p class="reader-note sr-only">
         ← → to move · Esc to close · Tutor responses use AI and can make mistakes.
       </p>
     </div>

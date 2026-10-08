@@ -2314,12 +2314,21 @@ audio {
 }
 
 /* Reading: keep the sentence in focus and its tools within reach. */
-.reader-page { padding-top:clamp(36px,7vh,72px); padding-bottom:140px; }
+.reader-page,.writing-page {
+  --document-width:760px;
+  --document-font-size:20px;
+  --document-line-height:1.8;
+  max-width:calc(var(--document-width) + 48px);
+  width:100%;
+  padding:56px 24px 140px;
+  margin:0 auto;
+}
+.reader-page { padding-top:56px; padding-bottom:140px; }
 .reader-flow { gap:32px; }
 .reader-page .sentence-neighbor { min-height:0; margin:0; align-items:center; }
 .reader-page .sentence-neighbor:empty { display:none; }
-.reader-page .sentence-neighbor .lyric { font-size:clamp(20px,2.1vw,28px); font-weight:500; line-height:1.45; filter:none; max-width:950px; }
-.reader-page .sentence { display:block; font-size:clamp(32px,3.7vw,52px); line-height:1.55; font-weight:500; letter-spacing:-.035em; }
+.reader-page .sentence-neighbor .lyric { font-size:var(--document-font-size); font-weight:400; line-height:var(--document-line-height); letter-spacing:normal; filter:none; max-width:100%; }
+.reader-page .sentence { display:block; font-size:var(--document-font-size); line-height:var(--document-line-height); font-weight:400; letter-spacing:normal; }
 .reader-page .token { display:inline; padding:.025em .12em; margin:0 -.015em; border-radius:999px; background:transparent; color:var(--ink); line-height:inherit; box-decoration-break:clone; transition:background-color .15s ease,color .15s ease; }
 .reader-page .token.colored,.reader-page .token:hover,.reader-page .token:focus-visible { background:var(--word-color,var(--soft)); color:#141413; filter:none; transform:none; }
 .reader-page .token:hover>span { text-decoration:none; }
@@ -2356,8 +2365,7 @@ audio {
 @media(max-width:640px) {
   .reader-page { padding:36px 20px 130px; }
   .reader-flow { gap:28px; }
-  .reader-page .sentence { font-size:34px; line-height:1.5; }
-  .reader-page .sentence-neighbor .lyric { font-size:21px; }
+  .reader-page,.writing-page { --document-font-size:18px; }
   .reader-page .reader-dock { bottom:max(12px,env(safe-area-inset-bottom)); width:calc(100% - 24px); gap:2px; }
   .reader-page .reader-dock>.icon-button { width:36px; }
   .reader-more>summary { width:30px; }
@@ -2389,14 +2397,15 @@ audio {
 
 /* A shared dock and a continuous, paragraph-aware writing surface. */
 .study-toolbar-fixed { position:fixed; left:50%; transform:translateX(-50%); bottom:max(20px,env(safe-area-inset-bottom)); width:min(720px,calc(100% - 32px)); max-width:none; z-index:30; }
-.writing-page { max-width:1080px; padding-top:56px; padding-bottom:150px; gap:28px; }
+.writing-page { padding-top:56px; padding-bottom:140px; gap:28px; }
 .writing-prompt { gap:8px 14px; }
 .writing-prompt .eyebrow { margin:0; flex-shrink:0; }
 .writing-prompt p { font-size:15px; }
-.writing-document { width:100%; max-width:840px; margin:12px auto 0; }
-.writing-document .essay-input { resize:none; min-height:380px; overflow:hidden; font-size:clamp(24px,2.5vw,34px); line-height:1.65; letter-spacing:-.02em; padding:12px 4px; outline-offset:8px; }
+.writing-document { width:100%; margin:0; }
+.writing-document .essay-input { display:block; resize:none; min-height:1lh; overflow:hidden; font-size:var(--document-font-size); font-weight:400; line-height:var(--document-line-height); letter-spacing:normal; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; caret-color:var(--ink); }
+.writing-document .essay-input:focus { outline:none; box-shadow:none; }
 .writing-document .essay-input::placeholder { color:var(--muted); opacity:.65; }
-.writing-status { color:var(--muted); font-size:12px; gap:10px; max-width:840px; width:100%; margin:auto; }
+.writing-status { color:var(--muted); font-size:12px; gap:10px; width:100%; margin:0; }
 .writing-status p { margin:0; }
 .writing-privacy { color:var(--muted); font-size:12px; }
 .writing-history { border-top:1px solid var(--line); padding-top:20px; }
@@ -2406,9 +2415,9 @@ audio {
 .writing-suggestion .action { align-self:flex-start; }
 .writing-page .tutor-answer { position:fixed; bottom:96px; left:50%; transform:translateX(-50%); width:min(640px,calc(100% - 32px)); max-height:45vh; overflow:auto; z-index:29; }
 @media(max-width:640px) {
-  .writing-page { padding:32px 20px 130px; gap:24px; }
+  .writing-page { padding:36px 20px 130px; gap:24px; }
   .writing-document { margin-top:0; }
-  .writing-document .essay-input { min-height:340px; font-size:24px; }
+
   .study-toolbar-fixed { bottom:max(12px,env(safe-area-inset-bottom)); width:calc(100% - 24px); gap:2px; }
   .study-toolbar>.icon-button { width:36px; }
   .study-toolbar>.action { padding-left:12px; gap:6px; }

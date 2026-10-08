@@ -284,7 +284,7 @@ defmodule LeitorWeb.WritingLive do
           type="textarea"
           label="Your English text"
           class="essay-input"
-          rows="8"
+          rows="1"
           phx-hook="WritingEditor"
           phx-debounce="250"
           aria-describedby="writing-help"
@@ -295,7 +295,7 @@ defmodule LeitorWeb.WritingLive do
         />
       </.form>
       <div class="writing-status row between wrap">
-        <p id="writing-help">
+        <p id="writing-help" class="sr-only">
           Enter starts a new paragraph. The tutor works on the paragraph under your cursor.
         </p>
         <p id="writing-save-status" role="status">{@word_count} words · {@save_status}</p>

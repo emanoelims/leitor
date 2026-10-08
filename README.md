@@ -167,7 +167,7 @@ Writing uses an inline Tiptap editor with Markdown persistence and an MDEx-rende
 preview. Type `/` at the start of a paragraph to insert text, headings, lists,
 checklists, quotes, code blocks, or dividers. Filter by typing, choose with ↑/↓ and
 Enter, and dismiss with Escape. Markdown shortcuts such as `## `, `- `, `> `,
-`**bold**`, and `*italic*` render as you type. Pasted Markdown supports the same
+`**bold**`, `*italic*`, and `[label](https://example.com)` render as you type. Pasted Markdown supports the same
 blocks. Cmd/Ctrl+Z undoes changes; Cmd/Ctrl+S saves the draft.
 
 The cursor selects the prose paragraph sent to the tutor, including headings and
@@ -175,7 +175,8 @@ list items. Code blocks and dividers are excluded. Applying a suggestion replace
 only that paragraph; changed paragraphs must be reviewed again. The eye button
 opens the server-rendered preview. Saved drafts and feedback remain available in
 the header's history menu. Existing plain-text drafts retain their literal text;
-new edits save as Markdown. Reading and writing share the same document measure
+new edits save as Markdown. Intentional blank paragraphs remain visible in the
+preview, and suggested titles are saved with their drafts. Reading and writing share the same document measure
 and `StudyComponents.reading_toolbar/1` function component.
 
 User drafts are untrusted Markdown: MDEx sanitizes HTML, escapes raw tags, and

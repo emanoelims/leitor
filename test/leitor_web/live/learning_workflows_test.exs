@@ -101,7 +101,7 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     text = "Café by the river.\n\nShe go to school yesterday.\nA quiet evening."
     {:ok, view, _} = live(conn, ~p"/write")
     render_hook(view, "paragraph", %{"index" => 1})
-    view |> form("#writing-form", writing: %{text: text, paragraph: "1"}) |> render_submit()
+    render_submit(view, "feedback", %{"writing" => %{"text" => text, "paragraph" => "1"}})
     assert render_async(view) =~ "Paragraph 2"
     assert [%{content: ^text, result: %{"paragraph_index" => 1}}] = Learning.recent_attempts(scope)
     updated = String.replace(text, "A quiet evening.", "An edited evening.")
@@ -128,7 +128,7 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     {:ok, view, _} = live(conn, ~p"/write")
     text = "unavailable\nShe go to school yesterday."
     render_hook(view, "paragraph", %{"index" => 1})
-    view |> form("#writing-form", writing: %{text: text, paragraph: "1"}) |> render_submit()
+    render_submit(view, "feedback", %{"writing" => %{"text" => text, "paragraph" => "1"}})
     assert render_async(view) =~ "Use the simple past"
     render_submit(view, "ask", %{"tutor" => %{"text" => text, "paragraph" => "1", "question" => "Why?"}})
     assert render_async(view) =~ "Yesterday calls for the simple past."
@@ -330,6 +330,31 @@ defmodule LeitorWeb.LearningWorkflowsTest do
              "Review it again"
 
     refute has_element?(view, "#writing-feedback")
+  end
+
+  test "a generated title follows the saved draft across LiveView sessions", %{conn: conn, scope: scope} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    view |> element("#suggest-writing-title") |> render_click()
+    render_async(view)
+    render_submit(view, "save", %{"writing" => %{"text" => "A complete draft.", "format" => "markdown"}})
+    [draft] = Learning.recent_attempts(scope)
+    assert draft.result["title"] == "A place I would love to visit"
+    {:ok, fresh, _} = live(conn, ~p"/write")
+    render_click(fresh, "load", %{"id" => draft.id})
+    assert has_element?(fresh, "#writing-title", "A place I would love to visit")
+    assert has_element?(fresh, "#app-header", "A place I would love to visit")
+  end
+
+  test "a debounced text update carries its current paragraph selection", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    render_hook(view, "paragraph", %{"index" => -1})
+
+    render_change(view, "edit", %{
+      "writing" => %{"text" => "First.\n\nSecond.", "format" => "markdown", "paragraph" => "1"}
+    })
+
+    assert has_element?(view, "#app-header", "Paragraph 2 of 2")
+    assert has_element?(view, "#review-paragraph:not([disabled])")
   end
 
   defp assert_draft(view, text) do

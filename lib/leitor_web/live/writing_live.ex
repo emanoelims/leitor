@@ -17,6 +17,7 @@ defmodule LeitorWeb.WritingLive do
        form: to_form(%{"text" => ""}, as: :writing),
        document_format: "plain",
        feedback_format: "plain",
+       feedback_title: nil,
        preview: false,
        feedback: nil,
        feedback_text: nil,
@@ -48,7 +49,13 @@ defmodule LeitorWeb.WritingLive do
   end
 
   def handle_event("edit", %{"writing" => %{"text" => text} = attrs}, socket) do
-    {:noreply, socket |> editor(text, WritingDocument.format(attrs)) |> assign(save_status: "Unsaved changes")}
+    socket = editor(socket, text, WritingDocument.format(attrs))
+
+    {:noreply,
+     assign(socket,
+       active_paragraph: min(paragraph_index(attrs, socket), socket.assigns.paragraph_count - 1),
+       save_status: "Unsaved changes"
+     )}
   end
 
   def handle_event("paragraph", %{"index" => index}, socket) when is_integer(index) and index >= -1,
@@ -72,7 +79,14 @@ defmodule LeitorWeb.WritingLive do
         {:noreply,
          socket
          |> editor(text, format)
-         |> assign(busy: true, feedback: nil, feedback_text: text, feedback_index: index, feedback_format: format)
+         |> assign(
+           busy: true,
+           feedback: nil,
+           feedback_text: text,
+           feedback_index: index,
+           feedback_format: format,
+           feedback_title: socket.assigns.writing_title
+         )
          |> start_async(:feedback, fn -> Language.feedback(paragraph.text) end)}
     end
   end
@@ -81,7 +95,7 @@ defmodule LeitorWeb.WritingLive do
     case Learning.create_attempt(socket.assigns.current_scope, %{
            kind: "draft",
            content: text,
-           result: %{"format" => WritingDocument.format(attrs)},
+           result: %{"format" => WritingDocument.format(attrs), "title" => socket.assigns.writing_title},
            duration: elapsed(socket)
          }) do
       {:ok, attempt} ->
@@ -112,6 +126,7 @@ defmodule LeitorWeb.WritingLive do
      socket
      |> cancel_async(:feedback)
      |> cancel_async(:question)
+     |> cancel_async(:writing_title)
      |> editor(attempt.content, format)
      |> assign(
        answer: nil,
@@ -119,6 +134,9 @@ defmodule LeitorWeb.WritingLive do
        feedback: feedback,
        feedback_text: attempt.content,
        feedback_format: format,
+       feedback_title: attempt.result["title"],
+       writing_title: attempt.result["title"],
+       generating_title: false,
        feedback_index: Map.get(attempt.result, "paragraph_index", 0),
        active_paragraph: 0,
        save_status: "Draft loaded",
@@ -227,7 +245,8 @@ defmodule LeitorWeb.WritingLive do
            result:
              feedback
              |> Map.put("paragraph_index", socket.assigns.feedback_index)
-             |> Map.put("format", socket.assigns.feedback_format),
+             |> Map.put("format", socket.assigns.feedback_format)
+             |> Map.put("title", socket.assigns.feedback_title),
            duration: elapsed(socket)
          }) do
       {:ok, attempt} ->
@@ -390,12 +409,6 @@ defmodule LeitorWeb.WritingLive do
         phx-change="edit"
         class="writing-document"
       >
-        <input
-          id="writing-paragraph"
-          type="hidden"
-          name="writing[paragraph]"
-          value={@active_paragraph}
-        />
         <div hidden={@preview}>
           <div
             id="writing-editor"
@@ -403,6 +416,12 @@ defmodule LeitorWeb.WritingLive do
             phx-update="ignore"
             data-format={@document_format}
           >
+            <input
+              id="writing-paragraph"
+              type="hidden"
+              name="writing[paragraph]"
+              value={@active_paragraph}
+            />
             <input id="writing-format" type="hidden" name="writing[format]" value={@document_format} />
             <div hidden>
               <.input
@@ -426,13 +445,7 @@ defmodule LeitorWeb.WritingLive do
           class="writing-prose"
           aria-label="Writing preview"
         >
-          <%= if @document_format == "markdown" do %>
-            {Phoenix.HTML.raw(WritingDocument.render(@form[:text].value))}
-          <% else %>
-            <p :for={paragraph <- WritingDocument.paragraphs(@form[:text].value, "plain")}>
-              {paragraph.text}
-            </p>
-          <% end %>
+          <LeitorWeb.WritingComponents.prose text={@form[:text].value} format={@document_format} />
         </article>
       </.form>
       <p id="writing-help" class="sr-only">
@@ -460,9 +473,13 @@ defmodule LeitorWeb.WritingLive do
           </article>
         </div>
         <div class="writing-suggestion stack">
-          <span class="eyebrow">A little more natural</span><p class="text-xl">
-            {@feedback["corrected"]}
-          </p>
+          <span class="eyebrow">A little more natural</span>
+          <div id="writing-corrected" class="writing-prose">
+            <LeitorWeb.WritingComponents.prose
+              text={@feedback["corrected"]}
+              format={@feedback_format}
+            />
+          </div>
           <button
             id="apply-correction"
             class="icon-button"
@@ -470,7 +487,9 @@ defmodule LeitorWeb.WritingLive do
             title="Use this version"
             phx-click={JS.dispatch("writing:apply", to: "#writing-editor")}
           ><.icon name="hero-check-circle" class="size-5" /></button>
-          <p :for={alternative <- @feedback["alternatives"]}>{alternative}</p>
+          <div :for={alternative <- @feedback["alternatives"]} class="writing-prose">
+            <LeitorWeb.WritingComponents.prose text={alternative} format={@feedback_format} />
+          </div>
         </div>
       </section>
 
@@ -532,7 +551,7 @@ defmodule LeitorWeb.WritingLive do
           type="submit"
           form="writing-form"
           class="action action-primary"
-          disabled={@busy}
+          disabled={@busy || @active_paragraph < 0}
           aria-label="Review current paragraph"
           title="Review current paragraph"
           aria-busy={to_string(@busy)}

@@ -2,6 +2,19 @@ defmodule LeitorWeb.WritingComponents do
   @moduledoc false
   use LeitorWeb, :html
 
+  attr :text, :string, required: true
+  attr :format, :string, default: "markdown"
+
+  def prose(assigns) do
+    ~H"""
+    <%= if @format == "markdown" do %>
+      {Phoenix.HTML.raw(Leitor.WritingDocument.render(@text))}
+    <% else %>
+      <p :for={paragraph <- Leitor.WritingDocument.paragraphs(@text, "plain")}>{paragraph.text}</p>
+    <% end %>
+    """
+  end
+
   def slash_menu(assigns) do
     assigns =
       assign(assigns, :commands, [

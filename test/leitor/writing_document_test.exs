@@ -42,6 +42,8 @@ defmodule Leitor.WritingDocumentTest do
     assert html =~ "<em>italic</em>"
     assert html =~ "<del>strike</del>"
     assert html =~ "Done"
+    assert html =~ "contains-task-list"
+    assert html =~ "task-list-item"
     assert html =~ "type=\"checkbox\""
     assert html =~ "disabled"
     assert html =~ "aria-label=\"Task completed\""
@@ -61,5 +63,12 @@ defmodule Leitor.WritingDocumentTest do
     assert WritingDocument.word_count("> First\n>\n> Second", "markdown") == 2
     assert WritingDocument.word_count("<script>bad()</script>\n\n<span>Text</span>", "markdown") == 1
     assert "# \n\nReal text" |> WritingDocument.paragraphs("markdown") |> Enum.map(& &1.text) == ["Real text"]
+  end
+
+  test "explicit empty paragraphs render without entering the tutor's paragraph count" do
+    source = "First.\n\n&nbsp;\n\nThird."
+    assert source |> WritingDocument.paragraphs("markdown") |> Enum.map(& &1.text) == ["First.", "Third."]
+    assert WritingDocument.word_count(source, "markdown") == 2
+    assert length(Regex.scan(~r/<p>/, WritingDocument.render(source))) == 3
   end
 end

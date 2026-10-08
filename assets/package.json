@@ -4,6 +4,7 @@
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
     "@tiptap/core": "3.31.4",
+    "@tiptap/extension-paragraph": "3.31.4",
     "@tiptap/extension-placeholder": "3.31.4",
     "@tiptap/extension-task-item": "3.31.4",
     "@tiptap/extension-task-list": "3.31.4",

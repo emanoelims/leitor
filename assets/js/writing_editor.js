@@ -5,6 +5,7 @@ import {Markdown} from "@tiptap/markdown"
 import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
 import Placeholder from "@tiptap/extension-placeholder"
+import {MarkdownLinks, WritingParagraph} from "./writing_markdown"
 import {computePosition, flip, offset, shift} from "@floating-ui/dom"
 
 const plainDocument = text => ({
@@ -33,11 +34,13 @@ export const WritingEditor = {
     })
     this.editor = new Editor({
       element: this.el.querySelector("#writing-surface"),
-      extensions: [StarterKit.configure({heading: {levels: [1, 2, 3]}, underline: false, link: {openOnClick: false}}), Markdown,
+      extensions: [StarterKit.configure({paragraph: false, heading: {levels: [1, 2, 3]}, underline: false, link: {openOnClick: false}}), Markdown, MarkdownLinks, WritingParagraph,
         TaskList, TaskItem.configure({nested: true}), Placeholder.configure({placeholder: "Write in English, or type / for blocks…"}), limit],
       content: this.format.value === "markdown" ? this.input.value : plainDocument(this.input.value),
       contentType: this.format.value === "markdown" ? "markdown" : "json",
       editorProps: {
+        scrollThreshold: {top: 80, bottom: 120, left: 0, right: 0},
+        scrollMargin: {top: 90, bottom: 140, left: 0, right: 0},
         attributes: {class: "writing-prose writing-rich-editor", role: "textbox", "aria-label": "Your English text", "aria-multiline": "true", "aria-describedby": "writing-help", spellcheck: "false"},
         handleKeyDown: (_view, event) => this.keydown(event),
         handlePaste: (_view, event) => {
@@ -48,15 +51,15 @@ export const WritingEditor = {
           return true
         }
       },
+      onBlur: () => this.closeMenu(),
       onUpdate: () => { this.sync(true); this.updateMenu() },
       onSelectionUpdate: () => { this.sync(false); this.updateMenu() }
     })
     this.sync = changed => {
       if (changed) {
         this.el.querySelector("#writing-editor-status").textContent = ""
-        this.input.value = this.editor.getMarkdown()
+        this.input.value = this.editor.isEmpty ? "" : this.editor.getMarkdown()
         this.format.value = "markdown"
-        this.input.dispatchEvent(new Event("input", {bubbles: true}))
       }
       const {$from} = this.editor.state.selection
       let index = -1, count = 0
@@ -69,6 +72,7 @@ export const WritingEditor = {
       const questionIndex = document.querySelector('#writing-question [name="tutor[paragraph]"]')
       if (questionIndex) questionIndex.value = index
       if (this.index !== index) { this.index = index; this.pushEvent("paragraph", {index}) }
+      if (changed) this.input.dispatchEvent(new Event("input", {bubbles: true}))
     }
     // Only the canonical Markdown field belongs to LiveView's form protocol.
     // In particular, task checkboxes must finish their editor transaction first.

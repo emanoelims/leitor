@@ -63,11 +63,15 @@ defmodule Leitor.WritingDocument do
   def render(text) do
     MDEx.to_html!(text,
       extension: [tasklist: true, strikethrough: true],
-      render: [unsafe: false, escape: true],
+      render: [unsafe: false, escape: true, tasklist_classes: true],
       sanitize: [
         rm_tags: ["img"],
         add_tags: ["input"],
-        add_tag_attributes: %{"input" => ["type", "checked", "disabled", "aria-label"]},
+        add_tag_attributes: %{
+          "input" => ["type", "checked", "disabled", "aria-label"],
+          "ul" => ["class"],
+          "li" => ["class"]
+        },
         set_tag_attribute_values: %{"input" => %{"aria-label" => "Task completed"}}
       ]
     )
@@ -76,7 +80,7 @@ defmodule Leitor.WritingDocument do
   defp prose(%MDEx.CodeBlock{}), do: ""
   defp prose(%MDEx.HtmlBlock{}), do: ""
   defp prose(%MDEx.HtmlInline{}), do: ""
-  defp prose(%{literal: literal}), do: literal
+  defp prose(%{literal: literal}), do: String.replace(literal, "\u00A0", " ")
 
   defp prose(%{__struct__: module, nodes: nodes})
        when module in [MDEx.Document, MDEx.List, MDEx.ListItem, MDEx.TaskItem, MDEx.BlockQuote],

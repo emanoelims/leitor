@@ -2478,10 +2478,14 @@ audio {
 .writing-prose pre code { padding:0; background:none; font-size:inherit; }
 .writing-prose hr { border:0; border-top:1px solid var(--line); margin:1.5em 0; }
 .writing-prose a { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
-.writing-prose ul[data-type="taskList"] { list-style:none; padding-left:0; }
-.writing-prose li[data-type="taskItem"] { display:flex; align-items:baseline; gap:.6em; }
-.writing-prose li[data-type="taskItem"] > div { flex:1; min-width:0; }
-.writing-prose input[type="checkbox"] { accent-color:var(--accent); cursor:pointer; }
+.writing-prose ul[data-type="taskList"],.writing-prose ul.contains-task-list { list-style:none; padding-left:0; }
+.writing-prose ul[data-type="taskList"] > li,.writing-prose li.task-list-item { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:start; gap:.6em; list-style:none; }
+.writing-prose ul[data-type="taskList"] > li > label { display:flex; align-items:center; height:1lh; margin:0; padding:0; }
+.writing-prose ul[data-type="taskList"] > li > div { min-width:0; }
+.writing-prose li.task-list-item > ul { grid-column:2; }
+.writing-prose input[type="checkbox"] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+.writing-prose li.task-list-item > input { margin-top:calc((1lh - 16px) / 2); }
+.writing-prose input[type="checkbox"]:disabled { cursor:default; }
 .writing-rich-editor .is-editor-empty:first-child::before { content:attr(data-placeholder); color:var(--muted); opacity:.65; float:left; pointer-events:none; height:0; }
 .writing-block-menu { position:fixed; z-index:80; width:min(280px, calc(100vw - 24px)); max-height:min(420px, 60dvh); overflow:auto; padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--paper); box-shadow:0 12px 40px #0002; font-size:13px; }
 .writing-block-menu[hidden],.writing-block-menu button[hidden] { display:none; }
@@ -2492,7 +2496,7 @@ audio {
 .writing-block-menu button > span:nth-child(2) { min-width:0; }
 .writing-block-menu small { color:var(--muted); font-family:monospace; }
 .writing-block-help { font-size:10px; color:var(--muted); padding:8px 6px 2px; }
-#writing-preview-toggle[aria-pressed="true"] { color:var(--accent); background:var(--card); }
+#writing-preview-toggle[aria-pressed="true"] { color:var(--ink); background:var(--soft); }
 
 .writing-limit-message { color:var(--danger); font-size:13px; margin-top:12px; }
 .writing-limit-message:empty { display:none; }

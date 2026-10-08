@@ -1,0 +1,15 @@
+[tools]
+erlang = "27.3.4.16"
+elixir = "1.19.5-otp-27"
+
+[tasks.setup]
+description = "Preparar dependências, banco e assets"
+run = ["mix local.hex --force", "mix local.rebar --force", "mix setup"]
+
+[tasks.dev]
+description = "Iniciar servidor Phoenix"
+run = "mix phx.server"
+
+[tasks.precommit]
+description = "Verificar compilação, dependências, formatação e testes"
+run = "mix precommit"

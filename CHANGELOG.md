@@ -9,3 +9,4 @@ visíveis aos usuários e as instruções de migração antes de cada release.
 
 - Convenções de contribuição, Conventional Commits e política de releases.
 - CI para formatação, compilação, testes, títulos de PR e versões de tags.
+- Configuração de ferramentas e tarefas com mise, compartilhada com o CI.

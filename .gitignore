@@ -35,3 +35,7 @@ leitor-*.tar
 npm-debug.log
 /assets/node_modules/
 
+
+# Personal mise overrides may contain local paths or secrets.
+/mise.local.toml
+/mise.*.local.toml

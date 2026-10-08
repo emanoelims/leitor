@@ -1,7 +1,13 @@
 # Contribuindo
 
-Use as versões de Erlang/OTP e Elixir em `.tool-versions`. Com asdf, execute
-`asdf install`, depois `mix setup`. Antes de abrir um PR, execute `mix precommit`.
+Use as versões de Erlang/OTP e Elixir em `mise.toml`. Execute `mise install`,
+depois `mise run setup`. Para iniciar o Phoenix, use `mise run dev`. Antes de
+abrir um PR, execute `mise run precommit` (executa `mix precommit`).
+
+As tarefas do mise usam automaticamente as ferramentas configuradas. Para
+comandos avulsos, use `mise exec -- mix <tarefa>`. Consulte a
+[documentação do mise](https://mise.jdx.dev/getting-started.html) para instalação
+e ativação no shell.
 
 ## Branches e revisão
 

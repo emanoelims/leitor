@@ -130,8 +130,17 @@ defmodule LeitorWeb.Shell do
               >
                 {String.upcase(String.first(@current_scope.user.email))}
               </summary>
+              <span
+                id="account-menu-positioner"
+                phx-hook="Floating"
+                phx-update="ignore"
+                data-panel="account-menu-panel"
+                data-placement="bottom-end"
+                hidden
+              ></span>
               <nav
-                class="account-popover stack"
+                id="account-menu-panel"
+                class="account-popover stack floating-panel"
                 aria-label="Account"
                 phx-click-away={JS.remove_attribute("open", to: "#account-menu")}
               >

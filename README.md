@@ -142,3 +142,21 @@ development app and database and complement the test and quality checks.
 
 See the [Tidewave MCP guide](https://tidewave.hexdocs.pm/mcp.md) for connection
 troubleshooting and the optional proxy for worktrees running on different ports.
+
+### Floating panels
+
+Reader tools, the color guide and the account menu use `@floating-ui/dom`,
+bundled through esbuild. `mix assets.setup` installs the locked npm dependencies;
+Node.js 22 is managed by mise. After pulling dependency changes, run
+`mise exec -- mix assets.setup`.
+
+The `Floating` hook adapts the positioning lifecycle from
+[Sisteo](https://github.com/emanoelims/sisteo/blob/main/lib/sisteo_web/components/core_components.ex).
+Attach it to an empty, ignored controller inside a native `details` element,
+with a unique ID, `data-panel` pointing to the panel ID and `data-placement`
+such as `bottom-end` or `top-start`. The panel needs `floating-panel`.
+LiveView retains ownership of panel content; the hook only positions it.
+Automatic updates run while open and are cleaned up on close or destruction,
+following [Floating UI's lifecycle guidance](https://floating-ui.com/docs/autoUpdate).
+Native disclosure keyboard behavior and Phoenix JS handle opening, Escape
+and outside clicks.

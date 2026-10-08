@@ -36,8 +36,17 @@
           >
             <.icon name="hero-information-circle" class="size-4" />
           </summary>
+          <span
+            id="color-guide-positioner"
+            phx-hook="Floating"
+            phx-update="ignore"
+            data-panel="color-guide-panel"
+            data-placement="bottom-end"
+            hidden
+          ></span>
           <section
-            class="color-guide-panel"
+            id="color-guide-panel"
+            class="color-guide-panel floating-panel"
             aria-labelledby="color-guide-title"
             phx-click-away={JS.remove_attribute("open", to: "#color-guide")}
           >
@@ -306,8 +315,17 @@
           <summary aria-label="More reading tools" title="More reading tools">
             <.icon name="hero-ellipsis-horizontal" class="size-5" />
           </summary>
+          <span
+            id="reader-more-positioner"
+            phx-hook="Floating"
+            phx-update="ignore"
+            data-panel="reader-more-panel"
+            data-placement="top-start"
+            hidden
+          ></span>
           <div
-            class="reader-more-panel"
+            id="reader-more-panel"
+            class="reader-more-panel floating-panel"
             phx-click-away={JS.remove_attribute("open", to: "#reader-more")}
           >
             <button

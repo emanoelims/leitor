@@ -2383,3 +2383,6 @@ audio {
   .reader-page .reader-dock>.action { padding:0 7px; }
   .reader-page .dock-question { padding-left:12px; gap:4px; }
 }
+
+/* Floating UI owns panel coordinates; LiveView owns their content. */
+.floating-panel { position:fixed; inset:auto; top:0; left:0; overflow-y:auto; overscroll-behavior:contain; max-width:calc(100vw - 24px); }

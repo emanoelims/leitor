@@ -169,6 +169,6 @@ paragraph sent to the tutor for questions and feedback. Applying a suggestion
 replaces only that paragraph, preserving the surrounding text and line breaks.
 Changed paragraphs must be reviewed again before a suggestion can be applied.
 Save the entire document with Save draft or Cmd/Ctrl+S; previous drafts and
-feedback are available from the toolbar's history button. Reading and writing
+feedback are available from the header's history button. Reading and writing
 share the `StudyComponents.reading_toolbar/1` function component, also shown
 in `/dev/componentes`.

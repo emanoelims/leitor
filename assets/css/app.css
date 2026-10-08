@@ -2408,9 +2408,18 @@ audio {
 .writing-status { color:var(--muted); font-size:12px; gap:10px; width:100%; margin:0; }
 .writing-status p { margin:0; }
 .writing-privacy { color:var(--muted); font-size:12px; }
-.writing-history { border-top:1px solid var(--line); padding-top:20px; }
-.writing-history>summary { cursor:pointer; width:fit-content; }
-.writing-history[open] .practice-results { margin-top:20px; }
+.writing-history { position:relative; }
+.writing-history>summary { cursor:pointer; list-style:none; }
+.writing-history>summary::-webkit-details-marker { display:none; }
+.writing-history:not([open]) .history-label { display:none; }
+.writing-history[open]>summary { background:var(--soft); color:var(--ink); }
+.writing-history-panel { width:340px; padding:20px; border:1px solid var(--line); border-radius:22px; background:var(--card); box-shadow:0 12px 36px #1414131c; z-index:40; }
+.writing-history-panel h2 { font-size:17px; margin-bottom:14px; }
+.writing-history-entry + .writing-history-entry { border-top:1px solid var(--line); }
+.writing-history-open { display:flex; flex-direction:column; gap:8px; width:100%; padding:14px 4px; text-align:left; cursor:pointer; border-radius:8px; }
+.writing-history-open:hover { background:var(--soft); }
+.writing-history-open .eyebrow { margin:0; font-size:10px; }
+.writing-history-preview { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:14px; line-height:1.5; color:var(--ink); }
 .writing-suggestion { padding:24px; background:var(--card); border:1px solid var(--line); border-radius:22px; white-space:pre-wrap; }
 .writing-suggestion .action { align-self:flex-start; }
 .writing-page .tutor-answer { position:fixed; bottom:96px; left:50%; transform:translateX(-50%); width:min(640px,calc(100% - 32px)); max-height:45vh; overflow:auto; z-index:29; }

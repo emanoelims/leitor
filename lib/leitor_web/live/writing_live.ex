@@ -250,6 +250,59 @@ defmodule LeitorWeb.WritingLive do
       context_detail={"Paragraph #{@active_paragraph + 1} of #{@paragraph_count}"}
     >
       <:header_controls>
+        <details
+          id="writing-history"
+          class="writing-history"
+          phx-window-keydown={
+            JS.focus(to: "#writing-history[open] > summary")
+            |> JS.remove_attribute("open", to: "#writing-history")
+          }
+          phx-key="Escape"
+        >
+          <summary
+            id="writing-history-toggle"
+            class="layer-button"
+            aria-label="Writing history"
+            title="Writing history"
+          >
+            <.icon name="hero-clock" class="size-[18px]" />
+            <span class="history-label">History</span>
+          </summary>
+          <span
+            id="writing-history-positioner"
+            phx-hook="Floating"
+            phx-update="ignore"
+            data-panel="writing-history-panel"
+            data-placement="bottom-end"
+            hidden
+          ></span>
+          <section
+            id="writing-history-panel"
+            class="writing-history-panel floating-panel"
+            aria-labelledby="writing-history-title"
+            phx-click-away={JS.remove_attribute("open", to: "#writing-history")}
+          >
+            <h2 id="writing-history-title">Writing history</h2>
+            <div id="writing-drafts" phx-update="stream">
+              <p id="no-drafts" class="hidden only:block muted">
+                Saved drafts and feedback will appear here.
+              </p>
+              <article :for={{id, draft} <- @streams.drafts} id={id} class="writing-history-entry">
+                <button
+                  class="writing-history-open"
+                  phx-click={
+                    JS.remove_attribute("open", to: "#writing-history")
+                    |> JS.push("load", value: %{id: draft.id})
+                  }
+                >
+                  <span class="eyebrow">{Calendar.strftime(draft.inserted_at, "%b %d · %H:%M")} · {draft.kind}</span>
+                  <span class="writing-history-preview">{String.slice(draft.content, 0, 180)}</span>
+                  <span class="text-link text-sm">Open writing <span aria-hidden="true">↗</span></span>
+                </button>
+              </article>
+            </div>
+          </section>
+        </details>
         <button
           type="submit"
           form="writing-form"
@@ -331,22 +384,7 @@ defmodule LeitorWeb.WritingLive do
           <p :for={alternative <- @feedback["alternatives"]}>{alternative}</p>
         </div>
       </section>
-      <details id="writing-history" class="writing-history">
-        <summary>Your writing history</summary>
-        <div id="writing-drafts" phx-update="stream" class="practice-results">
-          <p id="no-drafts" class="hidden only:block muted">
-            Saved drafts and feedback will appear here.
-          </p>
-          <article :for={{id, draft} <- @streams.drafts} id={id} class="card stack">
-            <span class="eyebrow">{Calendar.strftime(draft.inserted_at, "%b %d · %H:%M")} · {draft.kind}</span>
-            <p>{String.slice(draft.content, 0, 180)}</p><button
-              class="text-link"
-              phx-click="load"
-              phx-value-id={draft.id}
-            >Open writing</button>
-          </article>
-        </div>
-      </details>
+
       <section :if={@answer || @asking} class="tutor-answer stack" aria-live="polite">
         <div class="row between">
           <span class="eyebrow">About your paragraph</span><button
@@ -358,18 +396,6 @@ defmodule LeitorWeb.WritingLive do
         <p>{if @asking, do: "Thinking…", else: @answer}</p>
       </section>
       <StudyComponents.reading_toolbar id="writing-toolbar" label="Writing tools">
-        <button
-          id="writing-history-toggle"
-          type="button"
-          class="icon-button"
-          aria-label="Writing history"
-          phx-click={
-            JS.toggle_attribute({"open", ""}, to: "#writing-history")
-            |> JS.focus(to: "#writing-history > summary")
-          }
-        >
-          <.icon name="hero-clock" class="size-5" />
-        </button>
         <.form
           for={@question_form}
           id="writing-question"

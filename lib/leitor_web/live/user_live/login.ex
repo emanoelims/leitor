@@ -7,46 +7,37 @@ defmodule LeitorWeb.UserLive.Login do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="auth-grid auth-page">
-        <div>
-          <p class="eyebrow">Keep a little of what you learn.</p><h1 class="hero-title">
-            A sentence today.<br />Your story tomorrow.
-          </h1><p class="muted heading-subtitle">
-            Save words, revisit mistakes, and see your English grow. Reading is always open to everyone.
-          </p>
-        </div>
-        <section class="auth-card stack">
-          <h2>{if @current_scope, do: "Confirm it's you", else: "Make yourself at home."}</h2>
-          <p class="muted">
-            {if @current_scope,
-              do: "You need to reauthenticate to perform sensitive actions on your account.",
-              else: "One email. One magic link. No password to remember."}
-          </p>
-          <.form for={@form} id="login_form_magic" phx-submit="submit_magic" class="stack">
-            <.input
-              readonly={!!@current_scope}
-              field={@form[:email]}
-              type="email"
-              label="Email"
-              autocomplete="email"
-              spellcheck="false"
-              required
-              maxlength="160"
-              phx-mounted={JS.focus()}
-            />
-            <.button id="magic-link-submit" phx-disable-with="Sending your link…">Log in with email
-            <.icon name="hero-arrow-right" class="size-4" /></.button>
-          </.form>
-          <p class="muted text-sm">
-            New here? Your first link creates your account. Sign up and log in happen in the same step.
-          </p>
-          <p :if={local_mail_adapter?()} class="muted text-sm">
-            Development email is available in <.link href="/dev/mailbox" class="text-link">the mailbox page</.link>.
-          </p>
-          <.link navigate={~p"/read"} class="text-link">Keep reading without an account</.link>
-        </section>
-      </div>
+    <Layouts.app flash={@flash} current_scope={@current_scope} context_title="Your account">
+      <StudyComponents.auth_shell>
+        <h2>{if @current_scope, do: "Confirm it's you", else: "Make yourself at home."}</h2>
+        <p class="muted">
+          {if @current_scope,
+            do: "You need to reauthenticate to perform sensitive actions on your account.",
+            else: "One email. One magic link. No password to remember."}
+        </p>
+        <.form for={@form} id="login_form_magic" phx-submit="submit_magic" class="stack">
+          <.input
+            readonly={!!@current_scope}
+            field={@form[:email]}
+            type="email"
+            label="Email"
+            autocomplete="email"
+            spellcheck="false"
+            required
+            maxlength="160"
+            phx-mounted={JS.focus()}
+          />
+          <.button id="magic-link-submit" phx-disable-with="Sending your link…">Log in with email
+          <.icon name="hero-arrow-right" class="size-4" /></.button>
+        </.form>
+        <p class="muted text-sm">
+          New here? Your first link creates your account. Sign up and log in happen in the same step.
+        </p>
+        <p :if={local_mail_adapter?()} class="muted text-sm">
+          Development email is available in <.link href="/dev/mailbox" class="text-link">the mailbox page</.link>.
+        </p>
+        <.link navigate={~p"/read"} class="text-link">Keep reading without an account</.link>
+      </StudyComponents.auth_shell>
     </Layouts.app>
     """
   end

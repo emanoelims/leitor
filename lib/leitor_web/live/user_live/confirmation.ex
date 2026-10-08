@@ -7,16 +7,33 @@ defmodule LeitorWeb.UserLive.Confirmation do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="auth-card stack mx-auto max-w-lg">
-        <div class="text-center">
-          <.header>Welcome {@user.email}</.header>
+    <Layouts.app flash={@flash} current_scope={@current_scope} context_title="Your account">
+      <StudyComponents.auth_shell>
+        <span class="auth-confirm-icon" aria-hidden="true"><.icon
+          name="hero-envelope-open"
+          class="size-6"
+        /></span>
+        <div class="stack gap-2">
+          <h2>
+            {cond do
+              !@user.confirmed_at -> "You're almost home."
+              @current_scope -> "Confirm it's you."
+              true -> "Welcome back."
+            end}
+          </h2>
+          <p class="muted">
+            {if @user.confirmed_at,
+              do: "Continue with your email to pick up where you left off.",
+              else: "Confirm your email to start saving your words and your progress."}
+          </p>
+          <p class="auth-email">{@user.email}</p>
         </div>
 
         <.form
           :if={!@user.confirmed_at}
           for={@form}
           id="confirmation_form"
+          class="stack gap-3"
           phx-mounted={JS.focus_first()}
           phx-submit="submit"
           action={~p"/users/log-in?_action=confirmed"}
@@ -28,14 +45,14 @@ defmodule LeitorWeb.UserLive.Confirmation do
             name={@form[:remember_me].name}
             value="true"
             phx-disable-with="Confirming..."
-            class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+            class="action action-primary w-full"
           >
             Confirm and stay logged in
           </.button>
           <.button
             id="confirm-submit"
             phx-disable-with="Confirming..."
-            class="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+            class="action w-full"
           >
             Confirm and log in only this time
           </.button>
@@ -45,6 +62,7 @@ defmodule LeitorWeb.UserLive.Confirmation do
           :if={@user.confirmed_at}
           for={@form}
           id="login_form"
+          class="stack gap-3"
           phx-submit="submit"
           phx-mounted={JS.focus_first()}
           action={~p"/users/log-in"}
@@ -55,7 +73,7 @@ defmodule LeitorWeb.UserLive.Confirmation do
             <.button
               id="confirm-session-submit"
               phx-disable-with="Logging in..."
-              class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+              class="action action-primary w-full"
             >
               Log in
             </.button>
@@ -65,20 +83,24 @@ defmodule LeitorWeb.UserLive.Confirmation do
               name={@form[:remember_me].name}
               value="true"
               phx-disable-with="Logging in..."
-              class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+              class="action action-primary w-full"
             >
               Keep me logged in on this device
             </.button>
             <.button
               id="login-once-submit"
               phx-disable-with="Logging in..."
-              class="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+              class="action w-full"
             >
               Log me in only this time
             </.button>
           <% end %>
         </.form>
-      </div>
+        <p :if={!@current_scope} class="muted text-sm">
+          On a shared device, choose to log in only this time.
+        </p>
+        <.link navigate={~p"/read"} class="text-link text-sm">Keep reading without an account</.link>
+      </StudyComponents.auth_shell>
     </Layouts.app>
     """
   end

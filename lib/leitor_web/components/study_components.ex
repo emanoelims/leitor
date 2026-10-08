@@ -2,6 +2,24 @@ defmodule LeitorWeb.StudyComponents do
   @moduledoc false
   use LeitorWeb, :html
 
+  @doc "Shares the visual frame of email sign-in and magic-link confirmation."
+  slot :inner_block, required: true
+
+  def auth_shell(assigns) do
+    ~H"""
+    <div class="auth-grid auth-page">
+      <div>
+        <p class="eyebrow">Keep a little of what you learn.</p>
+        <h1 class="hero-title">A sentence today.<br />Your story tomorrow.</h1>
+        <p class="muted heading-subtitle">
+          Save words, revisit mistakes, and see your English grow. Reading is always open to everyone.
+        </p>
+      </div>
+      <section class="auth-card stack">{render_slot(@inner_block)}</section>
+    </div>
+    """
+  end
+
   @doc "Renders the fixed reading and writing toolbar with caller-owned controls."
   attr :id, :string, required: true
   attr :label, :string, required: true

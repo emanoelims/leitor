@@ -6,7 +6,7 @@ pattern =
 unless Regex.match?(pattern, title) do
   IO.puts(
     :stderr,
-    "Título inválido. Use Conventional Commits, por exemplo: feat(reader): adicionar busca"
+    "Invalid title. Use Conventional Commits, for example: feat(reader): add search"
   )
 
   System.halt(1)

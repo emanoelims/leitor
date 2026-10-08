@@ -1,12 +1,13 @@
 # Changelog
 
-As versões seguem [SemVer](https://semver.org/). Registre aqui as mudanças
-visíveis aos usuários e as instruções de migração antes de cada release.
+Versions follow [SemVer](https://semver.org/). Record user-visible changes
+and migration instructions here before each release.
 
-## Não lançado
+## Unreleased
 
-### Desenvolvimento
+### Development
 
-- Convenções de contribuição, Conventional Commits e política de releases.
-- CI para formatação, compilação, testes, títulos de PR e versões de tags.
-- Configuração de ferramentas e tarefas com mise, compartilhada com o CI.
+- Contribution guidelines, Conventional Commits, and release policy.
+- CI for formatting, compilation, tests, PR titles, and release tag versions.
+- Mise tool configuration and tasks shared with CI.
+- Elixir 1.20.4 built for OTP 29, with Erlang updates limited to the 29 series.

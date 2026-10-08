@@ -1,79 +1,82 @@
-# Contribuindo
+# Contributing
 
-Use Elixir da série `1.20` e Erlang/OTP da série `29`, configurados em
-`mise.toml`. O mise permite atualizações dentro dessas séries; execute
-`mise upgrade` para atualizar as instalações locais. Execute `mise install`,
-depois `mise run setup`. Para iniciar o Phoenix, use `mise run dev`. Antes de
-abrir um PR, execute `mise run precommit` (executa `mix precommit`).
+Use Elixir `1.20.4-otp-29` and Erlang/OTP `29`, as configured in `mise.toml`.
+Elixir is pinned to a specific release built for OTP 29. Erlang can receive
+updates within the 29 series through `mise upgrade erlang`. Update the Elixir
+pin explicitly when adopting a new release.
 
-As tarefas do mise usam automaticamente as ferramentas configuradas. Para
-comandos avulsos, use `mise exec -- mix <tarefa>`. Consulte a
-[documentação do mise](https://mise.jdx.dev/getting-started.html) para instalação
-e ativação no shell.
+Run `mise install`, then `mise run setup`. Start Phoenix with `mise run dev`.
+Before opening a PR, run `mise run precommit`, which executes `mix precommit`.
+Mise tasks automatically use the configured tools. For individual commands,
+use `mise exec -- mix <task>`. See the
+[mise documentation](https://mise.jdx.dev/getting-started.html) for installation
+and shell activation.
 
-## Branches e revisão
+## Branches and review
 
-Crie uma branch como `feat/busca`, `fix/leitura` ou `docs/instalacao` e abra um PR
-para `main`. Colaboradores precisam de uma aprovação e discussões resolvidas;
-novos commits invalidam aprovações. A `main` não permite exclusão nem force push.
-Administradores têm exceção à exigência de PR e revisão.
+Create a branch such as `feat/search`, `fix/reader`, or `docs/setup` and open a
+PR against `main`. Contributors need one approval and resolved discussions.
+New commits dismiss previous approvals. Deletion and force pushes are blocked
+on `main`. Administrators can bypass PR, review, and status check requirements.
 
-O merge usa squash: o título do PR vira o commit na `main`. Mantenha o título
-atualizado e espere os checks `Conventions` e `Elixir checks` passarem.
+Merges use squash: the PR title becomes the commit subject on `main`. Keep the
+title up to date and wait for `Conventions` and `Elixir checks` to pass.
 
 ## Conventional Commits
 
-Use `<tipo>[escopo opcional][!]: <descrição>` nos commits e no título do PR.
-Tipos permitidos: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
-`build`, `ci`, `chore` e `revert`. O escopo usa letras minúsculas, números,
-ponto, hífen, sublinhado ou barra. A descrição pode ser em português.
+Use `<type>[optional scope][!]: <description>` for commit subjects and PR titles.
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
+`build`, `ci`, `chore`, and `revert`. Scopes use lowercase letters, numbers,
+periods, hyphens, underscores, or slashes. Write descriptions, documentation,
+and developer-facing messages in English.
 
-Exemplos:
+Examples:
 
-- `feat(reader): adicionar busca`
-- `fix(reader): preservar posição de leitura`
-- `ci: validar os padrões do projeto`
-- `feat(api)!: alterar formato de resposta`
+- `feat(reader): add search`
+- `fix(reader): preserve reading position`
+- `ci: validate project conventions`
+- `feat(api)!: change response format`
 
-Para mudanças incompatíveis, use `!` no título do PR e descreva a migração no
-corpo com `BREAKING CHANGE: ...`. Isso preserva a sinalização no squash.
+For incompatible changes, use `!` in the PR title and explain the migration
+in the body with `BREAKING CHANGE: ...`. This preserves the signal during squash.
 
-## Versionamento semântico
+## Semantic versioning
 
-A fonte da versão é `version` em `mix.exs`, no formato `MAJOR.MINOR.PATCH`.
+The version source is `version` in `mix.exs`, using `MAJOR.MINOR.PATCH`.
 
-- `fix`: incremento PATCH (por exemplo, `1.2.0` → `1.2.1`).
-- `feat` compatível: incremento MINOR (`1.2.0` → `1.3.0`).
-- Mudança incompatível: incremento MAJOR (`1.2.0` → `2.0.0`).
-- Outros tipos não exigem release por si só; avalie o impacto público.
+- `fix`: increment PATCH, for example `1.2.0` → `1.2.1`.
+- Backward-compatible `feat`: increment MINOR, for example `1.2.0` → `1.3.0`.
+- Incompatible change: increment MAJOR, for example `1.2.0` → `2.0.0`.
+- Other types do not require a release by themselves; assess the public impact.
 
-Durante `0.x`, o projeto é experimental: nossa política é incrementar MINOR
-para funcionalidades e mudanças incompatíveis e PATCH para correções.
-A primeira versão com compromisso de estabilidade será `1.0.0`.
+During `0.x`, the project is experimental. Our policy is to increment MINOR
+for features and incompatible changes, and PATCH for fixes. The first release
+with a stability commitment will be `1.0.0`.
 
-Para uma release, abra um PR `chore(release): preparar X.Y.Z`, atualize
-`mix.exs` e registre mudanças e migrações em `CHANGELOG.md`. Após o merge e CI
-verde na `main`, crie a tag `vX.Y.Z` no commit correspondente. O CI confere se
-a tag corresponde exatamente ao `mix.exs`. Pré-releases podem usar
-`X.Y.Z-rc.1`. O incremento é revisado manualmente; não há publicação automática.
+For a release, open a PR titled `chore(release): prepare X.Y.Z`, update
+`mix.exs`, and record changes and migrations in `CHANGELOG.md`. After merging
+and passing CI on `main`, create tag `vX.Y.Z` at the corresponding commit.
+CI checks that the tag matches `mix.exs` exactly. Prereleases may use
+`X.Y.Z-rc.1`. Version increments are reviewed manually; publishing is not automated.
 
-## Elixir e Phoenix
+## Elixir and Phoenix
 
-Siga `AGENTS.md`, o formatador configurado em `.formatter.exs` e as convenções
-oficiais: módulos em `CamelCase`, funções e variáveis em `snake_case`, predicados
-com `?`, funções que levantam exceções com `!` quando houver essa convenção de API.
-Use contextos Phoenix para lógica de negócio e preserve a separação da camada web.
-O CI exige formatação, compilação sem warnings, ausência de dependências não
-utilizadas no lockfile e testes passando. Não adicionamos ferramentas ou
-dependências de análise sem uma necessidade concreta.
+Follow `AGENTS.md`, the formatter configured in `.formatter.exs`, and official
+conventions: `CamelCase` modules, `snake_case` functions and variables, predicates
+ending in `?`, and functions ending in `!` for raising variants where applicable.
+Use Phoenix contexts for business logic and keep it separate from the web layer.
+CI requires formatting, compilation without project warnings, no unused lockfile
+dependencies, and passing tests. Add analysis tools or dependencies only when
+there is a concrete need.
 
-Referências:
+References:
 
 - [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - [SemVer 2.0](https://semver.org/)
-- [Version do Elixir](https://hexdocs.pm/elixir/Version.html)
-- [Convenções de nomes do Elixir](https://hexdocs.pm/elixir/naming-conventions.html)
-- [Diretrizes para bibliotecas Elixir](https://hexdocs.pm/elixir/library-guidelines.html)
+- [Elixir Version](https://hexdocs.pm/elixir/Version.html)
+- [Elixir naming conventions](https://hexdocs.pm/elixir/naming-conventions.html)
+- [Elixir library guidelines](https://hexdocs.pm/elixir/library-guidelines.html)
+- [Elixir builds in mise](https://mise.jdx.dev/lang/elixir.html)
 
-As diretrizes para bibliotecas servem como referência; este projeto é uma
-aplicação Phoenix e não um pacote publicado no Hex.
+Library guidelines are a reference; this project is a Phoenix application,
+not a package published on Hex.

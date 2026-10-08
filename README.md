@@ -17,7 +17,7 @@ Ready to run in production? Please [check our deployment guides](https://phoenix
 * Forum: https://elixirforum.com/c/phoenix-forum
 * Source: https://github.com/phoenixframework/phoenix
 
-## Contribuições
+## Contributing
 
-Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para regras de PR, Conventional
-Commits, versionamento semântico e verificações de Elixir/Phoenix.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for PR rules, Conventional Commits,
+semantic versioning, and Elixir/Phoenix checks.

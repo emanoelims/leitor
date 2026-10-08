@@ -7,9 +7,9 @@ if System.get_env("GITHUB_REF_TYPE") == "tag" do
   tag = System.fetch_env!("GITHUB_REF_NAME")
 
   unless tag == "v#{version}" do
-    IO.puts(:stderr, "A tag #{tag} deve corresponder à versão v#{version} de mix.exs")
+    IO.puts(:stderr, "Tag #{tag} must match version v#{version} from mix.exs")
     System.halt(1)
   end
 end
 
-IO.puts("Versão válida: #{version}")
+IO.puts("Valid version: #{version}")

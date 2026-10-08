@@ -1,10 +1,10 @@
-## Mudança
+## Change
 
-Descreva o problema e o comportamento resultante.
+Describe the problem and resulting behavior.
 
-## Validação
+## Validation
 
-- [ ] Executei `mix precommit`.
-- [ ] O título segue Conventional Commits.
-- [ ] Documentei mudanças incompatíveis e migração, quando necessário.
-- [ ] Atualizei versão e changelog, se este PR prepara uma release.
+- [ ] Ran `mix precommit`.
+- [ ] The title follows Conventional Commits.
+- [ ] Documented incompatible changes and migration steps, where applicable.
+- [ ] Updated the version and changelog if this PR prepares a release.

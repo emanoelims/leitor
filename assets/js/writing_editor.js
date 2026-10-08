@@ -150,13 +150,20 @@ export const WritingEditor = {
     const selected = this.visible[this.selected]
     if (selected) {
       this.editor.view.dom.setAttribute("aria-activedescendant", selected.id)
-      selected.scrollIntoView({block: "nearest"})
+      const top = selected.offsetTop
+      const bottom = top + selected.offsetHeight
+      if (top < this.menu.scrollTop) this.menu.scrollTop = top
+      else if (bottom > this.menu.scrollTop + this.menu.clientHeight) this.menu.scrollTop = bottom - this.menu.clientHeight
     } else this.editor.view.dom.removeAttribute("aria-activedescendant")
   },
   positionMenu() {
     if (this.menu.hidden || this.editor.isDestroyed) return
     const rect = this.editor.view.coordsAtPos(this.editor.state.selection.from)
-    const reference = {getBoundingClientRect: () => ({...rect, x: rect.left, y: rect.top, width: rect.right - rect.left, height: rect.bottom - rect.top})}
+    const reference = {
+      contextElement: this.editor.view.dom,
+      // DOMRect coordinates are prototype getters, so spreading rect loses them.
+      getBoundingClientRect: () => new DOMRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+    }
     computePosition(reference, this.menu, {strategy: "fixed", placement: "bottom-start", middleware: [offset(8), flip(), shift({padding: 12})]})
       .then(({x, y}) => { if (!this.menu.hidden) Object.assign(this.menu.style, {left: `${x}px`, top: `${y}px`}) })
   },

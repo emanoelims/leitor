@@ -2486,9 +2486,10 @@ audio {
 .writing-block-menu { position:fixed; z-index:80; width:min(280px, calc(100vw - 24px)); max-height:min(420px, 60dvh); overflow:auto; padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--paper); box-shadow:0 12px 40px #0002; font-size:13px; }
 .writing-block-menu[hidden],.writing-block-menu button[hidden] { display:none; }
 .writing-block-menu .eyebrow { padding:5px 8px 8px; }
-.writing-block-menu button { display:flex; align-items:center; gap:10px; width:100%; padding:8px; border-radius:6px; text-align:left; }
+.writing-block-menu button { display:grid; grid-template-columns:16px minmax(0,1fr) auto; align-items:center; gap:10px; width:100%; padding:8px; border-radius:6px; text-align:left; }
 .writing-block-menu button[aria-selected="true"],.writing-block-menu button:hover { background:var(--card); }
-.writing-block-menu button span { flex:1; }
+.writing-block-menu button > span:first-child { width:16px; height:16px; }
+.writing-block-menu button > span:nth-child(2) { min-width:0; }
 .writing-block-menu small { color:var(--muted); font-family:monospace; }
 .writing-block-help { font-size:10px; color:var(--muted); padding:8px 6px 2px; }
 #writing-preview-toggle[aria-pressed="true"] { color:var(--accent); background:var(--card); }

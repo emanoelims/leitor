@@ -121,3 +121,33 @@ test("legacy drafts keep literal Markdown, including long escaped content", asyn
   await expect(editor.locator("strong, em, hr")).toHaveCount(0)
   await expect(page.locator("#writing_text")).toHaveValue(legacy)
 })
+
+
+test("slash menu aligns its columns and stays anchored without scrolling the page", async ({page}) => {
+  const editor = page.getByRole("textbox", {name: "Your English text", exact: true})
+  await editor.pressSequentially("/")
+  const menu = page.locator("#writing-block-menu")
+  await expect(menu).toBeVisible()
+  const rows = await menu.locator("[data-command]").evaluateAll(items => items.map(item => {
+    const [icon, label, shortcut] = item.children
+    return {icon: icon.getBoundingClientRect().toJSON(), label: label.getBoundingClientRect().toJSON(), shortcut: shortcut.getBoundingClientRect().toJSON()}
+  }))
+  for (const row of rows) {
+    expect(row.icon.width).toBe(16)
+    expect(row.label.x - row.icon.right).toBe(10)
+    expect(Math.abs(row.label.x - rows[0].label.x)).toBeLessThan(1)
+  }
+  const caret = await editor.evaluate(() => window.getSelection().getRangeAt(0).getBoundingClientRect().toJSON())
+  await expect.poll(async () => Math.abs((await menu.boundingBox()).x - caret.x)).toBeLessThan(2)
+  await expect.poll(async () => Math.abs((await menu.boundingBox()).y - caret.bottom - 8)).toBeLessThan(2)
+  const scroll = await page.evaluate(() => window.scrollY)
+  for (let i = 0; i < 9; i++) await editor.press("ArrowDown")
+  expect(await page.evaluate(() => window.scrollY)).toBe(scroll)
+  await page.screenshot({path: "../tmp/writing-slash-desktop.png"})
+  await page.setViewportSize({width: 320, height: 740})
+  await expect.poll(async () => {
+    const box = await menu.boundingBox()
+    return box.x >= 11 && box.x + box.width <= 309 && box.y >= 0 && box.y + box.height <= 740
+  }).toBe(true)
+  await page.screenshot({path: "../tmp/writing-slash-mobile.png"})
+})

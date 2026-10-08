@@ -2,6 +2,24 @@ defmodule LeitorWeb.StudyComponents do
   @moduledoc false
   use LeitorWeb, :html
 
+  @doc "Renders the fixed reading and writing toolbar with caller-owned controls."
+  attr :id, :string, required: true
+  attr :label, :string, required: true
+  attr :fixed, :boolean, default: true
+  slot :inner_block, required: true
+
+  def reading_toolbar(assigns) do
+    ~H"""
+    <nav
+      id={@id}
+      class={["reader-dock study-toolbar", @fixed && "study-toolbar-fixed"]}
+      aria-label={@label}
+    >
+      {render_slot(@inner_block)}
+    </nav>
+    """
+  end
+
   attr :eyebrow, :string, default: nil
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil

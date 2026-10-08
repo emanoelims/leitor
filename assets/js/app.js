@@ -24,6 +24,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/leitor"
 import {ReaderKeyboard, ShadowingRecorder, WritingQuestion} from "./study_hooks"
+import {WritingEditor} from "./writing_editor"
 import {Floating} from "./floating"
 import topbar from "../vendor/topbar"
 
@@ -31,7 +32,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, Floating, ReaderKeyboard, ShadowingRecorder, WritingQuestion},
+  hooks: {...colocatedHooks, Floating, WritingEditor, ReaderKeyboard, ShadowingRecorder, WritingQuestion},
 })
 
 // Show progress bar on live navigation and form submits

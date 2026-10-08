@@ -302,7 +302,7 @@
       <div :if={@answer} id="tutor-answer" class="tutor-answer" role="status">
         <p class="eyebrow">About this sentence</p><p>{@answer}</p>
       </div>
-      <nav id="reading-toolbar" class="reader-dock" aria-label="Reading controls">
+      <StudyComponents.reading_toolbar id="reading-toolbar" label="Reading controls">
         <details
           id="reader-more"
           class="reader-more"
@@ -397,7 +397,7 @@
           name="hero-arrow-right"
           class="size-4"
         /></span></button>
-      </nav>
+      </StudyComponents.reading_toolbar>
       <p class="reader-note sr-only">
         ← → to move · Esc to close · Tutor responses use AI and can make mistakes.
       </p>

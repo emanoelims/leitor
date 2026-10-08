@@ -66,6 +66,18 @@ defmodule LeitorWeb.ComponentGalleryLive do
           <.link navigate={~p"/read"} class="action">Read a sentence</.link>
         </StudyComponents.empty_state>
       </div>
+      <section class="card stack mt-8">
+        <h2>Reading and writing toolbar</h2>
+        <StudyComponents.reading_toolbar
+          id="gallery-toolbar"
+          label="Example writing tools"
+          fixed={false}
+        >
+          <button class="icon-button" aria-label="History"><.icon name="hero-clock" class="size-5" /></button>
+          <span class="dock-question muted">Ask about this paragraph…</span>
+          <button class="action action-primary">Review</button>
+        </StudyComponents.reading_toolbar>
+      </section>
       <StudyComponents.dialog
         :if={@dialog?}
         id="gallery-dialog"

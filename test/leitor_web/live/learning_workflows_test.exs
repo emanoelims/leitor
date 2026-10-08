@@ -71,13 +71,52 @@ defmodule LeitorWeb.LearningWorkflowsTest do
     assert [%{kind: "writing"}] = Learning.recent_attempts(scope)
     view |> element("#review-correction-0") |> render_click()
     assert [%{term: "went", category: "error"}] = Learning.list_entries(scope)
-    view |> element("#apply-correction") |> render_click()
+    render_hook(view, "apply", %{})
     assert has_element?(view, "textarea", "She went to school yesterday.")
     render_submit(view, "save", %{"writing" => %{"text" => "My draft"}})
     assert length(Learning.recent_attempts(scope)) == 2
     view |> form("#writing-form", writing: %{text: "unavailable"}) |> render_submit()
     assert render_async(view) =~ "Your text is preserved"
     assert has_element?(view, "textarea", "unavailable")
+  end
+
+  test "paragraph feedback preserves adjacent text, blank lines and Unicode", %{conn: conn, scope: scope} do
+    text = "Café by the river.\n\nShe go to school yesterday.\nA quiet evening."
+    {:ok, view, _} = live(conn, ~p"/write")
+    render_hook(view, "paragraph", %{"index" => 1})
+    view |> form("#writing-form", writing: %{text: text, paragraph: "1"}) |> render_submit()
+    assert render_async(view) =~ "Paragraph 2"
+    assert [%{content: ^text, result: %{"paragraph_index" => 1}}] = Learning.recent_attempts(scope)
+    updated = String.replace(text, "A quiet evening.", "An edited evening.")
+    render_hook(view, "apply", %{"text" => updated})
+
+    assert_push_event(view, "writing-applied", %{
+      text: "Café by the river.\n\nShe went to school yesterday.\nAn edited evening.",
+      index: 1
+    })
+
+    assert has_element?(view, "#writing_text", "An edited evening.")
+  end
+
+  test "stale feedback never replaces a paragraph edited after requesting review", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    view |> form("#writing-form", writing: %{text: "She go to school yesterday."}) |> render_submit()
+    render_async(view)
+    assert render_hook(view, "apply", %{"text" => "She visited her sister."}) =~ "This paragraph has changed"
+    assert has_element?(view, "#writing_text", "She visited her sister.")
+    refute has_element?(view, "#writing-feedback")
+  end
+
+  test "review and tutor requests use only the selected paragraph", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/write")
+    text = "unavailable\nShe go to school yesterday."
+    render_hook(view, "paragraph", %{"index" => 1})
+    view |> form("#writing-form", writing: %{text: text, paragraph: "1"}) |> render_submit()
+    assert render_async(view) =~ "Use the simple past"
+    render_submit(view, "ask", %{"tutor" => %{"text" => text, "paragraph" => "1", "question" => "Why?"}})
+    assert render_async(view) =~ "Yesterday calls for the simple past."
+    render_submit(view, "ask", %{"tutor" => %{"text" => "", "question" => "Why?"}})
+    assert render(view) =~ "Write some text"
   end
 
   test "dictation compares actual words, rewrite uses the tutor, shadowing saves only practice time", %{

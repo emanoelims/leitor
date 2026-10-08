@@ -2022,7 +2022,7 @@ audio {
   line-height:1.5;
   letter-spacing:-.02em
 }
-.writing-page:has(.essay-input) .fieldset>label {
+.writing-document .fieldset>label>.field-label {
   position:absolute;
   width:1px;
   height:1px;
@@ -2386,3 +2386,37 @@ audio {
 
 /* Floating UI owns panel coordinates; LiveView owns their content. */
 .floating-panel { position:fixed; inset:auto; top:0; left:0; overflow-y:auto; overscroll-behavior:contain; max-width:calc(100vw - 24px); }
+
+/* A shared dock and a continuous, paragraph-aware writing surface. */
+.study-toolbar-fixed { position:fixed; left:50%; transform:translateX(-50%); bottom:max(20px,env(safe-area-inset-bottom)); width:min(720px,calc(100% - 32px)); max-width:none; z-index:30; }
+.writing-page { max-width:1080px; padding-top:56px; padding-bottom:150px; gap:28px; }
+.writing-prompt { gap:8px 14px; }
+.writing-prompt .eyebrow { margin:0; flex-shrink:0; }
+.writing-prompt p { font-size:15px; }
+.writing-document { width:100%; max-width:840px; margin:12px auto 0; }
+.writing-document .essay-input { resize:none; min-height:380px; overflow:hidden; font-size:clamp(24px,2.5vw,34px); line-height:1.65; letter-spacing:-.02em; padding:12px 4px; outline-offset:8px; }
+.writing-document .essay-input::placeholder { color:var(--muted); opacity:.65; }
+.writing-status { color:var(--muted); font-size:12px; gap:10px; max-width:840px; width:100%; margin:auto; }
+.writing-status p { margin:0; }
+.writing-privacy { color:var(--muted); font-size:12px; }
+.writing-history { border-top:1px solid var(--line); padding-top:20px; }
+.writing-history>summary { cursor:pointer; width:fit-content; }
+.writing-history[open] .practice-results { margin-top:20px; }
+.writing-suggestion { padding:24px; background:var(--card); border:1px solid var(--line); border-radius:22px; white-space:pre-wrap; }
+.writing-suggestion .action { align-self:flex-start; }
+.writing-page .tutor-answer { position:fixed; bottom:96px; left:50%; transform:translateX(-50%); width:min(640px,calc(100% - 32px)); max-height:45vh; overflow:auto; z-index:29; }
+@media(max-width:640px) {
+  .writing-page { padding:32px 20px 130px; gap:24px; }
+  .writing-document { margin-top:0; }
+  .writing-document .essay-input { min-height:340px; font-size:24px; }
+  .study-toolbar-fixed { bottom:max(12px,env(safe-area-inset-bottom)); width:calc(100% - 24px); gap:2px; }
+  .study-toolbar>.icon-button { width:36px; }
+  .study-toolbar>.action { padding-left:12px; gap:6px; }
+  .study-toolbar .dock-question>.hero-sparkles { display:none; }
+  .study-toolbar .dock-input { font-size:13px; }
+}
+@media(max-width:380px) {
+  .study-toolbar .toolbar-action-label { display:none; }
+  .study-toolbar>.action { padding:0 7px; }
+  .study-toolbar .dock-question { padding-left:12px; gap:4px; }
+}

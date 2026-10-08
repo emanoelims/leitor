@@ -160,3 +160,15 @@ Automatic updates run while open and are cleaned up on close or destruction,
 following [Floating UI's lifecycle guidance](https://floating-ui.com/docs/autoUpdate).
 Native disclosure keyboard behavior and Phoenix JS handle opening, Escape
 and outside clicks.
+
+### Paragraph writing
+
+Writing uses a continuous plain-text editor. Enter starts a paragraph; blank
+lines are preserved but do not count as paragraphs. The cursor selects the
+paragraph sent to the tutor for questions and feedback. Applying a suggestion
+replaces only that paragraph, preserving the surrounding text and line breaks.
+Changed paragraphs must be reviewed again before a suggestion can be applied.
+Save the entire document with Save draft or Cmd/Ctrl+S; previous drafts and
+feedback are available from the toolbar's history button. Reading and writing
+share the `StudyComponents.reading_toolbar/1` function component, also shown
+in `/dev/componentes`.

@@ -13,6 +13,12 @@ defmodule LeitorWeb.WritingLive do
        page_title: "Writing",
        form: to_form(%{"text" => ""}, as: :writing),
        feedback: nil,
+       feedback_text: nil,
+       feedback_index: 0,
+       active_paragraph: 0,
+       paragraph_count: 1,
+       word_count: 0,
+       save_status: "Not saved yet",
        answer: nil,
        asking: false,
        question_form: to_form(%{"question" => ""}, as: :tutor),
@@ -26,35 +32,49 @@ defmodule LeitorWeb.WritingLive do
   end
 
   @impl true
+  def handle_event("edit", %{"writing" => %{"text" => text}}, socket) do
+    {:noreply, socket |> editor(text) |> assign(save_status: "Unsaved changes")}
+  end
+
+  def handle_event("paragraph", %{"index" => index}, socket) when is_integer(index) and index >= 0,
+    do: {:noreply, assign(socket, active_paragraph: index)}
+
   def handle_event("feedback", %{"intent" => "save"} = params, socket), do: handle_event("save", params, socket)
 
-  def handle_event("feedback", %{"writing" => %{"text" => text}}, socket) do
-    text = String.trim(text)
+  def handle_event("feedback", %{"writing" => %{"text" => text} = attrs}, socket) do
+    index = paragraph_index(attrs, socket)
+    paragraph = Enum.at(paragraphs(text), index)
 
     cond do
       socket.assigns.busy ->
         {:noreply, socket}
 
-      text == "" or String.length(text) > 10_000 ->
+      is_nil(paragraph) or String.length(text) > 10_000 ->
         {:noreply, put_flash(socket, :error, "Write between 1 and 10,000 characters.")}
 
       true ->
         {:noreply,
          socket
-         |> assign(busy: true, feedback: nil, form: to_form(%{"text" => text}, as: :writing))
-         |> start_async(:feedback, fn -> Language.feedback(text) end)}
+         |> editor(text)
+         |> assign(busy: true, feedback: nil, feedback_text: text, feedback_index: index)
+         |> start_async(:feedback, fn -> Language.feedback(paragraph.text) end)}
     end
   end
 
   def handle_event("save", %{"writing" => %{"text" => text}}, socket) do
     case Learning.create_attempt(socket.assigns.current_scope, %{
            kind: "draft",
-           content: String.trim(text),
+           content: text,
            result: %{},
            duration: elapsed(socket)
          }) do
       {:ok, attempt} ->
-        {:noreply, socket |> stream_insert(:drafts, attempt, at: 0, limit: 50) |> put_flash(:info, "Draft saved.")}
+        {:noreply,
+         socket
+         |> editor(text)
+         |> assign(save_status: "Draft saved")
+         |> stream_insert(:drafts, attempt, at: 0, limit: 50)
+         |> put_flash(:info, "Draft saved.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Write something first, up to 10,000 characters.")}
@@ -64,24 +84,65 @@ defmodule LeitorWeb.WritingLive do
   def handle_event("load", %{"id" => id}, socket) do
     attempt = Learning.get_attempt!(socket.assigns.current_scope, id)
 
+    feedback =
+      if attempt.kind == "writing" &&
+           (Map.has_key?(attempt.result, "paragraph_index") || length(paragraphs(attempt.content)) == 1),
+         do: attempt.result
+
     {:noreply,
      socket
      |> cancel_async(:feedback)
      |> cancel_async(:question)
-     |> assign(answer: nil, asking: false)
+     |> editor(attempt.content)
      |> assign(
-       form: to_form(%{"text" => attempt.content}, as: :writing),
-       feedback: if(attempt.kind == "writing", do: attempt.result),
+       answer: nil,
+       asking: false,
+       feedback: feedback,
+       feedback_text: attempt.content,
+       feedback_index: Map.get(attempt.result, "paragraph_index", 0),
+       active_paragraph: 0,
+       save_status: "Draft loaded",
        busy: false
-     )}
+     )
+     |> push_event("writing-loaded", %{text: attempt.content})}
   end
 
-  def handle_event("apply", _params, %{assigns: %{feedback: %{"corrected" => corrected}}} = socket),
-    do: {:noreply, assign(socket, form: to_form(%{"text" => corrected}, as: :writing), feedback: nil)}
+  def handle_event("apply", params, %{assigns: %{feedback: %{"corrected" => corrected}}} = socket) do
+    text = Map.get(params, "text", socket.assigns.form[:text].value)
+    index = socket.assigns.feedback_index
+    current = Enum.at(paragraphs(text), index)
+    original = Enum.at(paragraphs(socket.assigns.feedback_text), index)
 
-  def handle_event("review", %{"index" => index}, socket) do
-    with {i, ""} <- Integer.parse(index),
-         %{"to" => term, "explanation" => meaning} <- Enum.at(socket.assigns.feedback["issues"], i),
+    if current && original && current.text == original.text &&
+         length(paragraphs(text)) == length(paragraphs(socket.assigns.feedback_text)) do
+      updated =
+        binary_part(text, 0, current.start) <>
+          corrected <>
+          binary_part(text, current.start + current.length, byte_size(text) - current.start - current.length)
+
+      if String.length(updated) <= 10_000 do
+        {:noreply,
+         socket
+         |> editor(updated)
+         |> assign(feedback: nil, save_status: "Unsaved changes")
+         |> push_event("writing-applied", %{text: updated, index: index})}
+      else
+        {:noreply, put_flash(socket, :error, "This version exceeds the 10,000 character limit.")}
+      end
+    else
+      {:noreply,
+       socket
+       |> editor(text)
+       |> assign(feedback: nil)
+       |> put_flash(:info, "This paragraph has changed. Review it again before applying a suggestion.")}
+    end
+  end
+
+  def handle_event("apply", _params, socket), do: {:noreply, socket}
+
+  def handle_event("review", %{"index" => index}, %{assigns: %{feedback: %{"issues" => issues}}} = socket) do
+    with {i, ""} when i >= 0 <- Integer.parse(index),
+         %{"to" => term, "explanation" => meaning} <- Enum.at(issues, i),
          {:ok, _entry} <-
            Learning.save_word(socket.assigns.current_scope, %{
              term: term,
@@ -95,16 +156,20 @@ defmodule LeitorWeb.WritingLive do
     end
   end
 
-  def handle_event("ask", %{"tutor" => %{"question" => question, "text" => text}}, socket) do
-    question = String.trim(question)
-    text = String.trim(text)
+  def handle_event("review", _params, socket), do: {:noreply, socket}
 
-    if question != "" and String.length(question) <= 500 and text != "" and String.length(text) <= 10_000 and
+  def handle_event("ask", %{"tutor" => %{"question" => question, "text" => text} = attrs}, socket) do
+    question = String.trim(question)
+    paragraph = Enum.at(paragraphs(text), paragraph_index(attrs, socket))
+
+    if not is_nil(paragraph) and question != "" and String.length(question) <= 500 and text != "" and
+         String.length(text) <= 10_000 and
          !socket.assigns.asking do
       {:noreply,
        socket
-       |> assign(asking: true, answer: nil, form: to_form(%{"text" => text}, as: :writing))
-       |> start_async(:question, fn -> Language.explain(text, question) end)}
+       |> editor(text)
+       |> assign(asking: true, answer: nil)
+       |> start_async(:question, fn -> Language.explain(paragraph.text, question) end)}
     else
       {:noreply, put_flash(socket, :error, "Write some text and a question of up to 500 characters first.")}
     end
@@ -117,8 +182,8 @@ defmodule LeitorWeb.WritingLive do
   def handle_async(:feedback, {:ok, {:ok, feedback}}, socket) do
     case Learning.create_attempt(socket.assigns.current_scope, %{
            kind: "writing",
-           content: socket.assigns.form[:text].value,
-           result: feedback,
+           content: socket.assigns.feedback_text,
+           result: Map.put(feedback, "paragraph_index", socket.assigns.feedback_index),
            duration: elapsed(socket)
          }) do
       {:ok, attempt} ->
@@ -146,6 +211,31 @@ defmodule LeitorWeb.WritingLive do
   def handle_async(:question, _failure, socket),
     do: {:noreply, socket |> assign(asking: false) |> put_flash(:error, "The tutor is unavailable. Please try again.")}
 
+  defp paragraphs(text) do
+    ~r/[^\n]+/u
+    |> Regex.scan(text, return: :index)
+    |> Enum.map(fn [{start, length}] ->
+      %{start: start, length: length, text: binary_part(text, start, length)}
+    end)
+    |> Enum.reject(&(String.trim(&1.text) == ""))
+  end
+
+  defp paragraph_index(attrs, socket) do
+    case Integer.parse(to_string(Map.get(attrs, "paragraph", socket.assigns.active_paragraph))) do
+      {index, ""} when index >= 0 -> index
+      _ -> 0
+    end
+  end
+
+  defp editor(socket, text) do
+    assign(socket,
+      form: to_form(%{"text" => text}, as: :writing),
+      paragraph_count: max(length(paragraphs(text)), 1),
+      word_count: length(String.split(text)),
+      active_paragraph: min(socket.assigns.active_paragraph, max(length(paragraphs(text)) - 1, 0))
+    )
+  end
+
   defp elapsed(socket), do: min(max(System.monotonic_time(:second) - socket.assigns.started_at, 0), 1800)
 
   @impl true
@@ -157,6 +247,7 @@ defmodule LeitorWeb.WritingLive do
       active="write"
       class="page writing-page"
       context_title="Writing"
+      context_detail={"Paragraph #{@active_paragraph + 1} of #{@paragraph_count}"}
     >
       <:header_controls>
         <button
@@ -170,29 +261,51 @@ defmodule LeitorWeb.WritingLive do
         ><.icon name="hero-bookmark" class="size-4" /> Save draft</button>
       </:header_controls>
       <h1 class="sr-only">Writing</h1>
-      <div class="row wrap">
+      <div class="writing-prompt row wrap">
         <span class="eyebrow">Today's prompt</span><p class="muted">
           Describe a small moment that stayed with you.
         </p>
       </div>
-      <.form for={@form} id="writing-form" phx-submit="feedback" class="stack">
+      <.form
+        for={@form}
+        id="writing-form"
+        phx-submit="feedback"
+        phx-change="edit"
+        class="writing-document"
+      >
+        <input
+          id="writing-paragraph"
+          type="hidden"
+          name="writing[paragraph]"
+          value={@active_paragraph}
+        />
         <.input
           field={@form[:text]}
           type="textarea"
           label="Your English text"
           class="essay-input"
-          rows="10"
+          rows="8"
+          phx-hook="WritingEditor"
+          phx-debounce="250"
+          aria-describedby="writing-help"
           maxlength="10000"
           required
           placeholder="Write in English…"
           spellcheck="false"
         />
       </.form>
-      <p class="muted text-sm">
-        Your text is sent to Anthropic when you ask the tutor or request feedback.
-      </p>
+      <div class="writing-status row between wrap">
+        <p id="writing-help">
+          Enter starts a new paragraph. The tutor works on the paragraph under your cursor.
+        </p>
+        <p id="writing-save-status" role="status">{@word_count} words · {@save_status}</p>
+      </div>
       <section :if={@feedback} id="writing-feedback" class="stack" aria-live="polite">
-        <p>{@feedback["summary"]}</p>
+        <div class="row between wrap">
+          <p class="eyebrow">Paragraph {@feedback_index + 1} · Feedback</p><p>
+            {@feedback["summary"]}
+          </p>
+        </div>
         <div class="practice-results">
           <article :for={{issue, index} <- Enum.with_index(@feedback["issues"])} class="card stack">
             <p><del>{issue["from"]}</del> → <strong>{issue["to"]}</strong></p><p class="muted">
@@ -206,15 +319,19 @@ defmodule LeitorWeb.WritingLive do
             >Turn into a review card</button>
           </article>
         </div>
-        <div class="focus-card stack">
+        <div class="writing-suggestion stack">
           <span class="eyebrow">A little more natural</span><p class="text-xl">
             {@feedback["corrected"]}
           </p>
-          <button id="apply-correction" class="action" phx-click="apply">Use this version</button>
+          <button
+            id="apply-correction"
+            class="action"
+            phx-click={JS.dispatch("writing:apply", to: "#writing_text")}
+          >Use this version</button>
           <p :for={alternative <- @feedback["alternatives"]}>{alternative}</p>
         </div>
       </section>
-      <details class="writing-history">
+      <details id="writing-history" class="writing-history">
         <summary>Your writing history</summary>
         <div id="writing-drafts" phx-update="stream" class="practice-results">
           <p id="no-drafts" class="hidden only:block muted">
@@ -232,7 +349,7 @@ defmodule LeitorWeb.WritingLive do
       </details>
       <section :if={@answer || @asking} class="tutor-answer stack" aria-live="polite">
         <div class="row between">
-          <span class="eyebrow">About your text</span><button
+          <span class="eyebrow">About your paragraph</span><button
             class="icon-button"
             phx-click="close-answer"
             aria-label="Close answer"
@@ -240,36 +357,59 @@ defmodule LeitorWeb.WritingLive do
         </div>
         <p>{if @asking, do: "Thinking…", else: @answer}</p>
       </section>
-      <.form
-        for={@question_form}
-        id="writing-question"
-        phx-submit="ask"
-        phx-hook="WritingQuestion"
-        class="reader-dock writing-dock"
-      >
-        <input type="hidden" name="tutor[text]" value="" />
-        <.input
-          field={@question_form[:question]}
-          label="Ask about your text"
-          class="dock-input"
-          placeholder="How do I say… / make it more formal…"
-          maxlength="500"
-          required
-        />
-        <button class="dock-next" disabled={@asking} aria-label="Ask the tutor"><.icon
-          name="hero-arrow-up"
-          class="size-5"
-        /></button>
-        <.button
+      <StudyComponents.reading_toolbar id="writing-toolbar" label="Writing tools">
+        <button
+          id="writing-history-toggle"
+          type="button"
+          class="icon-button"
+          aria-label="Writing history"
+          phx-click={
+            JS.toggle_attribute({"open", ""}, to: "#writing-history")
+            |> JS.focus(to: "#writing-history > summary")
+          }
+        >
+          <.icon name="hero-clock" class="size-5" />
+        </button>
+        <.form
+          for={@question_form}
+          id="writing-question"
+          phx-submit="ask"
+          phx-hook="WritingQuestion"
+          class="dock-question"
+        >
+          <input type="hidden" name="tutor[text]" value="" />
+          <input type="hidden" name="tutor[paragraph]" value={@active_paragraph} />
+          <.icon name="hero-sparkles" class="size-4" />
+          <.input
+            field={@question_form[:question]}
+            id="writing-ask-input"
+            aria-label="Ask about this paragraph"
+            class="dock-input"
+            placeholder="Ask about this paragraph…"
+            maxlength="500"
+            required
+          />
+          <button class="icon-button" disabled={@asking} aria-label="Ask the tutor"><.icon
+            name="hero-arrow-up"
+            class="size-4"
+          /></button>
+        </.form>
+        <button
+          id="review-paragraph"
           type="submit"
           form="writing-form"
           class="action action-primary"
           disabled={@busy}
-          phx-disable-with="Thinking…"
-        >{if @busy,
-          do: "Thinking…",
-          else: "Review my text"} <.icon name="hero-check" class="size-4" /></.button>
-      </.form>
+          aria-label="Review current paragraph"
+          phx-disable-with="Reviewing…"
+        >
+          <span class="toolbar-action-label">{if @busy, do: "Reviewing…", else: "Review"}</span>
+          <span class="dock-arrow"><.icon name="hero-check" class="size-4" /></span>
+        </button>
+      </StudyComponents.reading_toolbar>
+      <p class="writing-privacy">
+        Only the current paragraph is sent to Anthropic when you ask or review.
+      </p>
     </Layouts.app>
     """
   end

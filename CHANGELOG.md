@@ -4,6 +4,16 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-16
+
+### Fixed
+
+- Increase the Fly machine to 1 GB so the first streamed explanation has room
+  for provider initialization alongside the reader and native highlighting
+  runtime. The 512 MB machine was killed by the operating system during use.
+- Include the SCTP runtime library required by the Erlang build, removing the
+  missing `libsctp.so.1` startup warning.
+
 ## [0.2.0] - 2026-10-15
 
 First published release of the page-based reading workspace.

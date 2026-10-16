@@ -1,8 +1,15 @@
 # Production deployment
 
 Leitor runs at [leitor.fly.dev](https://leitor.fly.dev) in the Fly `personal`
-organization, region `gru`. The app uses one shared CPU and 512 MB of memory.
+organization, region `gru`. The app uses one shared CPU and 1 GB of memory.
 One machine stays running; this is an initial single-machine deployment.
+
+Allow headroom for the first ReqLLM request: initializing model metadata and the
+streaming stack creates a transient memory peak in addition to the reader and
+native highlighting runtime. The original 512 MB machine was OOM-killed during
+explanation requests; 1 GB must be preserved on subsequent deploys. A passing
+idle health check alone does not validate this workload. After deployment, test
+a real streamed explanation and confirm that the machine did not restart.
 
 ## Publishing
 

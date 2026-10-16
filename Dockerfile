@@ -32,7 +32,7 @@ RUN mix release
 
 FROM ${RUNNER_IMAGE} AS final
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libstdc++6 openssl libncurses6 locales ca-certificates poppler-utils \
+    libstdc++6 openssl libncurses6 libsctp1 locales ca-certificates poppler-utils \
     && rm -rf /var/lib/apt/lists/* \
     && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 \

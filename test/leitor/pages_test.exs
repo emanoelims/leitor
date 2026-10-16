@@ -27,7 +27,9 @@ defmodule Leitor.PagesTest do
     assert %{total: 0, entries: []} = Pages.notebook(scope, %{text_id: secret.id})
     assert %{total: 0} = Pages.notebook(scope, %{search: "private"})
     assert %{total: 0} = Pages.notebook(scope, %{kind: "highlight"})
-    assert Pages.notebook_sources(scope) == [%{id: second.id, title: second.title}, %{id: first.id, title: first.title}]
+    # PostgreSQL title collation differs across local and CI database locales.
+    assert MapSet.new(Pages.notebook_sources(scope)) ==
+             MapSet.new([%{id: second.id, title: second.title}, %{id: first.id, title: first.title}])
   end
 
   test "the global notebook paginates without dropping entries and clamps empty pages" do

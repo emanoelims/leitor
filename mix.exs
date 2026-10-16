@@ -4,7 +4,7 @@ defmodule Leitor.MixProject do
   def project do
     [
       app: :leitor,
-      version: "0.1.0",
+      version: "0.2.0",
       name: "Leitor",
       source_url: "https://github.com/emanoelims/leitor",
       docs: docs(),
@@ -97,7 +97,14 @@ defmodule Leitor.MixProject do
       main: "readme",
       source_ref: "main",
       formatters: ["html"],
-      extras: ["README.md", "CONTRIBUTING.md", "CHANGELOG.md", "SECURITY.md", "guides/authentication-contracts.md"],
+      extras: [
+        "README.md",
+        "CONTRIBUTING.md",
+        "CHANGELOG.md",
+        "SECURITY.md",
+        "guides/authentication-contracts.md",
+        "guides/deployment.md"
+      ],
       groups_for_modules: [
         Accounts: [Leitor.Accounts, Leitor.Accounts.User, Leitor.Accounts.Scope],
         "Authentication internals": [Leitor.Accounts.UserToken, Leitor.Accounts.UserNotifier],

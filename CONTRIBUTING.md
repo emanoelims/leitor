@@ -73,8 +73,9 @@ CI checks that the tag matches `mix.exs` exactly. Prereleases may use
 `X.Y.Z-rc.1`. Version increments are reviewed manually; publishing is not automated.
 Do not move or reuse release tags. Keep the changelog curated manually using
 Added, Changed, Deprecated, Removed, Fixed, and Security as applicable, omitting
-empty categories. Deployment automation will be defined with the deployment
-target; this application is not published as a Hex package.
+empty categories. Stable published GitHub releases deploy to Fly after CI passes;
+drafts, prereleases, and pushes do not deploy. See the
+[deployment guide](guides/deployment.md). This application is not published as a Hex package.
 
 ## Elixir and Phoenix
 

@@ -11,7 +11,7 @@ defmodule Leitor.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Leitor", "contact@example.com"})
+      |> from(Application.fetch_env!(:leitor, :mail_from))
       |> subject(subject)
       |> text_body(body)
 

@@ -38,7 +38,13 @@ recent authentication through an email link. Page annotations inherit ownership 
 their parent text; browser-supplied quotes and owner IDs are never trusted.
 
 Email delivery is tested through Swoosh's test adapter. These tests do not prove
-production mail delivery. SQL sandbox tests isolate database changes; they do not
+production mail delivery. Production uses Swoosh's Resend adapter with a required
+`RESEND_API_KEY` and verified sender address in `MAIL_FROM`; account emails use
+the configured sender with the Leitor display name. The notifier regression test
+checks the configured sender, recipient, and login URL. Credentials belong in Fly
+secrets, never in source control. The public `/health` API endpoint checks database
+readiness without creating a session or granting access to product screens.
+SQL sandbox tests isolate database changes; they do not
 prove every concurrent token-consumption schedule. No property or fuzz suite is
 claimed by this register.
 

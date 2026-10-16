@@ -18,6 +18,12 @@ defmodule LeitorWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Fly readiness checks do not use browser sessions or authentication.
+  scope "/", LeitorWeb do
+    pipe_through :api
+    get "/health", HealthController, :show
+  end
+
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:leitor, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put

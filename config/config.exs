@@ -37,6 +37,8 @@ config :leitor, LeitorWeb.Endpoint,
   pubsub_server: Leitor.PubSub,
   live_view: [signing_salt: "2kmNEK7H"]
 
+config :leitor, :mail_from, {"Leitor", "contact@example.com"}
+
 config :leitor, :scopes,
   user: [
     default: true,

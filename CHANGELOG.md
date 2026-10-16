@@ -4,6 +4,14 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+### Added
+
+- A Dictionary action in the selection toolbar. Its answer opens in the same
+  margin card as Define and Explain: a Brazilian Portuguese translation chosen
+  from the surrounding passage (DeepL), phonetics when available (Free Dictionary
+  API), and English senses with examples (Wiktionary). The card keeps its meaning
+  and part of speech for word jars. Configure `DEEPL_API_KEY` to enable translations.
+
 ## [0.2.1] - 2026-10-16
 
 ### Fixed

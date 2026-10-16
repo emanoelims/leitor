@@ -3,6 +3,7 @@ defmodule LeitorWeb.PageLive do
   use LeitorWeb, :live_view
 
   alias Leitor.Accounts
+  alias Leitor.Dictionary
   alias Leitor.Language
   alias Leitor.Language.AnswerStream
   alias Leitor.Learning
@@ -296,7 +297,13 @@ defmodule LeitorWeb.PageLive do
     mark = Pages.get_mark!(socket.assigns.current_scope, id)
 
     if !socket.assigns.busy and mark.text_id == socket.assigns.text.id and mark.kind in ["answer", "definition"] do
-      action = if mark.kind == "definition", do: "define", else: "ask"
+      action =
+        cond do
+          mark.question == "Dictionary" -> "dictionary"
+          mark.kind == "definition" -> "define"
+          true -> "ask"
+        end
+
       blocks = socket.assigns.document.blocks
 
       {:noreply,
@@ -315,7 +322,7 @@ defmodule LeitorWeb.PageLive do
          error: nil
        )
        |> refresh_marks()
-       |> start_page_help(action, mark.quote, blocks, mark.question || "Explain")}
+       |> start_help(action, mark.quote, blocks, mark.question || "Explain", mark.block_index)}
     else
       {:noreply, socket}
     end
@@ -323,6 +330,8 @@ defmodule LeitorWeb.PageLive do
 
   def handle_event("selection-mode", %{"mode" => mode}, socket) when mode in ~w(actions note ask pot),
     do: {:noreply, assign(socket, selection_mode: mode)}
+
+  def handle_event("selection-mode", _, socket), do: {:noreply, socket}
 
   def handle_event("highlight", %{"color" => color}, socket) when color in ~w(yellow green blue rose) do
     socket = socket |> assign(marker_color: color) |> push_event("reading-preference", %{key: "marker", value: color})
@@ -440,7 +449,8 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
-  def handle_event("help", %{"action" => action} = params, socket) when action in ~w(define explain simplify ask) do
+  def handle_event("help", %{"action" => action} = params, socket)
+      when action in ~w(define explain simplify ask dictionary) do
     question = String.trim(get_in(params, ["question", "question"]) || "")
 
     cond do
@@ -476,7 +486,7 @@ defmodule LeitorWeb.PageLive do
            to: selection.to_offset,
            block: selection.block_index
          })
-         |> start_page_help(action, selection.quote, document.blocks, question)}
+         |> start_help(action, selection.quote, document.blocks, question, selection.block_index)}
     end
   end
 
@@ -553,7 +563,7 @@ defmodule LeitorWeb.PageLive do
     pending = socket.assigns.pending
 
     attrs = %{
-      kind: if(pending.action == "define", do: "definition", else: "answer"),
+      kind: if(pending.action in ["define", "dictionary"], do: "definition", else: "answer"),
       body: data["answer"],
       meaning: data["meaning"],
       category: data["category"],
@@ -587,6 +597,17 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
+  def handle_async(:help, {:ok, {:error, reason}}, %{assigns: %{pending: pending}} = socket)
+      when pending.action == "dictionary" or
+             (pending.action == "retry" and pending.mark.kind == "definition" and pending.mark.question == "Dictionary") do
+    error =
+      if reason == :not_found,
+        do: "No dictionary entry for this selection. Try a single word.",
+        else: "The dictionary is unavailable right now. Try again in a moment."
+
+    {:noreply, socket |> reset_help_stream() |> assign(busy: false, pending: nil, error: error) |> refresh_marks()}
+  end
+
   def handle_async(:help, _, socket),
     do:
       {:noreply,
@@ -598,6 +619,22 @@ defmodule LeitorWeb.PageLive do
          error: "The tutor couldn’t respond. Your page and annotations are safe. Select the passage to try again."
        )
        |> refresh_marks()}
+
+  defp start_help(socket, "dictionary", quote, blocks, _question, block_index) do
+    context = Enum.at(blocks, block_index, %{text: quote}).text
+
+    socket
+    |> assign(help_stream: nil)
+    |> start_async(:help, fn ->
+      with {:ok, entry} <- Dictionary.lookup(quote, context) do
+        category = entry.meanings |> List.first(%{}) |> Map.get(:part_of_speech) |> Dictionary.jar_category()
+        {:ok, %{"answer" => Dictionary.markdown(entry), "meaning" => entry.translation || "", "category" => category}}
+      end
+    end)
+  end
+
+  defp start_help(socket, action, quote, blocks, question, _block_index),
+    do: start_page_help(socket, action, quote, blocks, question)
 
   defp start_page_help(socket, action, quote, blocks, question, history \\ []) do
     owner = self()
@@ -698,6 +735,7 @@ defmodule LeitorWeb.PageLive do
   end
 
   defp mark_title(%{kind: "note"}), do: "Note"
+  defp mark_title(%{kind: "definition", question: "Dictionary"}), do: "Dictionary"
   defp mark_title(%{kind: "definition"}), do: "Define"
   defp mark_title(%{question: question}) when question in ["Explain", "Simplify"], do: question
   defp mark_title(_), do: "Ask"

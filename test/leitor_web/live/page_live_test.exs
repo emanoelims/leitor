@@ -413,6 +413,76 @@ defmodule LeitorWeb.PageLiveTest do
     assert length(Pages.list_marks(scope, page.id)) == 2
   end
 
+  test "the dictionary answers in a margin card that can be kept in a jar and retried", %{conn: conn, scope: scope} do
+    {:ok, page} = Pages.create_page(scope, %{"title" => "Thoughts", "body" => "A wonderful sentence."})
+    {:ok, view, _} = live(conn, ~p"/pages/#{page.id}")
+    Req.Test.allow(Leitor.Dictionary, self(), view.pid)
+
+    Req.Test.stub(Leitor.Dictionary, fn
+      %{host: "en.wiktionary.org"} = conn ->
+        Req.Test.json(conn, %{
+          "en" => [
+            %{
+              "partOfSpeech" => "Adjective",
+              "definitions" => [
+                %{"definition" => "Tending to excite <i>wonder</i>.", "examples" => ["A wonderful view."]}
+              ]
+            }
+          ]
+        })
+
+      %{host: "api.dictionaryapi.dev"} = conn ->
+        Req.Test.json(conn, [%{"phonetic" => "/ˈwʌndəfəl/"}])
+
+      conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        assert %{"text" => ["wonderful"], "context" => "A wonderful sentence."} = Jason.decode!(body)
+        Req.Test.json(conn, %{"translations" => [%{"text" => "maravilhosa"}]})
+    end)
+
+    render_hook(view, "select", %{"start_block" => 0, "end_block" => 0, "start_offset" => 2, "end_offset" => 11})
+    view |> element("#selection-dictionary") |> render_click()
+    render_async(view)
+
+    assert [%{kind: "definition", question: "Dictionary", meaning: "maravilhosa", category: "adj"} = mark] =
+             Pages.list_marks(scope, page.id)
+
+    card = "#margin_marks-#{mark.id}"
+    assert has_element?(view, "#{card} .page-answer strong", "maravilhosa")
+    assert has_element?(view, "#{card} .page-answer", "/ˈwʌndəfəl/")
+    assert has_element?(view, "#{card} .page-answer em", "adjective")
+    assert has_element?(view, "#{card} .page-answer li", "Tending to excite wonder.")
+    assert has_element?(view, "#{card} footer", "DeepL · Wiktionary")
+
+    view |> element("#{card} .page-collect-word") |> render_click()
+    assert has_element?(view, "#selection-pot-form input[name='pot[meaning]'][value='maravilhosa']")
+    render_submit(view, "save-pot", %{"pot" => %{"meaning" => "maravilhosa", "category" => "adj"}})
+    assert [%{term: "wonderful", meaning: "maravilhosa", category: "adj"}] = Learning.list_entries(scope)
+
+    Req.Test.stub(Leitor.Dictionary, &Plug.Conn.send_resp(&1, 503, ""))
+    render_click(view, "retry-mark", %{"id" => mark.id})
+    render_async(view)
+    assert has_element?(view, "#page-help-error", "dictionary is unavailable")
+    assert [%{meaning: "maravilhosa"}] = Pages.list_marks(scope, page.id)
+  end
+
+  test "the dictionary explains when nothing is found", %{conn: conn, scope: scope} do
+    {:ok, page} = Pages.create_page(scope, %{"title" => "Thoughts", "body" => "A wonderful sentence."})
+    {:ok, view, _} = live(conn, ~p"/pages/#{page.id}")
+    Req.Test.allow(Leitor.Dictionary, self(), view.pid)
+
+    Req.Test.stub(Leitor.Dictionary, fn
+      %{host: "api-free.deepl.com"} = conn -> Req.Test.json(conn, %{"translations" => [%{"text" => "wonderful"}]})
+      conn -> Plug.Conn.send_resp(conn, 404, "")
+    end)
+
+    render_hook(view, "select", %{"start_block" => 0, "end_block" => 0, "start_offset" => 2, "end_offset" => 11})
+    view |> element("#selection-dictionary") |> render_click()
+    render_async(view)
+    assert has_element?(view, "#page-help-error", "No dictionary entry")
+    assert Pages.list_marks(scope, page.id) == []
+  end
+
   test "margin cards open from the source, collapse, keep follow-ups and export the conversation", %{
     conn: conn,
     scope: scope

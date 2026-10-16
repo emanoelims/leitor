@@ -22,6 +22,11 @@ end
 
 config :leitor, LeitorWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "8080"))]
 
+# Optional: contextual dictionary translations. Without it, lookups show English entries only.
+if deepl_api_key = System.get_env("DEEPL_API_KEY") do
+  config :leitor, Leitor.Dictionary, deepl_api_key: deepl_api_key
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :leitor, LeitorWeb.Endpoint,

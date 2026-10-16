@@ -275,7 +275,11 @@
                   (!@help_stream || @help_stream.answer == "")
               } />
               <footer>
-                <span>{if mark.kind == "note", do: gettext("Your note"), else: gettext("Claude")}</span>
+                <span>{cond do
+                  mark.kind == "note" -> gettext("Your note")
+                  mark_title(mark) == "Dictionary" -> "DeepL · Wiktionary"
+                  true -> gettext("Claude")
+                end}</span>
                 <button
                   :if={@busy && @pending && @pending.mark_id == mark.id}
                   type="button"
@@ -565,6 +569,14 @@
           /><span>{if length(String.split(@selection.quote)) <= 4,
             do: gettext("Define"),
             else: gettext("Simplify")}</span></button>
+          <button
+            :if={String.length(@selection.quote) <= 200}
+            id="selection-dictionary"
+            type="button"
+            phx-click="help"
+            phx-value-action="dictionary"
+            disabled={@busy}
+          ><.icon name="lucide-languages" class="size-[15px]" /><span>{gettext("Dictionary")}</span></button>
           <details id="selection-more" class="selection-more">
             <summary aria-label={gettext("More actions")} title={gettext("More actions")}>
               <.icon name="lucide-ellipsis" class="size-4" />

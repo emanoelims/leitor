@@ -188,6 +188,26 @@ Provider failures preserve the learner's text and allow retrying. Structured
 responses are schema validated, and sentence analysis must preserve the original
 words and punctuation. AI suggestions still require the learner's judgment.
 
+### Dictionary configuration
+
+The selection toolbar's Dictionary action answers in a margin card, like Define
+and Explain, and keeps the translation and part of speech for word jars. DeepL
+translates the selected term into Brazilian Portuguese, using its paragraph (up
+to 1,000 characters) as context so the translation follows the meaning in the
+text. Wiktionary's REST API supplies English senses and examples for terms of up
+to three words, and the keyless [Free Dictionary API](https://dictionaryapi.dev/)
+adds phonetics when it answers; that service is intermittent, so it never decides
+the result. Either main source may be missing; the card shows whatever was found.
+
+Set `DEEPL_API_KEY` in the environment or the ignored `mise.local.toml`; never
+commit it. Free keys end in `:fx` and use DeepL's free API host automatically.
+Without a key, the dictionary shows English entries only.
+
+```toml
+[env]
+DEEPL_API_KEY = "your-deepl-key:fx"
+```
+
 ## Persistence
 
 `Library`, `Learning`, and `Study` follow generated Phoenix context boundaries and

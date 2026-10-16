@@ -3,6 +3,11 @@ import Config
 # Only in tests, remove the complexity from the password hashing algorithm
 config :argon2_elixir, t_cost: 1, m_cost: 8
 
+# Dictionary lookups never leave the test process; Req.Test stubs both providers.
+config :leitor, Leitor.Dictionary,
+  deepl_api_key: "test-key:fx",
+  req_options: [plug: {Req.Test, Leitor.Dictionary}, retry_delay: 0]
+
 # In test we don't send emails
 config :leitor, Leitor.Mailer, adapter: Swoosh.Adapters.Test
 

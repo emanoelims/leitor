@@ -57,6 +57,8 @@ Fly secrets:
 - `MAIL_FROM`: the verified email address only, without a display name or brackets.
   The application adds the `Leitor` display name.
 - `ANTHROPIC_API_KEY`: the Claude API credential.
+- `DEEPL_API_KEY`: optional DeepL API credential for contextual dictionary
+  translations. Without it, the dictionary shows English entries only.
 
 GitHub's encrypted `FLY_API_TOKEN` secret contains an app-scoped deployment token
 for `leitor`, initially valid for one year. Rotate it before expiry with

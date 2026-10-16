@@ -7,7 +7,7 @@ defmodule LeitorWeb.UserLive.Confirmation do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} context_title="Your account">
+    <Layouts.app flash={@flash} current_scope={@current_scope} active="confirmation" class="auth-main">
       <StudyComponents.auth_shell>
         <span class="auth-confirm-icon" aria-hidden="true"><.icon
           name="hero-envelope-open"
@@ -23,8 +23,8 @@ defmodule LeitorWeb.UserLive.Confirmation do
           </h2>
           <p class="muted">
             {if @user.confirmed_at,
-              do: "Continue with your email to pick up where you left off.",
-              else: "Confirm your email to start saving your words and your progress."}
+              do: gettext("Continue with your email to pick up where you left off."),
+              else: gettext("Confirm your email to start saving your words and your progress.")}
           </p>
           <p class="auth-email">{@user.email}</p>
         </div>
@@ -44,17 +44,17 @@ defmodule LeitorWeb.UserLive.Confirmation do
             id="confirm-remember-submit"
             name={@form[:remember_me].name}
             value="true"
-            phx-disable-with="Confirming..."
+            phx-disable-with={gettext("Confirming...")}
             class="action action-primary w-full"
           >
-            Confirm and stay logged in
+            {gettext("Confirm and stay logged in")}
           </.button>
           <.button
             id="confirm-submit"
-            phx-disable-with="Confirming..."
+            phx-disable-with={gettext("Confirming...")}
             class="action w-full"
           >
-            Confirm and log in only this time
+            {gettext("Confirm and log in only this time")}
           </.button>
         </.form>
 
@@ -72,34 +72,34 @@ defmodule LeitorWeb.UserLive.Confirmation do
           <%= if @current_scope do %>
             <.button
               id="confirm-session-submit"
-              phx-disable-with="Logging in..."
+              phx-disable-with={gettext("Logging in...")}
               class="action action-primary w-full"
             >
-              Log in
+              {gettext("Log in")}
             </.button>
           <% else %>
             <.button
               id="login-remember-submit"
               name={@form[:remember_me].name}
               value="true"
-              phx-disable-with="Logging in..."
+              phx-disable-with={gettext("Logging in...")}
               class="action action-primary w-full"
             >
-              Keep me logged in on this device
+              {gettext("Keep me logged in on this device")}
             </.button>
             <.button
               id="login-once-submit"
-              phx-disable-with="Logging in..."
+              phx-disable-with={gettext("Logging in...")}
               class="action w-full"
             >
-              Log me in only this time
+              {gettext("Log me in only this time")}
             </.button>
           <% end %>
         </.form>
         <p :if={!@current_scope} class="muted text-sm">
-          On a shared device, choose to log in only this time.
+          {gettext("On a shared device, choose to log in only this time.")}
         </p>
-        <.link navigate={~p"/read"} class="text-link text-sm">Keep reading without an account</.link>
+        <.link navigate={~p"/users/log-in"} class="text-link text-sm">{gettext("Back to log in")}</.link>
       </StudyComponents.auth_shell>
     </Layouts.app>
     """
@@ -114,7 +114,7 @@ defmodule LeitorWeb.UserLive.Confirmation do
     else
       {:ok,
        socket
-       |> put_flash(:error, "Magic link is invalid or it has expired.")
+       |> put_flash(:error, gettext("Magic link is invalid or it has expired."))
        |> push_navigate(to: ~p"/users/log-in")}
     end
   end

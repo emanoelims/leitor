@@ -1,0 +1,686 @@
+<Layouts.app
+  flash={@flash}
+  current_scope={@current_scope}
+  header_mode="reader"
+  class={[
+    "free-page page-face-#{@face} page-size-#{@font_size}",
+    !@show_numbers && "hide-paragraph-numbers",
+    !@appearance["rail"] && "hide-page-map",
+    @appearance["focus"] && "page-focus-mode",
+    "page-leading-#{@appearance["leading"]} page-width-#{@appearance["width"]}",
+    "page-align-#{@appearance["align"]} page-paras-#{@appearance["paras"]}"
+  ]}
+  style={"--page-text-size:#{@font_size}px"}
+  context_title={@page_title}
+  context_detail={if @dirty, do: "Unsaved", else: "Private page"}
+>
+  <p :if={@appearance["focus"]} class="page-focus-hint">
+    {gettext("Focus mode · Press F or Escape to leave")}
+  </p>
+  <:tools>
+    <button
+      id="page-shortcuts"
+      type="button"
+      class="layer-button"
+      phx-click="shortcuts"
+      aria-label={gettext("Keyboard shortcuts")}
+      title={gettext("Keyboard shortcuts")}
+    ><.icon name="lucide-thin-keyboard" class="size-[18px]" /></button>
+    <ReaderComponents.appearance
+      face={@face}
+      font_size={@font_size}
+      numbers={@show_numbers}
+      tab={@appearance_tab}
+      preferences={@appearance}
+    />
+    <button
+      :if={!@editing}
+      id="page-edit"
+      type="button"
+      class="layer-button"
+      phx-click="edit"
+      aria-label={gettext("Edit page")}
+      title={gettext("Edit page")}
+    ><.icon name="lucide-thin-pen-line" class="size-[18px]" /></button>
+    <button
+      :if={!@editing}
+      id="page-notebook"
+      type="button"
+      class={["layer-button", @notebook_open && "active"]}
+      phx-click="notebook"
+      aria-pressed={@notebook_open}
+      aria-label={gettext("Page notebook")}
+      title={gettext("Notes on this page")}
+    ><.icon name="lucide-thin-book-open" class="size-[18px]" /></button>
+    <button
+      :if={@editing && @generation_id}
+      id="page-ai-stop"
+      type="button"
+      class="workspace-header-action"
+      phx-click="stop-page-generation"
+      aria-label={gettext("Stop generating")}
+    ><.icon name="lucide-square" class="size-3" /><span>{gettext("Stop")}</span></button>
+    <button
+      :if={@editing}
+      id="page-save"
+      type="submit"
+      form="page-form"
+      class="workspace-header-action workspace-header-primary"
+      aria-label={gettext("Save & read")}
+      title={gettext("Save & read · ⌘/Ctrl S")}
+      phx-disable-with={gettext("Saving…")}
+      disabled={!is_nil(@generation_id)}
+    ><span>{gettext("Save & read")}</span><.icon name="lucide-thin-arrow-right" class="size-4" /></button>
+  </:tools>
+  <StudyComponents.dialog
+    :if={@shortcuts_open}
+    id="page-shortcut-dialog"
+    title={gettext("A few helpful keys")}
+    on_close={JS.push("shortcuts")}
+  >
+    <dl class="reading-shortcuts">
+      <div :for={
+        {key, action} <- [
+          {"N", "Open or close your notebook"},
+          {"F", "Enter or leave focus mode"},
+          {"?", "Show keyboard shortcuts"},
+          {"⌘ / Ctrl S", "Save while editing"},
+          {"Esc", "Close a popup"},
+          {"↑ / ↓ · Home / End", "Travel when the scroll map is focused"},
+          {"Tab / Enter", "Move between and activate controls"}
+        ]
+      }>
+        <dt><kbd>{key}</kbd></dt><dd>{t(action)}</dd>
+      </div>
+    </dl>
+  </StudyComponents.dialog>
+  <%= if @editing do %>
+    <.form
+      for={@form}
+      id="page-form"
+      phx-change="draft"
+      phx-submit="save"
+      class="page-editor-form"
+    >
+      <.input
+        id="page-title"
+        field={@form[:title]}
+        aria-label={gettext("Page title")}
+        placeholder={gettext("Untitled")}
+        maxlength="180"
+        class="page-title-input"
+        required
+      />
+      <div
+        id="page-editor"
+        phx-hook="PageEditor"
+        phx-update="ignore"
+        data-draft-key={"#{@current_scope.user.id}:#{if @text, do: @text.id, else: "new"}"}
+      >
+        <p id="page-draft-recovered" class="notice" role="status" hidden>
+          {gettext("Your unsaved draft was restored in this tab. Save it to keep it.")}
+        </p>
+        <.input id="page-body" field={@form[:body]} type="textarea" class="hidden" />
+        <div id="page-editor-surface"></div>
+        <WritingComponents.slash_menu />
+        <WritingComponents.ai_composer />
+      </div>
+      <p :if={@error} role="alert" class="notice">{t(@error)}</p>
+    </.form>
+  <% else %>
+    <div class="free-page-layout">
+      <article class="free-page-document">
+        <header class="free-page-heading">
+          <p class="eyebrow">{gettext("Your own little corner")}</p><h1>{@page_title}</h1><p>
+            {ngettext(
+              "%{count} block · Private to you",
+              "%{count} blocks · Private to you",
+              length(@document.blocks)
+            )}
+          </p>
+        </header>
+        <div
+          id="page-reading"
+          phx-hook="PageReader"
+          phx-update="ignore"
+          data-marks={@marks_json}
+          data-reading-key={"#{@current_scope.user.id}:#{@text.id}"}
+          data-reading-version={Base.encode16(:crypto.hash(:sha256, @text.body), case: :lower)}
+          class="page-prose"
+          lang="en"
+        >
+          {Phoenix.HTML.raw(@document.html)}
+        </div>
+        <p class="page-end">{gettext("End of this page")} <span aria-hidden="true">✦</span></p>
+      </article>
+      <aside
+        id="page-margin-root"
+        class="page-margins"
+        aria-label={gettext("Margin notes")}
+        data-active={@active_mark_id || (@busy && "pending")}
+      >
+        <div :if={@mark_count == 0 && !@busy} class="page-margin-intro">
+          <p>{gettext("Select a word or a passage.")}</p><p>
+            {gettext("Define it, mark it, or keep a thought here.")}
+          </p>
+        </div>
+        <p :if={@error} id="page-help-error" role="alert" class="notice">{t(@error)}</p>
+
+        <article
+          :if={@busy && @pending && is_nil(@pending.mark_id)}
+          id="page-pending-card"
+          class="page-margin-card is-active is-entering"
+          data-margin-mark="pending"
+          data-margin-block={@pending.block_index}
+          aria-busy="true"
+        >
+          <header>
+            <strong>{t(String.capitalize(@pending.action))}</strong><span class="page-cite">¶{@pending.block_index +
+              1}</span><button
+              type="button"
+              class="icon-button"
+              phx-click="stop-help"
+              aria-label={gettext("Stop response")}
+            ><.icon name="lucide-square" class="size-3" /></button>
+          </header>
+          <blockquote>{@pending.quote}</blockquote>
+          <div
+            :if={@help_stream && @help_stream.answer != ""}
+            class="page-answer page-stream-answer"
+          >
+            {answer_html(@help_stream.answer, @document)}
+          </div>
+          <WritingComponents.generating :if={!@help_stream || @help_stream.answer == ""} />
+          <footer><span>{gettext("Reading your passage…")}</span></footer>
+        </article>
+        <div id="page-margin-marks" phx-update="stream">
+          <article
+            :for={{id, mark} <- @streams.margin_marks}
+            id={id}
+            data-margin-mark={mark.id}
+            data-margin-kind={mark.kind}
+            class={[
+              "page-margin-card",
+              "mark-#{mark.kind}",
+              if(@active_mark_id == mark.id, do: "is-active", else: "is-collapsed")
+            ]}
+          >
+            <button
+              :if={@active_mark_id != mark.id}
+              type="button"
+              class="page-card-summary"
+              phx-click="activate-mark"
+              phx-value-id={mark.id}
+            >
+              <span><strong>{t(mark_title(mark))}</strong> “{mark.quote}”</span><span class="page-cite">¶{mark.block_index +
+                1}</span>
+              <small>{answer_summary(mark.body)}</small>
+            </button>
+            <div :if={@active_mark_id == mark.id} class="page-card-expanded">
+              <header>
+                <strong>{t(mark_title(mark))}</strong><button
+                  type="button"
+                  class="page-cite"
+                  data-page-cite-mark={mark.id}
+                  aria-label={gettext("Go to paragraph %{number}", number: mark.block_index + 1)}
+                  phx-click="jump-mark"
+                  phx-value-id={mark.id}
+                >¶{mark.block_index + 1}</button><span
+                  :if={mark.replies != []}
+                  class="page-follow-count"
+                >{ngettext("%{count} follow-up", "%{count} follow-ups", length(mark.replies))}</span><button
+                  type="button"
+                  class="icon-button"
+                  phx-click="collapse-mark"
+                  aria-label={gettext("Collapse note")}
+                ><.icon name="lucide-chevrons-down-up" class="size-3" /></button>
+              </header>
+              <blockquote>{mark.quote}</blockquote>
+              <h3 :if={mark.kind == "answer" && mark_title(mark) == "Ask"}>{mark.question}</h3>
+              <div class="page-answer">
+                {answer_html(
+                  if(
+                    @busy && @pending && @pending.mark_id == mark.id && @pending.action == "retry" &&
+                      @help_stream && @help_stream.answer != "",
+                    do: @help_stream.answer,
+                    else: mark.body
+                  ),
+                  @document
+                )}
+              </div>
+              <div
+                :for={reply <- mark.replies}
+                id={"#{id}-reply-#{reply.id}"}
+                class="page-follow-turn"
+              >
+                <h4><.icon name="lucide-corner-down-right" class="size-3" />{reply.question}</h4><div class="page-answer">
+                  {answer_html(reply.body, @document)}
+                </div>
+              </div>
+              <div
+                :if={
+                  @busy && @pending && @pending.mark_id == mark.id && @pending.action == "follow" &&
+                    @help_stream && @help_stream.answer != ""
+                }
+                class="page-follow-turn page-follow-pending"
+                aria-busy="true"
+              >
+                <h4>
+                  <.icon name="lucide-corner-down-right" class="size-3" />{@pending.question}
+                </h4>
+                <div class="page-answer">{answer_html(@help_stream.answer, @document)}</div>
+              </div>
+              <WritingComponents.generating :if={
+                @busy && @pending && @pending.mark_id == mark.id &&
+                  (!@help_stream || @help_stream.answer == "")
+              } />
+              <footer>
+                <span>{if mark.kind == "note", do: gettext("Your note"), else: gettext("Claude")}</span>
+                <button
+                  :if={@busy && @pending && @pending.mark_id == mark.id}
+                  type="button"
+                  class="icon-button"
+                  phx-click="stop-help"
+                  aria-label={gettext("Stop response")}
+                ><.icon name="lucide-square" class="size-3" /></button>
+                <button
+                  :if={mark.kind in ["definition", "answer"]}
+                  type="button"
+                  class="icon-button"
+                  phx-click="retry-mark"
+                  phx-value-id={mark.id}
+                  disabled={@busy}
+                  aria-label={gettext("Try again")}
+                ><.icon name="lucide-rotate-ccw" class="size-4" /></button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  phx-click={
+                    JS.dispatch("leitor:copy",
+                      detail: %{text: mark_markdown(mark), status_id: "mark-copy-#{mark.id}"}
+                    )
+                  }
+                  aria-label={gettext("Copy annotation")}
+                ><.icon name="lucide-copy" class="size-4" /></button>
+                <button
+                  :if={mark.kind == "note"}
+                  type="button"
+                  class="icon-button"
+                  phx-click="edit-note"
+                  phx-value-id={mark.id}
+                  aria-label={gettext("Edit note")}
+                ><.icon name="lucide-pen-line" class="size-4" /></button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  phx-click="remove-mark"
+                  phx-value-id={mark.id}
+                  aria-label={gettext("Remove annotation")}
+                ><.icon name="lucide-trash-2" class="size-4" /></button>
+              </footer>
+              <p
+                id={"mark-copy-#{mark.id}"}
+                phx-update="ignore"
+                class="page-copy-status"
+                role="status"
+              >
+              </p>
+              <.form
+                :if={mark.kind in ["definition", "answer"]}
+                for={to_form(%{"question" => ""}, as: "follow")}
+                id={"follow-up-#{mark.id}"}
+                phx-submit="follow-up"
+                phx-value-id={mark.id}
+                class="page-follow-form"
+              >
+                <.input
+                  name="follow[question]"
+                  value=""
+                  id={"follow-question-#{mark.id}"}
+                  aria-label={gettext("Ask a follow-up")}
+                  placeholder={gettext("Ask a follow-up…")}
+                  maxlength="500"
+                  required
+                  class="page-follow-input"
+                  disabled={@busy}
+                /><button type="submit" aria-label={gettext("Send follow-up")} disabled={@busy}><.icon
+                  name="lucide-arrow-up"
+                  class="size-4"
+                /></button>
+              </.form>
+              <button
+                :if={String.length(mark.quote) <= 200}
+                type="button"
+                class="page-collect-word"
+                phx-click="mark-to-pot"
+                phx-value-id={mark.id}
+              ><.icon name="hero-beaker" class="size-3" />{gettext("Keep in a jar")}</button>
+            </div>
+          </article>
+        </div>
+        <svg
+          id="page-margin-connectors"
+          phx-hook="PageMargin"
+          phx-update="ignore"
+          class="page-margin-connectors"
+          aria-hidden="true"
+        ></svg>
+      </aside>
+    </div>
+    <div
+      id="page-citation-preview"
+      phx-hook="PageCitations"
+      phx-update="ignore"
+      class="page-cite-preview"
+      role="tooltip"
+      hidden
+    >
+      <p data-cite-number></p><p data-cite-text></p><p>{gettext("Click to jump there")}</p>
+    </div>
+    <div
+      id="page-scroll-rail"
+      phx-hook="PageRail"
+      phx-update="ignore"
+      role="slider"
+      aria-label={gettext("Position in the page")}
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      tabindex="0"
+    >
+      <div class="page-rail-bars" aria-hidden="true"></div>
+      <div class="page-rail-markers" aria-hidden="true"></div>
+      <div class="page-rail-viewport" aria-hidden="true"></div>
+    </div>
+  <% end %>
+  <aside
+    :if={@notebook_open && !@editing}
+    id="page-notebook-panel"
+    class="page-notebook"
+    aria-label={gettext("Notebook")}
+    phx-window-keydown="notebook"
+    phx-key="Escape"
+  >
+    <header>
+      <div>
+        <h2>{gettext("Notebook")}</h2><p>
+          {ngettext("%{count} saved entry", "%{count} saved entries", @mark_count)}
+        </p>
+      </div><button
+        id="copy-page-notebook"
+        type="button"
+        class="icon-button"
+        aria-label={gettext("Copy notebook as Markdown")}
+        phx-click={
+          JS.dispatch("leitor:copy",
+            detail: %{text: @notebook_markdown, status_id: "page-export-status"}
+          )
+        }
+        disabled={@mark_count == 0}
+      ><.icon name="lucide-copy" class="size-4" /></button>
+      <button
+        id="download-page-notebook"
+        type="button"
+        class="icon-button"
+        aria-label={gettext("Download notebook as Markdown")}
+        phx-click="export-notebook"
+        phx-value-mode="download"
+        disabled={@mark_count == 0}
+      ><.icon name="lucide-download" class="size-4" /></button>
+      <button
+        id="close-page-notebook"
+        type="button"
+        class="icon-button"
+        phx-click="notebook"
+        aria-label={gettext("Close notebook")}
+      ><.icon name="lucide-x" class="size-4" /></button>
+    </header>
+    <p id="page-export-status" phx-update="ignore" class="page-export-status" role="status"></p>
+    <div class="notebook-filters" role="group" aria-label={gettext("Annotation types")}>
+      <button
+        :for={
+          {kind, label} <- [
+            {"all", "All"},
+            {"highlight", "Highlights"},
+            {"note", "Notes"},
+            {"definition", "Definitions"},
+            {"answer", "Questions"}
+          ]
+        }
+        id={"notebook-filter-#{kind}"}
+        type="button"
+        class={[@notebook_filter == kind && "selected"]}
+        phx-click="filter-notebook"
+        phx-value-kind={kind}
+        aria-pressed={@notebook_filter == kind}
+      >{t(label)}</button>
+    </div>
+    <div id="page-notebook-marks" phx-update="stream" class="page-notebook-scroll">
+      <div id="page-notebook-empty" class="hidden only:block notebook-empty-state">
+        <.icon name="lucide-notebook-pen" class="size-8" /><h3>{gettext("Nothing here yet")}</h3><p>
+          {gettext("Add a note or ask about a passage. It will stay here, in reading order.")}
+        </p>
+      </div>
+      <article
+        :for={{id, mark} <- @streams.notebook_marks}
+        id={id}
+        class={"page-notebook-entry mark-#{mark.kind}"}
+      >
+        <div class="row between">
+          <button
+            type="button"
+            class="page-mark-meta"
+            data-page-cite-mark={mark.id}
+            phx-click="jump-mark"
+            phx-value-id={mark.id}
+          >¶{mark.block_index + 1} · {t(String.capitalize(mark.kind))}
+          <.icon name="lucide-arrow-up-right" class="size-3" /></button><button
+            :if={mark.kind == "note"}
+            type="button"
+            class="icon-button"
+            aria-label={gettext("Edit note")}
+            phx-click="edit-note"
+            phx-value-id={mark.id}
+          ><.icon name="lucide-pen-line" class="size-3" /></button>
+          <button
+            type="button"
+            class="icon-button"
+            aria-label={gettext("Remove annotation")}
+            phx-click="remove-mark"
+            phx-value-id={mark.id}
+          ><.icon name="lucide-trash-2" class="size-3" /></button>
+        </div>
+        <blockquote class={"highlight-#{mark.color}"}>{mark.quote}</blockquote><h3 :if={
+          mark.question
+        }>
+          {mark.question}
+        </h3><div :if={mark.body != ""} class="page-answer">
+          {answer_html(mark.body, @document)}
+        </div>
+        <div :for={reply <- mark.replies} id={"#{id}-reply-#{reply.id}"} class="page-follow-turn">
+          <h4>{reply.question}</h4><div class="page-answer">
+            {answer_html(reply.body, @document)}
+          </div>
+        </div>
+        <button
+          :if={String.length(mark.quote) <= 200}
+          type="button"
+          class="page-collect-word"
+          phx-click="mark-to-pot"
+          phx-value-id={mark.id}
+        ><.icon name="hero-beaker" class="size-3" />{if mark.category == "word",
+          do: gettext("Keep in a jar"),
+          else: "#{String.capitalize(mark.category)} · Keep in a jar"}</button>
+      </article>
+    </div>
+  </aside>
+  <section
+    :if={@selection && !@editing}
+    id="page-selection"
+    class={[
+      "page-selection",
+      @selection_mode == "actions" && "page-selection-actions",
+      @selection_mode != "actions" && "page-selection-expanded"
+    ]}
+    role={if @selection_mode == "actions", do: "toolbar", else: "dialog"}
+    aria-label={gettext("Actions for the selection")}
+    data-selection-version={@selection_anchor["selection_version"]}
+    phx-window-keydown="close-selection"
+    phx-key="Escape"
+  >
+    <%= case @selection_mode do %>
+      <% "actions" -> %>
+        <div class="selection-tools">
+          <button id="selection-ask" type="button" phx-click="selection-mode" phx-value-mode="ask">{gettext(
+            "Ask"
+          )}
+          <span class="selection-caret" aria-hidden="true"></span></button>
+          <span class="selection-divider"></span>
+          <button
+            id="selection-explain"
+            type="button"
+            phx-click="help"
+            phx-value-action="explain"
+            disabled={@busy}
+          ><.icon name="lucide-lightbulb" class="size-[15px]" /><span>{gettext("Explain")}</span></button>
+          <button
+            id={
+              if length(String.split(@selection.quote)) <= 4,
+                do: "selection-define",
+                else: "selection-simplify"
+            }
+            type="button"
+            phx-click="help"
+            phx-value-action={
+              if length(String.split(@selection.quote)) <= 4, do: "define", else: "simplify"
+            }
+            disabled={@busy}
+          ><.icon
+            name={
+              if length(String.split(@selection.quote)) <= 4,
+                do: "lucide-book-a",
+                else: "lucide-feather"
+            }
+            class="size-[15px]"
+          /><span>{if length(String.split(@selection.quote)) <= 4,
+            do: gettext("Define"),
+            else: gettext("Simplify")}</span></button>
+          <details id="selection-more" class="selection-more">
+            <summary aria-label={gettext("More actions")} title={gettext("More actions")}>
+              <.icon name="lucide-ellipsis" class="size-4" />
+            </summary><div class="selection-more-menu">
+              <button
+                id={
+                  if length(String.split(@selection.quote)) <= 4,
+                    do: "selection-simplify",
+                    else: "selection-define"
+                }
+                type="button"
+                phx-click="help"
+                phx-value-action={
+                  if length(String.split(@selection.quote)) <= 4, do: "simplify", else: "define"
+                }
+                disabled={@busy}
+              ><.icon
+                name={
+                  if length(String.split(@selection.quote)) <= 4,
+                    do: "lucide-feather",
+                    else: "lucide-book-a"
+                }
+                class="size-4"
+              />{if length(String.split(@selection.quote)) <= 4,
+                do: gettext("Simplify"),
+                else: gettext("Define")}</button><button
+                type="button"
+                phx-click={
+                  JS.dispatch("leitor:copy",
+                    detail: %{
+                      text:
+                        "> #{@selection.quote}\n\n— #{@page_title}, ¶#{@selection.block_index + 1}",
+                      status_id: "selection-copy-status"
+                    }
+                  )
+                }
+              ><.icon name="lucide-copy" class="size-4" />{gettext("Copy quote")}</button>
+              <button
+                :if={String.length(@selection.quote) <= 200}
+                id="selection-pot"
+                type="button"
+                aria-label={gettext("Keep in a jar")}
+                title={gettext("Keep in a jar")}
+                phx-click="selection-mode"
+                phx-value-mode="pot"
+              ><.icon name="hero-beaker" class="size-4" /></button>
+            </div>
+          </details>
+          <span class="selection-divider"></span>
+          <button
+            id="selection-note"
+            type="button"
+            aria-label={gettext("Add a note")}
+            title={gettext("Add a note")}
+            phx-click="selection-mode"
+            phx-value-mode="note"
+          ><.icon name="lucide-pen-line" class="size-[15px]" /></button>
+        </div>
+        <p id="selection-copy-status" phx-update="ignore" class="sr-only" role="status"></p>
+      <% "note" -> %>
+        <.form for={@note_form} id="selection-note-form" phx-submit="note">
+          <.input
+            field={@note_form[:body]}
+            id="selected-note-body"
+            type="textarea"
+            label={gettext("Your note on the selection")}
+            placeholder={gettext("A thought, in your own words")}
+            maxlength="4000"
+            required
+            phx-mounted={JS.focus()}
+          /><button type="submit">{gettext("Keep note")}
+          <.icon name="lucide-check" class="size-4" /></button>
+        </.form>
+      <% "ask" -> %>
+        <.form for={@question_form} id="selection-question-form" phx-submit="help">
+          <input type="hidden" name="action" value="ask" /><.input
+            field={@question_form[:question]}
+            id="selection-question-input"
+            label={gettext("Question about the selection")}
+            placeholder={gettext("Ask about this passage…")}
+            maxlength="500"
+            required
+            phx-mounted={JS.focus()}
+          /><button type="submit" disabled={@busy}>{gettext("Ask")}
+          <.icon name="lucide-arrow-up" class="size-4" /></button>
+        </.form>
+      <% "pot" -> %>
+        <.form for={@pot_form} id="selection-pot-form" phx-submit="save-pot">
+          <p class="selection-quote">{@selection.quote}</p><.input
+            field={@pot_form[:meaning]}
+            label={gettext("Meaning")}
+            placeholder={gettext("What does this word mean?")}
+            maxlength="2000"
+            required
+            phx-mounted={JS.focus()}
+          /><.input
+            field={@pot_form[:category]}
+            type="select"
+            label={gettext("Word jar")}
+            options={
+              LeitorWeb.I18n.options([
+                {"Other words", "word"},
+                {"Nouns", "noun"},
+                {"Verbs", "verb"},
+                {"Adjectives", "adj"},
+                {"Adverbs", "adv"},
+                {"Pronouns", "pron"},
+                {"Prepositions", "prep"},
+                {"Expressions", "expression"}
+              ])
+            }
+          /><button type="submit">{gettext("Save word")}
+          <.icon name="hero-beaker" class="size-4" /></button>
+        </.form>
+    <% end %>
+    <p :if={@error} class="notice" role="alert">{t(@error)}</p>
+    <span id="page-selection-positioner" phx-hook="PagePopup" phx-update="ignore" hidden></span>
+  </section>
+</Layouts.app>

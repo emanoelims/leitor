@@ -1,0 +1,919 @@
+/* Lumis 0.10.3 GitHub palettes, scoped to Leitor reading themes.
+ * Source: deps/lumis/priv/static/css/github_{light,dark}.css
+ * Container surfaces follow the application palette.
+ *
+ * MIT License
+ *
+ * Copyright (c) 2023 Leandro Pereira
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/* github_light
+ * revision: c106c9472154d6b2c74b74565616b877ae8ed31d
+ */
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis {
+  color: #1f2328;
+  background-color: var(--card);
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-attribute {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-attribute-builtin {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-boolean {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-character {
+  color: #0a3069;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-character-special {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment {
+  color: #57606a;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment-documentation {
+  color: #57606a;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment-error {
+  color: #ffffff;
+  background-color: #d1242f;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment-hint {
+  color: #ffffff;
+  background-color: #d0d7de;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment-note {
+  color: #0969da;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment-todo {
+  color: #ffffff;
+  background-color: #d0d7de;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-comment-warning {
+  color: #ffffff;
+  background-color: #9a6700;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constant {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constant-builtin {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constant-builtin-rust {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constant-html {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constant-macro {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constructor {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-constructor-lua {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-diff-delta {
+  color: #9a6700;
+  background-color: #d8cab3;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-diff-minus {
+  color: #d1242f;
+  background-color: #e4b7be;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-diff-plus {
+  color: #1a7f37;
+  background-color: #b8d0bf;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-builtin-bash {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-builtin-lua {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-builtin-make {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-call {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-call-bash {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-macro {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-method {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-function-method-call {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-highlighted {
+  background-color: #e7eaf0;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-conditional {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-conditional-ternary {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-coroutine {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-debug {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-directive {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-directive-define {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-directive-rust {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-exception {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-export {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-function {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-import {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-modifier {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-operator {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-repeat {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-return {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-keyword-type {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-label {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-label-ruby {
+  color: #0550ae;
+}
+.l-line-number:not(.l-line-number-highlighted) {
+  color: #6e7781;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-line-number-highlighted {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-environment {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-environment-name {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-1 {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-2 {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-3 {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-4 {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-5 {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-6 {
+  color: #0550ae;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-heading-html {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-italic {
+  color: #1f2328;
+  font-style: italic;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-link {
+  color: #1f2328;
+  text-decoration: underline;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-link-label {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-link-url {
+  color: #1f2328;
+  text-decoration: underline;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-list {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-list-bash {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-list-checked {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-list-unchecked {
+  color: #57606a;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-math {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-quote {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-quote-markdown {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-raw {
+  color: #1f2328;
+  font-style: italic;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-raw-block {
+  color: #1f2328;
+  font-style: italic;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-strikethrough {
+  color: #1f2328;
+  text-decoration: line-through;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-strong {
+  color: #1f2328;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-markup-underline {
+  text-decoration: underline;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-module {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-module-builtin {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-module-c_sharp {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-module-elixir {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-module-php {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-number {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-number-float {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-operator {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-operator-bash {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-operator-lua {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-property {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-property-json {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-property-lua {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-property-yaml {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-punctuation-bracket {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-punctuation-delimiter {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-punctuation-delimiter-bash {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-punctuation-special {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string {
+  color: #0a3069;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-documentation {
+  color: #0a3069;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-escape {
+  color: #0a3069;
+  font-weight: bold;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-regexp {
+  color: #0a3069;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special-path {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special-path-gitignore {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special-path-nix {
+  color: #0a3069;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special-symbol {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special-symbol-make {
+  color: #6639ba;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-string-special-url {
+  color: #0550ae;
+  font-style: italic;
+  text-decoration: underline;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag-attribute {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag-builtin {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag-delimiter-javascript {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag-delimiter-tsx {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag-javascript {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-tag-tsx {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-type {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-type-builtin {
+  color: #cf222e;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-type-builtin-python {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-type-css {
+  color: #116329;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-type-definition {
+  color: #953800;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-type-sql {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable-builtin {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable-member {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable-member-python {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable-parameter {
+  color: #1f2328;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable-parameter-builtin {
+  color: #0550ae;
+}
+:where(:root:not([data-theme="dark"]):not([data-theme="ink"])) .lumis .l-variable-sql {
+  color: #0550ae;
+}
+@layer lumis {
+  pre.lumis > code {
+    display: block;
+    width: fit-content;
+    min-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  pre.lumis > code > span.l-line {
+    display: inline-block;
+    width: 100%;
+    min-height: 1lh;
+    vertical-align: top;
+  }
+  .l-line-number {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* github_dark
+ * revision: c106c9472154d6b2c74b74565616b877ae8ed31d
+ */
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis {
+  color: #e6edf3;
+  background-color: var(--card);
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-attribute {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-attribute-builtin {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-boolean {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-character {
+  color: #a5d6ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-character-special {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment {
+  color: #8b949e;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment-documentation {
+  color: #8b949e;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment-error {
+  color: #0d1117;
+  background-color: #f85149;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment-hint {
+  color: #0d1117;
+  background-color: #7d8590;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment-note {
+  color: #2f81f7;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment-todo {
+  color: #0d1117;
+  background-color: #7d8590;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-comment-warning {
+  color: #0d1117;
+  background-color: #d29922;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constant {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constant-builtin {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constant-builtin-rust {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constant-html {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constant-macro {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constructor {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-constructor-lua {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-diff-delta {
+  color: #d29922;
+  background-color: #231e14;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-diff-minus {
+  color: #f85149;
+  background-color: #2c171b;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-diff-plus {
+  color: #3fb950;
+  background-color: #10231c;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-builtin-bash {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-builtin-lua {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-builtin-make {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-call {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-call-bash {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-macro {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-method {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-function-method-call {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-highlighted {
+  background-color: #484f58;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-conditional {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-conditional-ternary {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-coroutine {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-debug {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-directive {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-directive-define {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-directive-rust {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-exception {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-export {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-function {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-import {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-modifier {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-operator {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-repeat {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-return {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-keyword-type {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-label {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-label-ruby {
+  color: #79c0ff;
+}
+.l-line-number:not(.l-line-number-highlighted) {
+  color: #6e7681;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-line-number-highlighted {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-environment {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-environment-name {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-1 {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-2 {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-3 {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-4 {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-5 {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-6 {
+  color: #79c0ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-heading-html {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-italic {
+  color: #e6edf3;
+  font-style: italic;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-link {
+  color: #e6edf3;
+  text-decoration: underline;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-link-label {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-link-url {
+  color: #e6edf3;
+  text-decoration: underline;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-list {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-list-bash {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-list-checked {
+  color: #3fb950;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-list-unchecked {
+  color: #6e7681;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-math {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-quote {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-quote-markdown {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-raw {
+  color: #e6edf3;
+  font-style: italic;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-raw-block {
+  color: #e6edf3;
+  font-style: italic;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-strikethrough {
+  color: #e6edf3;
+  text-decoration: line-through;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-strong {
+  color: #e6edf3;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-markup-underline {
+  text-decoration: underline;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-module {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-module-builtin {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-module-c_sharp {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-module-elixir {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-module-php {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-number {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-number-float {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-operator {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-operator-bash {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-operator-lua {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-property {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-property-json {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-property-lua {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-property-yaml {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-punctuation-bracket {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-punctuation-delimiter {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-punctuation-delimiter-bash {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-punctuation-special {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string {
+  color: #a5d6ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-documentation {
+  color: #a5d6ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-escape {
+  color: #a5d6ff;
+  font-weight: bold;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-regexp {
+  color: #a5d6ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special-path {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special-path-gitignore {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special-path-nix {
+  color: #a5d6ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special-symbol {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special-symbol-make {
+  color: #d2a8ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-string-special-url {
+  color: #79c0ff;
+  font-style: italic;
+  text-decoration: underline;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag-attribute {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag-builtin {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag-delimiter-javascript {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag-delimiter-tsx {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag-javascript {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-tag-tsx {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-type {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-type-builtin {
+  color: #ff7b72;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-type-builtin-python {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-type-css {
+  color: #7ee787;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-type-definition {
+  color: #ffa657;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-type-sql {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable-builtin {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable-member {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable-member-python {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable-parameter {
+  color: #e6edf3;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable-parameter-builtin {
+  color: #79c0ff;
+}
+:where(:root:is([data-theme="dark"], [data-theme="ink"])) .lumis .l-variable-sql {
+  color: #79c0ff;
+}
+@layer lumis {
+  pre.lumis > code {
+    display: block;
+    width: fit-content;
+    min-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  pre.lumis > code > span.l-line {
+    display: inline-block;
+    width: 100%;
+    min-height: 1lh;
+    vertical-align: top;
+  }
+  .l-line-number {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+
+/* Code keeps its own rhythm rather than inheriting the prose line height. */
+:is(.page-prose, .page-answer, .writing-prose) pre.lumis {
+  max-width: 100%;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+  white-space: pre;
+  tab-size: 2;
+}
+:is(.page-prose, .page-answer, .writing-prose) pre.lumis code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}

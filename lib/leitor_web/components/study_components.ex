@@ -7,15 +7,39 @@ defmodule LeitorWeb.StudyComponents do
 
   def auth_shell(assigns) do
     ~H"""
-    <div class="auth-grid auth-page">
-      <div>
-        <p class="eyebrow">Keep a little of what you learn.</p>
-        <h1 class="hero-title">A sentence today.<br />Your story tomorrow.</h1>
-        <p class="muted heading-subtitle">
-          Save words, revisit mistakes, and see your English grow. Reading is always open to everyone.
+    <div id="auth-workspace" class="auth-layout">
+      <div class="auth-introduction">
+        <p class="auth-eyebrow">{gettext("A little space for a curious mind")}</p>
+        <h1 class="auth-title">
+          {gettext("Less noise.")}<br />{gettext("More")} <em>{gettext("meaning.")}</em>
+        </h1>
+        <p class="auth-description">
+          {gettext("Bring a text. Follow a thought. Keep the words that stay with you.")}
         </p>
+        <figure
+          class="auth-reading-sample"
+          aria-label={gettext("A preview of reading with margin notes")}
+        >
+          <div class="auth-sample-page">
+            <p class="auth-sample-label">{gettext("A margin for your thoughts")} <span>01</span></p>
+            <p class="auth-sample-text">
+              {gettext("Read slowly. There is more here than")}
+              <span>{gettext("a first glance")}</span> {gettext("can hold.")}
+            </p>
+            <div class="auth-sample-lines" aria-hidden="true"><span></span><span></span></div>
+          </div>
+          <figcaption class="auth-sample-note">
+            <span class="auth-sample-connector" aria-hidden="true"></span>
+            <span class="auth-sample-note-label">{gettext("A thought, kept.")}</span>
+            {gettext("A second look is where understanding begins.")}
+          </figcaption>
+        </figure>
+        <p class="auth-signature">{gettext("Read. Notice. Make it yours.")}</p>
       </div>
-      <section class="auth-card stack">{render_slot(@inner_block)}</section>
+      <section class="auth-panel" aria-label={gettext("Your account")}>
+        <div class="auth-panel-content stack">{render_slot(@inner_block)}</div>
+        <p class="auth-panel-footnote">{gettext("Your pages. Your notes. A space of your own.")}</p>
+      </section>
     </div>
     """
   end
@@ -31,7 +55,7 @@ defmodule LeitorWeb.StudyComponents do
     <nav
       id={@id}
       class={["reader-dock study-toolbar", @fixed && "study-toolbar-fixed"]}
-      aria-label={@label}
+      aria-label={t(@label)}
     >
       {render_slot(@inner_block)}
     </nav>
@@ -81,7 +105,10 @@ defmodule LeitorWeb.StudyComponents do
   def stat(assigns) do
     ~H"""
     <section class={["stat-card", @class]}>
-      <p class="eyebrow">{@label}</p><p class="stat-value">{@value}</p><p :if={@detail} class="muted">
+      <p class="eyebrow">{t(@label)}</p><p class="stat-value">{@value}</p><p
+        :if={@detail}
+        class="muted"
+      >
         {@detail}
       </p>
     </section>
@@ -104,7 +131,9 @@ defmodule LeitorWeb.StudyComponents do
 
   def progress(assigns) do
     ~H"""
-    <progress class="study-progress" value={@value} max={max(@max, 1)} aria-label={@label}>{@value} of {@max}</progress>
+    <progress class="study-progress" value={@value} max={max(@max, 1)} aria-label={t(@label)}>{@value} {gettext(
+      "of"
+    )} {@max}</progress>
     """
   end
 
@@ -135,7 +164,7 @@ defmodule LeitorWeb.StudyComponents do
             <h2 id={@id <> "-title"}>{@title}</h2><button
               type="button"
               class="icon-button"
-              aria-label="Close dialog"
+              aria-label={gettext("Close dialog")}
               phx-click={@on_close}
             ><.icon name="hero-x-mark" class="size-5" /></button>
           </header>

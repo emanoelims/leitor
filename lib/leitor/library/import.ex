@@ -1,5 +1,8 @@
 defmodule Leitor.Library.Import do
-  @moduledoc "Extracts bounded text from uploaded TXT, EPUB, DOCX, text-based PDF documents, and photos through local OCR."
+  @moduledoc "Extracts bounded text from uploaded Markdown, TXT, EPUB, DOCX, text-based PDF documents, and photos through local OCR."
+
+  @typedoc "Imported text and a detected title, falling back to Untitled."
+  @type document() :: %{title: String.t(), body: String.t()}
 
   @max_size 10_000_000
   @doc "Extracts a document without writing archive entries to disk; returns an explicit extraction error."
@@ -7,16 +10,137 @@ defmodule Leitor.Library.Import do
   def extract(path, name) do
     result =
       case String.downcase(Path.extname(name)) do
-        ".txt" -> File.read(path)
+        extension when extension in [".txt", ".md", ".markdown"] -> File.read(path)
         ".pdf" -> pdf(path)
         extension when extension in [".png", ".jpg", ".jpeg"] -> photo(path)
         ".epub" -> archive(path, :epub)
         ".docx" -> archive(path, :docx)
-        _ -> {:error, "Choose a TXT, EPUB, DOCX, PDF, JPG, or PNG file."}
+        _ -> {:error, "Choose a Markdown, TXT, EPUB, DOCX, PDF, JPG, or PNG file."}
       end
 
     validate_text(result)
   end
+
+  @doc """
+  Extracts a bounded document and derives its title without using its filename.
+
+  EPUB/DOCX title metadata and PDF metadata (when `pdfinfo` is installed) take
+  precedence over a Markdown heading or an isolated first-line title. Missing or
+  unreadable optional metadata falls back to the content, then `Untitled`.
+  Text extraction errors are returned unchanged; the body is preserved.
+  """
+  @spec extract_document(Path.t(), String.t()) :: {:ok, document()} | {:error, String.t()}
+  def extract_document(path, name) do
+    with {:ok, body} <- extract(path, name) do
+      detected = metadata_title(path, String.downcase(Path.extname(name)))
+      {:ok, %{title: detected || title(body), body: body}}
+    end
+  end
+
+  @doc ~S"""
+  Detects a title from the first top-level Markdown heading or an isolated opening line.
+
+  Inline Markdown is flattened, headings in code or quotes are ignored, and
+  titles are limited to 180 characters. Ordinary prose has the title `Untitled`.
+
+  ## Examples
+
+      iex> Leitor.Library.Import.title("# A **quiet** discovery\n\nA passage.")
+      "A quiet discovery"
+
+      iex> Leitor.Library.Import.title("A quiet discovery\n\nA passage follows.")
+      "A quiet discovery"
+
+      iex> Leitor.Library.Import.title("An ordinary paragraph.")
+      "Untitled"
+  """
+  @spec title(String.t()) :: String.t()
+  def title(body) do
+    body = body |> String.trim_leading("\uFEFF") |> String.trim()
+    document = MDEx.parse_document!(String.slice(body, 0, 300_000))
+    heading = Enum.find(document.nodes, &match?(%MDEx.Heading{}, &1))
+    detected = if heading, do: normalize_title(inline_text(heading)), else: opening_title(body, document.nodes)
+    detected || "Untitled"
+  end
+
+  defp opening_title(body, [%MDEx.Paragraph{} = first | _]) do
+    case Regex.split(~r/\r?\n[ \t]*\r?\n/, body, parts: 2) do
+      [line, rest] ->
+        if String.trim(rest) != "" and String.length(line) <= 180 and
+             not String.contains?(line, "\n") and not Regex.match?(~r/[.!?;:]$/u, line),
+           do: normalize_title(inline_text(first))
+
+      _ ->
+        nil
+    end
+  end
+
+  defp opening_title(_body, _nodes), do: nil
+
+  defp inline_text(%MDEx.Image{}), do: ""
+  defp inline_text(%{literal: text}), do: text
+  defp inline_text(%{nodes: nodes}), do: Enum.map_join(nodes, &inline_text/1)
+  defp inline_text(_), do: " "
+
+  defp normalize_title(text) do
+    normalized = text |> String.replace(~r/\s+/u, " ") |> String.trim() |> String.slice(0, 180)
+    if normalized != "", do: normalized
+  end
+
+  defp metadata_title(path, extension) when extension in [".docx", ".epub"] do
+    format = if extension == ".docx", do: :docx_metadata, else: :epub_metadata
+
+    with {:ok, entries} <- archive_contents(path, format),
+         xml when is_binary(xml) <- metadata_xml(entries, format),
+         [_, text] <- Regex.run(~r/<dc:title\b[^>]*>(.*?)<\/dc:title>/is, xml) do
+      text = text |> String.replace("<![CDATA[", "") |> String.replace("]]>", "")
+      text |> MDEx.parse_document!() |> inline_text() |> normalize_title()
+    else
+      _ -> nil
+    end
+  end
+
+  defp metadata_title(path, ".pdf") do
+    case System.find_executable("pdfinfo") do
+      nil -> nil
+      command -> pdf_title(command, path)
+    end
+  end
+
+  defp metadata_title(_path, _extension), do: nil
+
+  defp pdf_title(command, path) do
+    case System.cmd(command, [path], stderr_to_stdout: true) do
+      {info, 0} -> parse_pdf_title(info)
+      _ -> nil
+    end
+  end
+
+  defp parse_pdf_title(info) do
+    case Regex.run(~r/^Title:[ \t]*([^\r\n]+)$/m, info) do
+      [_, title] -> if String.valid?(title), do: normalize_title(title)
+      nil -> nil
+    end
+  end
+
+  defp metadata_xml(entries, :docx_metadata), do: entries |> Map.new() |> Map.get(~c"docProps/core.xml")
+
+  defp metadata_xml(entries, :epub_metadata) do
+    files = Map.new(entries, fn {name, data} -> {Path.expand(List.to_string(name), "/"), data} end)
+
+    with container when is_binary(container) <- files["/META-INF/container.xml"],
+         [root] <- Regex.run(~r/<(?:[\w-]+:)?rootfile\b[^>]*>/i, container),
+         path when is_binary(path) <- attribute(root, "full-path") do
+      files[Path.expand(path, "/")]
+    else
+      _ -> nil
+    end
+  end
+
+  defp metadata_entry?(name, :docx_metadata), do: name == ~c"docProps/core.xml"
+
+  defp metadata_entry?(name, :epub_metadata),
+    do: name == ~c"META-INF/container.xml" or String.ends_with?(String.downcase(List.to_string(name)), ".opf")
 
   defp validate_text({:ok, text}) when is_binary(text) do
     cond do
@@ -60,12 +184,7 @@ defmodule Leitor.Library.Import do
   end
 
   defp archive(path, format) do
-    with {:ok, table} <- :zip.table(String.to_charlist(path)),
-         files = Enum.filter(table, &(is_tuple(&1) and elem(&1, 0) == :zip_file)),
-         true <- Enum.sum(Enum.map(files, &elem(elem(&1, 2), 1))) <= @max_size,
-         names = files |> Enum.map(&elem(&1, 1)) |> Enum.filter(&archive_entry?(&1, format)),
-         {:ok, entries} <- :zip.extract(String.to_charlist(path), [:memory, {:file_list, names}]),
-         true <- Enum.all?(entries, fn {_name, data} -> String.valid?(data) end),
+    with {:ok, entries} <- archive_contents(path, format),
          {:ok, entries} <- reading_order(entries, format) do
       text =
         Enum.map_join(entries, "\n\n", fn {_name, data} ->
@@ -83,6 +202,21 @@ defmodule Leitor.Library.Import do
       _ -> {:error, :invalid_archive}
     end
   end
+
+  defp archive_contents(path, format) do
+    with {:ok, table} <- :zip.table(String.to_charlist(path)),
+         files = Enum.filter(table, &(is_tuple(&1) and elem(&1, 0) == :zip_file)),
+         true <- Enum.sum(Enum.map(files, &elem(elem(&1, 2), 1))) <= @max_size,
+         names = files |> Enum.map(&elem(&1, 1)) |> Enum.filter(&archive_entry?(&1, format)),
+         {:ok, entries} <- :zip.extract(String.to_charlist(path), [:memory, {:file_list, names}]),
+         true <- Enum.all?(entries, fn {_name, data} -> String.valid?(data) end) do
+      {:ok, entries}
+    else
+      _ -> {:error, :invalid_archive}
+    end
+  end
+
+  defp archive_entry?(name, format) when format in [:docx_metadata, :epub_metadata], do: metadata_entry?(name, format)
 
   defp archive_entry?(name, :docx), do: List.to_string(name) == "word/document.xml"
 

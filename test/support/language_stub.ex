@@ -2,6 +2,23 @@ defmodule Leitor.LanguageStub do
   @moduledoc false
   alias Leitor.Library.Reading
 
+  def stream(_model, _prompt, on_delta) do
+    text = "## A fresh page\n\nA quiet moment to read."
+    on_delta.(text)
+    {:ok, %{"markdown" => text}}
+  end
+
+  def stream_object(model, prompt, schema, on_fragment) do
+    case generate(model, prompt, schema) do
+      {:ok, data} = result ->
+        on_fragment.(Jason.encode!(data))
+        result
+
+      error ->
+        error
+    end
+  end
+
   def generate(_model, prompt, _schema) do
     cond do
       String.contains?(prompt, "Suggest one fresh writing title") ->
@@ -9,6 +26,12 @@ defmodule Leitor.LanguageStub do
 
       String.contains?(prompt, "unavailable") ->
         {:error, :unavailable}
+
+      String.contains?(prompt, "Help an English learner with the selected passage") ->
+        {:ok, %{"answer" => "Very good or pleasing.", "meaning" => "maravilhoso", "category" => "adj"}}
+
+      String.contains?(prompt, "Answer a reading question") ->
+        {:ok, %{"answer" => "Yesterday calls for the simple past.", "references" => [1]}}
 
       String.contains?(prompt, "language question") ->
         {:ok, %{"answer" => "Yesterday calls for the simple past."}}

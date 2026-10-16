@@ -23,16 +23,29 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/leitor"
-import {ReaderKeyboard, ShadowingRecorder, WritingQuestion} from "./study_hooks"
-import {WritingEditor} from "./writing_editor"
+import {PageEditor} from "./page_editor"
+import {PageReader, PagePopup, PageCitations, PageMargin, PageRail, preserveMarginPlacement} from "./page_reader"
 import {Floating} from "./floating"
+import {Select} from "./select"
+import {ReadingAppearance} from "./reading_appearance"
+import {initializeReadingTheme, setReadingTheme, toggleReadingTheme} from "./reading_theme"
 import topbar from "../vendor/topbar"
+import {t, setLocale} from "./i18n"
+
+window.addEventListener('phx:locale-changed', ({detail}) => setLocale(detail))
+window.addEventListener('phx:page-saved', ({detail}) => {
+  try {sessionStorage.removeItem(`leitor:page-draft:${detail.key}`)} catch (_) {}
+})
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+const readingPreferences = () => {
+  try {return JSON.parse(localStorage.getItem("leitor:reading-preferences") || "{}")} catch (_) {return {}}
+}
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, Floating, WritingEditor, ReaderKeyboard, ShadowingRecorder, WritingQuestion},
+  params: () => ({_csrf_token: csrfToken, reading_preferences: readingPreferences(), locale: document.body.dataset.locale || 'en'}),
+  dom: {onBeforeElUpdated: preserveMarginPlacement},
+  hooks: {...colocatedHooks, PageEditor, PageReader, PagePopup, PageCitations, PageMargin, PageRail, Floating, Select, ReadingAppearance},
 })
 
 // Show progress bar on live navigation and form submits
@@ -85,23 +98,34 @@ if (process.env.NODE_ENV === "development") {
 }
 
 
-window.addEventListener("leitor:speak", ({detail}) => {
-  const notify = () => {
-    const status = document.getElementById("speech-status")
-    if (status) {status.querySelector('p').textContent = "Audio is unavailable. Check your browser's speech support and try again."; status.hidden = false}
+initializeReadingTheme()
+window.addEventListener("leitor:theme", event => toggleReadingTheme(event.target.closest?.('button')))
+
+window.addEventListener("phx:reading-preference", ({detail}) => {
+  if (detail.key !== 'focus') {
+    try {localStorage.setItem("leitor:reading-preferences", JSON.stringify({...readingPreferences(), [detail.key]: detail.value}))} catch (_) {}
   }
-  if (!window.speechSynthesis) {notify(); return}
-  speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(detail.text)
-  utterance.lang = "en-US"
-  utterance.rate = detail.rate || 0.85
-  utterance.onerror = event => {if (!["canceled", "interrupted"].includes(event.error)) notify()}
-  speechSynthesis.speak(utterance)
+  if (detail.key === 'pen') document.documentElement.dataset.pen = detail.value
 })
-window.addEventListener("phx:page-loading-start", () => window.speechSynthesis?.cancel())
-try {document.documentElement.dataset.theme = localStorage.getItem("leitor:theme") || "light"} catch (_) {}
-window.addEventListener("leitor:theme", () => {
-  const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"
-  document.documentElement.dataset.theme = theme
-  try {localStorage.setItem("leitor:theme", theme)} catch (_) {}
+window.addEventListener("phx:reading-text-preferences-reset", ({detail}) => {
+  try {localStorage.setItem("leitor:reading-preferences", JSON.stringify({...readingPreferences(), ...detail}))} catch (_) {}
+})
+window.addEventListener("leitor:set-theme", event => setReadingTheme(event.detail.theme, event.target.closest?.('[data-theme-choice]')))
+
+window.addEventListener("phx:page-export", async ({detail}) => {
+  const status = document.getElementById("page-export-status")
+  try {
+    if (detail.mode === "copy") {await navigator.clipboard.writeText(detail.markdown); if (status) status.textContent = t("Copied as Markdown.")}
+    else {
+      const url = URL.createObjectURL(new Blob([detail.markdown], {type:"text/markdown;charset=utf-8"}))
+      const link = document.createElement("a"); link.href = url; link.download = "notebook.md"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
+      if (status) status.textContent = t("Notebook downloaded.")
+    }
+  } catch (_) {if (status) status.textContent = t("Clipboard unavailable. Use Download instead.")}
+})
+
+window.addEventListener("leitor:copy", async ({detail}) => {
+  const status=document.getElementById(detail.status_id)
+  try {await navigator.clipboard.writeText(detail.text);if(status)status.textContent=t("Copied.")}
+  catch (_) {if(status)status.textContent=t("Clipboard unavailable. You can select and copy the text.")}
 })

@@ -32,6 +32,12 @@ defmodule LeitorWeb.UserLive.RegistrationTest do
 
       assert result =~ "Register"
       assert result =~ "must have the @ sign and no spaces"
+      assert has_element?(lv, "#user_email[aria-invalid=true][aria-describedby=user_email-errors]")
+      assert has_element?(lv, "#user_email-errors", "must have the @ sign and no spaces")
+
+      lv |> element("#registration_form") |> render_change(user: %{"email" => "valid@example.test"})
+      refute has_element?(lv, "#user_email[aria-invalid=true]")
+      refute has_element?(lv, "#user_email-errors")
     end
   end
 

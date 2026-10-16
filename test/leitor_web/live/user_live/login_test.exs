@@ -6,14 +6,15 @@ defmodule LeitorWeb.UserLive.LoginTest do
 
   alias Leitor.Accounts
 
-  test "offers email links and public reading, without passwords", %{conn: conn} do
+  test "offers only email-link login with no public reading", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/users/log-in")
     assert has_element?(view, "#login_form_magic")
     refute has_element?(view, "input[type=password]")
-    assert has_element?(view, "a[href='/read']")
+    refute has_element?(view, "#login_form_password")
+    refute has_element?(view, "a[href='/read']")
   end
 
-  test "sends a link for both existing and first-time readers without enumerating accounts", %{conn: conn} do
+  test "sends a link for existing readers without enumerating accounts or registering strangers", %{conn: conn} do
     existing = user_fixture()
 
     for email <- [existing.email, "new-reader@example.com"] do
@@ -27,8 +28,13 @@ defmodule LeitorWeb.UserLive.LoginTest do
 
       assert html =~ "If your email is valid"
       user = Accounts.get_user_by_email(email)
-      assert user
-      assert Leitor.Repo.get_by!(Leitor.Accounts.UserToken, user_id: user.id).context == "login"
+
+      if email == existing.email do
+        assert user
+        assert Leitor.Repo.get_by!(Leitor.Accounts.UserToken, user_id: user.id).context == "login"
+      else
+        refute user
+      end
     end
   end
 

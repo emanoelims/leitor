@@ -1,0 +1,79 @@
+/* The Leitor mark: an open folio and a thought in its margin. */
+.leitor-mark { display:inline-block; position:relative; flex:none; width:28px; height:28px; }
+.leitor-mark-page { position:absolute; inset:0; background:currentColor; mask:url('/images/logo.svg') center/contain no-repeat; }
+.leitor-mark-note { position:absolute; left:75%; top:7.5%; width:15%; height:15%; border-radius:50%; background:var(--gloss-pen,#c1401b); }
+.brand-home { display:inline-flex; align-items:center; justify-content:center; flex:none; width:36px; height:36px; color:var(--ink); border-radius:8px; }
+.brand-home:hover { background:var(--soft); }
+.brand-home .brand-symbol { width:30px; height:30px; }
+.brand-home-wordmark { width:auto; gap:8px; padding-right:5px; }
+.brand-wordmark { font-family:"Newsreader",Georgia,serif; font-size:28px; line-height:1; letter-spacing:-.05em; }
+.app-header.auth-header .header-inner { max-width:1440px; margin-inline:auto; min-height:88px; padding:24px 56px; }
+.app-header.auth-header .header-actions { gap:16px; }
+.auth-header-prompt { font-size:12px; color:var(--muted); }
+.auth-header-link { font-weight:400; display:inline-flex; align-items:center; gap:6px; font-size:12px; }
+.auth-main { max-width:1328px; margin:auto; padding:64px 56px 72px; }
+.auth-layout { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,.82fr); align-items:center; gap:clamp(64px,8vw,128px); min-height:calc(100svh - 224px); }
+.auth-introduction { min-width:0; padding-block:16px; }
+.auth-eyebrow { margin:0 0 28px; color:var(--muted); font-size:10px; font-weight:500; line-height:1.5; text-transform:uppercase; letter-spacing:.15em; }
+.auth-title { font-family:"Newsreader",Georgia,serif; font-size:clamp(64px,6.7vw,94px); font-weight:400; line-height:1.03; letter-spacing:-.04em; }
+.auth-title em { font-weight:400; color:var(--gloss-pen-text); }
+.auth-description { max-width:340px; margin-top:26px; color:var(--gloss-ink-2); font-size:14px; line-height:1.75; }
+.auth-reading-sample { display:grid; grid-template-columns:minmax(0,1fr) 134px; gap:32px; margin:54px 0 0; }
+.auth-sample-page { min-width:0; }
+.auth-sample-label { display:flex; justify-content:space-between; gap:12px; padding-bottom:13px; margin-bottom:17px; border-bottom:1px solid var(--line); color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.11em; }
+.auth-sample-label>span { font-family:var(--font-mono); font-size:9px; }
+.auth-sample-text { font-family:"Newsreader",Georgia,serif; font-size:24px; line-height:1.4; letter-spacing:-.015em; }
+.auth-sample-text>span { text-decoration:underline; text-decoration-color:var(--gloss-pen); text-underline-offset:5px; text-decoration-thickness:1px; background:var(--gloss-wash); box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.auth-sample-lines { display:grid; gap:8px; margin-top:19px; }
+.auth-sample-lines>span { height:1px; background:var(--line); }
+.auth-sample-lines>span:last-child { width:66%; }
+.auth-sample-note { position:relative; align-self:start; margin-top:62px; padding-left:12px; border-left:1px solid var(--gloss-pen); color:var(--muted); font-size:11px; line-height:1.6; }
+.auth-sample-note-label { display:block; margin-bottom:5px; color:var(--gloss-pen-text); font-weight:500; }
+.auth-sample-connector { position:absolute; right:100%; top:12px; width:27px; height:1px; background:var(--gloss-line); }
+.auth-sample-connector::before { content:""; position:absolute; width:4px; height:4px; border-radius:50%; background:var(--gloss-pen); left:0; top:-1.5px; }
+.auth-signature { margin-top:36px; color:var(--muted); font-size:10px; letter-spacing:.035em; }
+.auth-panel { min-width:0; padding:40px 0 0 36px; border-left:1px solid var(--line); }
+.auth-panel .auth-panel-content { gap:22px; }
+.auth-form-eyebrow { margin-bottom:12px; color:var(--gloss-pen-text); font-size:10px; line-height:1.5; letter-spacing:.13em; text-transform:uppercase; }
+.auth-form-heading h2 { max-width:300px; font-family:"Newsreader",Georgia,serif; font-size:36px; line-height:1.13; font-weight:400; letter-spacing:-.025em; }
+.auth-form-heading>.muted { max-width:290px; margin-top:13px; font-size:13px; line-height:1.7; }
+.auth-panel .field-label { font-size:11px; }
+.auth-panel .auth-submit { width:100%; justify-content:space-between; padding-inline:16px; font-size:12px; border-radius:8px; }
+.auth-panel .auth-alternate { font-size:11px; color:var(--muted); line-height:1.7; }
+.auth-alternate .text-link { color:var(--ink); }
+.auth-panel-footnote { margin-top:48px; padding-bottom:12px; color:var(--gloss-ink-4); font-size:10px; line-height:1.5; }
+@media(max-width:1050px) {
+  .auth-layout { gap:56px; grid-template-columns:minmax(0,1fr) minmax(0,.9fr); }
+  .auth-reading-sample { grid-template-columns:1fr; }
+  .auth-sample-note { display:none; }
+  .auth-title { font-size:68px; }
+  .auth-panel { padding-left:28px; }
+}
+@media(max-width:800px) {
+  .app-header.auth-header .header-inner { padding:18px 28px; min-height:76px; }
+  .app-header.auth-header .header-left { flex-basis:auto; }
+  .auth-main { padding:32px 28px 48px; max-width:600px; }
+  .auth-layout { min-height:0; grid-template-columns:1fr; gap:38px; }
+  .auth-introduction { padding:0; }
+  .auth-eyebrow { margin-bottom:18px; }
+  .auth-title { font-size:64px; }
+  .auth-description { margin-top:18px; max-width:350px; font-size:13px; }
+  .auth-reading-sample,.auth-signature { display:none; }
+  .auth-panel { border-left:0; border-top:1px solid var(--line); padding:30px 0 0; }
+  .auth-form-heading h2 { max-width:none; font-size:30px; }
+  .auth-panel-footnote { margin-top:30px; }
+}
+@media(max-width:460px) {
+  .app-header.auth-header .header-inner { padding-inline:22px; }
+  .app-header.auth-header .header-actions { gap:0; }
+  .auth-header-prompt { display:none; }
+  .auth-main { padding:24px 24px 36px; }
+  .auth-title { font-size:54px; }
+  .auth-eyebrow { font-size:9px; letter-spacing:.11em; }
+  .auth-description { max-width:300px; }
+}
+@media(max-width:800px) {
+  .app-header.auth-header:not(:has(.workspace-menu)) .header-inner { flex-wrap:nowrap; }
+  .app-header.auth-header:not(:has(.workspace-menu)) .header-left { flex:0 0 auto; }
+  .app-header.auth-header:not(:has(.workspace-menu)) .header-actions { width:auto; flex:none; }
+}

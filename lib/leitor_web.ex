@@ -17,7 +17,7 @@ defmodule LeitorWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts images robots.txt)
 
   def router do
     quote do
@@ -82,8 +82,10 @@ defmodule LeitorWeb do
       # Translation
       use Gettext, backend: LeitorWeb.Gettext
 
-      # Core UI components
       import LeitorWeb.CoreComponents
+
+      # Core UI components
+      import LeitorWeb.I18n, only: [t: 1, t: 2]
 
       # HTML escaping functionality
       import Phoenix.HTML

@@ -1,27 +1,64 @@
-# Reading and learning implementation
+# Pages workspace
+
+## Product scope
+
+The authenticated workspace contains the page library (`/` and `/pages`), a new
+page (`/pages/new`), reading and editing (`/pages/:id`), a combined notebook
+(`/notebook`) with notes and word jars (`?view=words`). `/vocabulary` redirects to
+the words section. Each page also has its own notebook.
+Account settings, registration, login, and confirmation follow Phoenix's generated
+account flows. All product screens require login.
+
+The earlier sentence reader, writing, lessons, practice, review, progress,
+collaboration, generated resource screens, and component gallery have been
+removed, including their routes. Existing database records and domain APIs remain
+intact. Development dashboard and mailbox routes remain development tools.
 
 ## Boundaries
 
-- Accounts: email magic-link registration, confirmation, sessions, and email changes. Password login is not exposed.
-- Library: owned texts and lesson materials, document extraction, sentence positions. Anonymous reading is ephemeral; account history is private.
-- Learning: vocabulary and expressions, known words, review scheduling, writing/practice attempts, and progress derived from actual activity.
-- Study: invitation-only rooms, host-owned reading position, Presence, and temporary chat.
-- Language: Anthropic through ReqLLM, structured sentence analysis and writing feedback. Model and credentials belong in runtime environment configuration. Provider failures remain explicit and recoverable.
-
-## Delivery stages
-
-1. Generate scoped resources; adopt native Ecto UUID v7 for all application schemas without rewriting existing identities.
-2. Extract the application shell and reusable function components. Replace daisyUI with the prototype's warm neutral palette, Google Fonts stylesheet links, accessible controls, and a development component gallery.
-3. Implement public reading/import and email-only authentication. Add owned history, vocabulary, expressions, and spaced review.
-4. Implement dictation, shadowing, rewriting, writing feedback, lesson material import with persisted guides, measured progress, and private collaboration.
-5. Test ownership boundaries, validation, magic links, streams, and provider failures. Review desktop/mobile layouts, keyboard operation, accessibility, request errors, and responsiveness using Tidewave.
+- Accounts owns registration, email-link login, sessions, and account email settings.
+- Library owns private texts and document import.
+- Pages owns page annotations, anchored selections, notebook queries, and exports.
+- Learning owns collected vocabulary and grammatical word jars.
+- Language provides requested definitions, explanations, simplifications, and answers
+  through Anthropic. Reading and editing do not require a provider request.
+- Study and historical learning APIs remain available in the domain layer without
+  product routes.
 
 ## UI and state
 
-Use function components with declared attributes and slots for presentation. LiveViews own server state. JS commands handle immediate DOM operations; hooks handle browser speech, microphone recording, theme preference, and keyboard shortcuts with lifecycle cleanup. Use live navigation within a session and regular navigation at authentication/session boundaries.
+`Layouts.app/1` owns the universal shell and account menu. Its `menu` slot is the
+workspace context selector; `tabs` follows it with a divider and `tools` contains
+contextual controls. Pages provides source tabs, Notebook provides notes / word
+jar tabs, and both place search and filters inside a shared popover. Context
+selection also offers a separate creation action. Wrapped header menus anchor
+below the full header so they do not cover the second row of tabs.
+Reader and editor headers replace workspace navigation with a close link to the
+page shelf and the current title, keeping the local notebook, editing,
+appearance, and keyboard tools on the right. Titles scale with reading size.
 
-Stream persistent collections with stable IDs, reset after filtering, and reinsert changed records. Track counts/empty states separately. Keep the current sentence and bounded exercise state in assigns. Persist private mutations through scoped contexts; never trust a submitted user ID.
+LiveViews own server state and use scoped contexts for persistence. Stream
+collections with stable IDs and reset them when filtering. Browser hooks manage
+selection, anchored cards, citation previews, the corner reading map, and editor
+interactions with lifecycle cleanup. Floating UI positions shared popovers and
+selection tools. Appearance preferences persist locally.
 
-## Acceptance
+The reader uses the local Gloss reference for typography, themes, customization,
+selection actions, margin connectors, and card motion. Paragraph numbers start
+hidden. The bottom question toolbar and color-highlighting action are absent.
 
-Only reading is publicly accessible. Saving and all learning workspaces require authentication. Import errors and unsupported browser capabilities have visible recovery paths. Progress is based on recorded work, not fixture numbers. AI feedback is identified as such and validated before persistence. All changes pass precommit and the existing coverage floor; do not weaken checks to accommodate new code.
+## Verification
+
+Test login requirements, ownership, unsupported routes, import validation, page
+creation and editing, annotations, both notebooks, vocabulary, and provider errors.
+Browser regressions cover desktop and mobile navigation, reading preferences,
+selection, cards, citation jumps, and the minimap. Run `mix precommit` and
+`mix test --cover --warnings-as-errors`; preserve the existing coverage floor.
+
+## Import intake
+
+The importer exposes one text surface with document attachment and drag-and-drop.
+It derives a bounded title from EPUB/DOCX/PDF metadata or Markdown/plain-text
+headings, with `Untitled` as the fallback. Import titles do not depend on filenames
+or caller-supplied title fields. Pasted drafts survive validation and extraction
+errors; removing an attachment makes the draft editable again.

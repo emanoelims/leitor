@@ -5,6 +5,23 @@ defmodule Leitor.LearningTest do
   alias Leitor.Learning
   alias Leitor.Learning.Attempt
 
+  test "vocabulary search is literal, scoped, and matches meanings and context" do
+    scope = AccountsFixtures.user_scope_fixture()
+    other = AccountsFixtures.user_scope_fixture()
+
+    {:ok, literal} =
+      Learning.save_word(scope, %{term: "100%_done", meaning: "Completed", category: "aux", context: "All finished."})
+
+    {:ok, _} =
+      Learning.save_word(scope, %{term: "hundred", meaning: "A quantity", category: "noun", context: "An amount."})
+
+    {:ok, _} = Learning.save_word(other, %{term: "100%_done", meaning: "Completed", category: "aux", context: "Hidden."})
+    assert Learning.vocabulary(scope, "all", "%_") == [literal]
+    assert Learning.vocabulary(scope, "verb", "finished") == [literal]
+    assert Learning.vocabulary(scope, "all", "completed") == [literal]
+    assert Learning.vocabulary(scope, "noun", "%_") == []
+  end
+
   describe "entries" do
     import AccountsFixtures, only: [user_scope_fixture: 0]
     import Leitor.LearningFixtures

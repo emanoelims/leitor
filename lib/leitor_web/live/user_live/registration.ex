@@ -8,27 +8,20 @@ defmodule LeitorWeb.UserLive.Registration do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm">
-        <div class="text-center">
-          <.header>
-            Register for an account
-            <:subtitle>
-              Already registered?
-              <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
-                Log in
-              </.link>
-              to your account now.
-            </:subtitle>
-          </.header>
+    <Layouts.app flash={@flash} current_scope={@current_scope} active="register" class="auth-main">
+      <StudyComponents.auth_shell>
+        <div class="auth-form-heading">
+          <p class="auth-form-eyebrow">{gettext("Your next chapter")}</p>
+          <h2>{gettext("Register for Leitor.")}</h2>
+          <p class="muted">{gettext("Start with your email. A private reading space follows.")}</p>
         </div>
-
         <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
           <.input
             field={@form[:email]}
             type="email"
-            label="Email"
-            autocomplete="username"
+            label={gettext("Email")}
+            autocomplete="email"
+            placeholder={gettext("you@example.com")}
             spellcheck="false"
             required
             phx-mounted={JS.focus()}
@@ -36,13 +29,17 @@ defmodule LeitorWeb.UserLive.Registration do
 
           <.button
             id="register-submit"
-            phx-disable-with="Creating account..."
-            class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
+            phx-disable-with={gettext("Creating account...")}
+            variant="primary"
+            class="action action-primary w-full"
           >
-            Create an account
+            {gettext("Create an account")}
           </.button>
         </.form>
-      </div>
+        <p class="auth-alternate">
+          {gettext("Already have an account?")} <.link navigate={~p"/users/log-in"} class="text-link">{gettext("Log in")}</.link>.
+        </p>
+      </StudyComponents.auth_shell>
     </Layouts.app>
     """
   end
@@ -72,7 +69,7 @@ defmodule LeitorWeb.UserLive.Registration do
          socket
          |> put_flash(
            :info,
-           "An email was sent to #{user.email}, please access it to confirm your account."
+           gettext("An email was sent to %{email}, please access it to confirm your account.", email: user.email)
          )
          |> push_navigate(to: ~p"/users/log-in")}
 

@@ -236,9 +236,16 @@ defmodule Leitor.Learning do
     end
   end
 
-  @doc "Lists up to 200 recently updated words matching the selected jar or known status."
+  @doc """
+  Lists up to 200 recently updated owned words matching a jar or known status.
+
+  Optional search matches literal text in the term, meaning, or context before
+  limiting results, so older words can still be found. Auxiliary verbs share the
+  verb jar and proper nouns share the noun jar.
+  """
   @spec vocabulary(Scope.t(), String.t()) :: [Entry.t()]
-  def vocabulary(scope, filter) do
+  @spec vocabulary(Scope.t(), String.t(), String.t()) :: [Entry.t()]
+  def vocabulary(scope, filter, search \\ "") do
     query = from e in Entry, where: e.user_id == ^scope.user.id, order_by: [desc: e.updated_at], limit: 200
 
     query =
@@ -248,6 +255,14 @@ defmodule Leitor.Learning do
         "noun" -> from e in query, where: e.category in ["noun", "proper"]
         "verb" -> from e in query, where: e.category in ["verb", "aux"]
         category -> from e in query, where: e.category == ^category
+      end
+
+    query =
+      if search == "" do
+        query
+      else
+        pattern = "%" <> String.replace(search, ["\\", "%", "_"], &"\\#{&1}") <> "%"
+        from e in query, where: ilike(e.term, ^pattern) or ilike(e.meaning, ^pattern) or ilike(e.context, ^pattern)
       end
 
     Repo.all(query)

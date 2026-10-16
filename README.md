@@ -26,46 +26,152 @@ for the line coverage report in `cover/`.
 
 ## Authentication
 
-Open `/users/log-in` and enter your email. The same magic-link flow creates a
-new account or signs in an existing one. Open `/dev/mailbox` for development
-emails. Password login and password settings are not exposed. Email changes
-require a recent login. Public deployment also requires a production Swoosh
-adapter and a verified sender; the development mailbox does not deliver email.
+All product pages require login, including `/`, `/pages`, `/notebook`, and word jars.
+Registration and authentication follow Phoenix 1.8's generated flow: register an
+email, then sign in through a single-use magic link. Browser password login and
+password updates are unavailable, including for existing accounts that retain a
+legacy password hash. Account email changes require a recent email-link login.
+Open `/dev/mailbox` for development emails.
+Public deployment requires a production Swoosh adapter and a verified sender;
+the development mailbox does not deliver external email.
 
 ## Reading and learning
 
-`/` and `/read` support anonymous reading, pasted text, and document imports.
-Anonymous content stays in the current LiveView; sign in before saving it.
-Accounts unlock a private library, word and expression jars, spaced review,
-writing feedback, dictation, shadowing, rewriting, lesson materials, and progress.
-Progress comes from saved activity rather than demonstration numbers.
+The UI uses application-owned Phoenix function components and Tailwind CSS,
+without daisyUI or another component framework. `CoreComponents` provides buttons,
+inputs, validation, notices, and anchored popovers. Shared control styles live in
+`assets/css/components.css`; palettes and reading interactions are adapted from
+the local Gloss reference. All workspace and account screens use these palettes.
 
-Import TXT, EPUB, DOCX, text-based PDF, or clear JPG/PNG photos (up to 10 MB).
-PDF extraction requires `pdftotext`; photo OCR requires Tesseract with English
-language data. On macOS, `brew install poppler tesseract` supplies both. Missing
+Leitor's own open-folio mark replaces Phoenix's logo and browser icon. Its vector
+source is `priv/static/images/logo.svg`, rendered through `CoreComponents.icon/1`
+and used as the SVG favicon. Registration, email sign-in, and confirmation share
+an editorial entry layout with a reading-and-margin preview.
+
+The universal application shell lives in `LeitorWeb.Layouts.app/1`. Its `menu`
+slot defaults to a Pages / Notebook context selector, `tabs` follows the context
+with a divider, and `tools` supplies contextual controls. The account menu stays
+owned by the layout. Creating a page is also available in the context selector.
+The shelf’s filled **Add page** button opens a single menu with **Blank page**
+and **Import text** actions, using the shared Floating UI popup. Closing the
+importer restores focus to the Add page button.
+
+Page source tabs and notebook view tabs live in the header; search, ordering,
+annotation filters, and word filters live in its shared Floating UI submenu.
+Menus open below the full header when its tabs wrap on mobile. Filters retain
+shareable URLs and survive reloads. Reader and editor screens instead show a
+close link to `/pages` and the page title on the left, with only contextual
+controls and the account menu on the right. Saving stays in that header as a
+primary action while editing; the ⌘/Ctrl S shortcut also remains available.
+Reading titles follow the same size
+preference as the document, including on mobile.
+
+The workspace has a page shelf and a combined notebook. Create any number of private
+pages at `/pages/new`, paste a text or Markdown, and save it as a formatted reading.
+The page shelf has title search, source filters, recent/title ordering, readable
+previews, and estimated reading time. Imports use a single paste-or-upload surface
+with no title field. Titles come from document metadata, a Markdown heading
+(including setext), or a short isolated opening line; otherwise they are `Untitled`.
+A filename is never used as a substitute title. Validation
+and extraction errors preserve typed text, and successful imports return to the
+unfiltered shelf. Imported texts open in the same page reader. The appearance menu ports Gloss’s complete Look and Text controls: Auto, Paper,
+Sepia, Snow, Night and Ink themes; Vermilion, Cobalt, Moss and Graphite pens;
+Newsreader, Literata, Schibsted and Atkinson Hyperlegible Next fonts; text sizes
+from 15 to 28; line spacing, column width, alignment and spaced or indented paragraphs.
+Fonts are served locally, including their licenses. Auto follows the system palette,
+and theme changes use Gloss’s circular reveal when motion is allowed.
+Reading preferences persist in the browser. Paragraph numbers are hidden by default;
+the Numbers switch enables them without hiding citation references. Map can be
+hidden independently. Focus hides the margin, map and paragraph addresses, lets the
+header recede until hovered or focused, and fades paragraphs already read. F toggles
+focus and Escape leaves it; focus is temporary for the current page. Text reset
+preserves the palette, pen, Numbers and Map choices. The keyboard help explains
+notebook and scroll-map shortcuts.
+
+The notebook at `/notebook` brings together notes and word jars in two sections.
+`/notebook?view=words` opens the collected words; `/vocabulary` redirects there.
+Word filters and literal searches in terms, meanings, and context are reflected
+in the URL. Editing and known status retain the existing ownership rules.
+The notes section gathers annotations from every owned page,
+with literal search, source-page and annotation-type filters, and pagination of
+30 entries per page. Source links open the page and highlight the reanchored
+passage when it still exists. The page notebook remains available in the reading
+tools and with N, preserving page-specific notes, editing, and export.
+
+The block editor supports headings, lists, checklists, quotes, code and `/` commands.
+Read without contacting an AI provider. Double-click a word or select across formatted
+blocks to keep a note or collect vocabulary. Definitions
+and explanations call Anthropic only on request. The notebook opens as a right-hand
+sheet and filters highlights, notes, definitions and questions. Its entries link
+back to the source and can be sent to a grammatical word jar with an explicit meaning.
+The corner minimap uses Gloss’s paragraph lines, vermilion annotation dots and
+viewport outline, with clicking, dragging and keyboard travel. Notes and existing
+highlights persist per account. Color highlighting is absent from the selection toolbar. Unique quotations are reanchored after edits; removed
+or ambiguous passages are retained in the notebook without pointing to another text.
+The bottom question toolbar is absent from this workspace.
+
+The selection lens, paper palette, marker sweep, underline draw, waiting lines,
+and margin-card movement are ported from the local Gloss reference. Active cards
+connect to their source; nearby responses collapse into one-line summaries. Cards
+appear directly at their first anchor, retain their position through LiveView
+patches, and glide when switching notes without replaying the entrance animation.
+The reader uses the same Lucide icon geometry as Gloss, bundled locally with its
+ISC license in `assets/vendor/lucide`. Ask follow-ups
+inside a response (including a request for Portuguese), retry, copy, or stop a
+pending answer. Completed exchanges remain owned by the page and persist together,
+up to 20 follow-ups per annotation, including notebook Markdown exports.
+Definitions, explanations, simplifications, questions, retries and follow-ups use
+ReqLLM object streaming. Cards show the provisional answer in small batches while
+the full answer, meaning and word category are validated before persistence.
+Cancelled, failed or truncated streams preserve previous annotations and replies.
+Click empty paper to collapse an open note. Paragraph badges and valid ¶ citations
+inside answers preview their source on hover or keyboard focus and jump there on
+click, briefly highlighting the destination with Gloss’s fading paragraph wash.
+Repeated clicks restart the effect; reduced-motion preferences use a static wash
+and immediate navigation. Floating UI keeps previews and selection menus anchored and within the viewport.
+Hovering a marked passage or its card draws their connector without opening the
+card. An open card keeps its connector while another is previewed. Native text
+selection survives card updates, and the selection lens follows Gloss sizing,
+theme colors, and contextual word/passage actions.
+
+The product routes are `/` and `/pages` (the page library), `/pages/new`,
+`/pages/:id`, and `/notebook`, plus account and
+authentication flows. The former sentence reader, writing, lessons, exercises,
+review, progress, rooms, resource-management screens, and component gallery
+have been removed. Their database records remain intact.
+
+The shelf accepts Markdown (.md/.markdown), TXT, EPUB, DOCX, and text-based PDF files (up to 10 MB).
+EPUB and DOCX title metadata are read locally. Optional `pdfinfo` supplies PDF titles.
+PDF extraction requires `pdftotext` (`brew install poppler` on macOS). Missing
 tools or unreadable files produce a recoverable import error. Import chapters
 separately: extracted text is limited to 300,000 bytes and PDF import to 200 pages.
 
-In the reader, use Left/Right arrows to move between sentences. Tab and Enter
-operate word buttons and controls; Escape dismisses dialogs. Select an expression
-with the mouse or enable expression selection and choose its first and last word
-with the keyboard. Browser speech supplies pronunciation. Shadowing uses microphone
-permission and local audio playback; audio is never uploaded or stored. It records
-practice time, without claiming automatic pronunciation scoring.
-
-Create a private room at `/rooms` and share its invitation with signed-in readers.
-The host controls the shared sentence; Phoenix Presence tracks participants.
-Chat is temporary, limited to 50 displayed messages, and does not expose email
-addresses. Closing a room revokes its invitation.
-
-Reusable function components are demonstrated at `/dev/componentes` in development.
-The warm palette, typography, contextual header, jars, and activity layouts follow
-the approved prototypes. Google Fonts are loaded through stylesheet links.
-
 ## Language tutor
 
-ReqLLM sends text to Anthropic only when a learner requests analysis, feedback,
-a lesson guide, or an explanation. Set credentials in the environment or the
+### Markdown code highlighting
+
+MDEx uses Lumis for fenced code in the reader, annotation answers, and streamed
+draft previews. Label fences with a language, for example `elixir`, `js`, `ts`,
+`tsx`, `html`, `css`, `json`, `heex`, `python`, or `bash`. Unlabelled fences and
+uninstalled languages remain escaped plain code. Code is never executed.
+
+The bundled GitHub light/dark palettes in `assets/css/lumis.css` follow the
+reading theme, including Auto, without fetching assets or rerendering content.
+Parser packages are release dependencies; add a `lumis_wasm_*` dependency to
+support another language. The comment grammar supports Elixir's injections.
+Each code block has a cooperative 1-second highlighting budget and a 4096-match
+limit; exceeding the time budget falls back to plain code. These limits exclude
+parser loading and do not bound total document rendering time.
+
+`config :mdex_native, syntax_highlighter: :lumis` selects the native artifact at
+compile time. After changing it in an existing checkout, stop the development
+server, run `mise exec -- mix deps.compile mdex_native mdex --force`, then restart
+with `mise run dev`.
+
+### Claude configuration
+
+ReqLLM sends text to Anthropic only when a learner requests a definition,
+explanation, simplification, or question response. Set credentials in the environment or the
 ignored `mise.local.toml`; never commit them:
 
 ```toml
@@ -75,13 +181,12 @@ LEITOR_ANALYSIS_MODEL = "anthropic:claude-haiku-5-5"
 LEITOR_FEEDBACK_MODEL = "anthropic:claude-sonnet-5-5"
 ```
 
-These model settings are also the defaults. Analysis favors the lighter model;
-writing feedback uses Sonnet. Override either setting to evaluate another
-Anthropic model. Restart the development server after changing its environment.
+These model settings are also the defaults. Page assistance uses the analysis
+model. The feedback setting remains available to the retained domain APIs.
+Restart the development server after changing its environment.
 Provider failures preserve the learner's text and allow retrying. Structured
 responses are schema validated, and sentence analysis must preserve the original
 words and punctuation. AI suggestions still require the learner's judgment.
-Lesson guides analyze the first 12,000 characters and remain saved with the lesson.
 
 ## Persistence
 
@@ -145,7 +250,7 @@ troubleshooting and the optional proxy for worktrees running on different ports.
 
 ### Floating panels
 
-Reader tools, the color guide and the account menu use `@floating-ui/dom`,
+Reading appearance controls and the account menu use `@floating-ui/dom`,
 bundled through esbuild. `mix assets.setup` installs the locked npm dependencies;
 Node.js 22 is managed by mise. After pulling dependency changes, run
 `mise exec -- mix assets.setup`.
@@ -161,31 +266,86 @@ following [Floating UI's lifecycle guidance](https://floating-ui.com/docs/autoUp
 Native disclosure keyboard behavior and Phoenix JS handle opening, Escape
 and outside clicks.
 
-### Paragraph writing
+### Page editing
 
-Writing uses an inline Tiptap editor with Markdown persistence and an MDEx-rendered
-preview. Type `/` at the start of a paragraph to insert text, headings, lists,
-checklists, quotes, code blocks, or dividers. Filter by typing, choose with ↑/↓ and
-Enter, and dismiss with Escape. Markdown shortcuts such as `## `, `- `, `> `,
-`**bold**`, `*italic*`, and `[label](https://example.com)` render as you type. Pasted Markdown supports the same
-blocks. Cmd/Ctrl+Z undoes changes; Cmd/Ctrl+S saves the draft.
+Closing an editor with unsaved changes asks before leaving; reload/close uses
+the browser's native confirmation. Same-document browser Back can bypass those
+prompts, so an account/page-scoped session-storage backup recovers unsaved text
+when reopening that editor in the same tab. The recovery notice makes it clear
+that Save & read is still required. Explicitly discarding a draft or successfully
+saving it clears its backup; failed saves keep it. Drafts are not synchronized
+between tabs or devices, and recovery never replaces a newer saved document.
 
-The cursor selects the prose paragraph sent to the tutor, including headings and
-list items. Code blocks and dividers are excluded. Applying a suggestion replaces
-only that paragraph; changed paragraphs must be reviewed again. The eye button
-opens the server-rendered preview. Saved drafts and feedback remain available in
-the header's history menu. Existing plain-text drafts retain their literal text;
-new edits save as Markdown. Intentional blank paragraphs remain visible in the
-preview, and suggested titles are saved with their drafts. Reading and writing share the same document measure
-and `StudyComponents.reading_toolbar/1` function component.
+Readers remember a source block and relative offset in local storage, scoped to
+the account, page, and saved body revision. This restores the passage after
+reopening, including after a viewport/font change. A notebook reference or URL
+fragment takes priority; editing/saving resets the reading position. Blocked
+browser storage does not prevent reading or saving pages.
 
-User drafts are untrusted Markdown: MDEx sanitizes HTML, escapes raw tags, and
-never compiles HEEx or evaluates Phoenix components. MDEx's HEEx/component support
-is reserved for trusted application templates. This editor supports the blocks
-listed above, not every MDEx extension (for example, tables and embedded components).
+Pages use an inline Tiptap editor with Markdown persistence and sanitized MDEx
+rendering. Type `/` at the start of a paragraph for headings, lists, checklists,
+quotes, code, and dividers. Choose with arrow keys and Enter; Escape dismisses
+the menu. Markdown shortcuts and pasted Markdown render as you type.
+Cmd/Ctrl+Z undoes changes and Cmd/Ctrl+S saves the page.
+
+Choose **Generate with AI** in the `/` menu (or type `/ai`) to describe new text
+to insert at the cursor. The request uses the current title and up to 24,000
+characters of draft context with `LEITOR_FEEDBACK_MODEL`. Instructions follow the
+requested language and are limited to 2,000 characters. The generated Markdown
+is inserted into the unsaved draft and can be undone. Escape or the header's Stop
+button cancels a pending request; failures keep the prompt for retry.
+The existing Claude API key is required, and credentials stay on the server.
+ReqLLM streams Markdown through `stream_text/3` and `StreamResponse.process_stream/2`.
+The prompt popup closes when generation starts. The shared loading animation and
+incoming formatted text appear directly at the cursor, using the document's
+typography. While writing, **Stop** in the header or Escape cancels the request.
+The editor is read-only and saving is disabled until generation ends. Provisional
+text is a document decoration, so cancellation leaves the draft and undo history intact.
+Only a normally completed, nonempty response within 12,000 characters is inserted
+into the editor. Interrupted, truncated, or failed responses leave the draft intact.
+
+Page content is untrusted Markdown: MDEx sanitizes HTML, escapes raw tags, and
+never compiles HEEx or evaluates Phoenix components. Shared Markdown parsing and
+block-menu components remain in use by the page editor.
 
 Run browser regression tests against a development server using
 `npm --prefix assets run test:browser` (install Chromium once with
 `cd assets && npx playwright install chromium`). Set `BASE_URL` for another port.
 Tests create isolated accounts through the development mailbox; no external email
 is sent. Screenshots and browser artifacts are written to the ignored `tmp/` folder.
+
+### Account language and AI preferences
+
+Open **Account → Preferences** (`/settings`) to choose English or Brazilian
+Portuguese for the interface. Phoenix Gettext owns the interface catalogs in
+`priv/gettext`; user page titles, text, and annotations retain their original
+content. The public authentication screens reuse the last browser locale.
+
+The AI response language is independent: follow the request (the existing
+behavior), English, or Brazilian Portuguese. Explicit language requests take
+priority. Existing answers are preserved; new requests use the current account
+preferences, including requests from an already-open reading tab.
+
+Reading/explanations and writing/generation have separate Claude model choices:
+Haiku 5.5, Sonnet 5.5, and Opus 5.5. **Application default** retains the server's
+`LEITOR_ANALYSIS_MODEL` / `LEITOR_FEEDBACK_MODEL` configuration. Credentials stay
+on the server; preferences never store an API key or change authentication tokens.
+
+The workspace and account dropdowns use shared `dropdown_item/1` rows inside
+the Floating UI popover. They share compact spacing, Lucide icons, regular
+labels, selected-state checks, and theme colors. Arrow keys and Home/End move
+between entries; Enter/Space activates an entry. Escape restores trigger focus,
+Tab leaves the menu, and outside clicks dismiss it.
+
+Single-choice form fields use the same popup surface through the shared input
+component. The native select retains its name, options, required/disabled state,
+and LiveView form events; an ignored browser picker supplies the visible
+control and listbox. Selection checks, keyboard search and arrows, Escape, and
+viewport placement work in nested filter popups as well as account preferences.
+Without JavaScript, the native select remains visible.
+
+Reading typography follows Gloss's prose scale: the default is 20px, with
+line-height choices of 1.50, 1.64, and 1.82. At widths up to 640px, line-height
+is reduced by 0.05 for every reading face. Font-specific size ratios and the
+0.95em paragraph gap match the reference; existing saved sizes remain intact.
+Reset text settings to apply the current defaults.

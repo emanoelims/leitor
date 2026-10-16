@@ -90,12 +90,14 @@ defmodule LeitorWeb.UserLive.SettingsTest do
     end
   end
 
-  describe "password settings are unavailable" do
+  describe "email-only account settings" do
     setup :register_and_log_in_user
 
-    test "does not expose password controls", %{conn: conn} do
+    test "does not expose password controls even in sudo mode", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/users/settings")
+      assert has_element?(view, "#email_form")
       refute has_element?(view, "#password_form")
+      refute has_element?(view, "input[type=password]")
     end
   end
 

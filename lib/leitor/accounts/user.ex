@@ -12,6 +12,7 @@ defmodule Leitor.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    embeds_one :preferences, Leitor.Accounts.Preferences, on_replace: :update, defaults_to_struct: true
 
     timestamps(type: :utc_datetime)
   end

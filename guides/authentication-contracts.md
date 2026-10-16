@@ -7,17 +7,18 @@ input, concurrent schedule, or deployment configuration.
 
 | ID | Contract | Existing test evidence |
 | --- | --- | --- |
-| AUTH-001 | Registration requires a valid, unique email and creates an unconfirmed account without a password. The login form also registers first-time email addresses and sends the same generic success message. | `test/leitor/accounts_test.exs`: `register_user/1`, including case-insensitive uniqueness. |
-| AUTH-002 | Legacy context password operations retain validation, hashing, and token revocation. Browser password login is rejected, and password settings are not exposed. | `test/leitor/accounts_test.exs`: `change_user_password/3`, `update_user_password/2`, and password lookup. |
+| AUTH-001 | Registration requires a valid, unique email and creates an unconfirmed account without a password. The login form sends a generic response and only emails registered accounts; first-time readers use registration. | `test/leitor/accounts_test.exs`: `register_user/1`, including case-insensitive uniqueness. |
+| AUTH-002 | Browser login accepts only a valid email-link token. Password submissions are rejected even when legacy credentials are valid; password-update routes and controls are absent. Existing password hashes and domain APIs are retained without exposing them to the browser. Remember-me remains available when consuming an email link. | `controllers/user_session_controller_test.exs`: email-only authentication; `live/user_live/login_test.exs` and `settings_test.exs`; existing domain password tests. |
 | AUTH-003 | Session lookups reject unknown and expired tokens; logout removes the session token. | `test/leitor/accounts_test.exs`: session lookup and deletion; `test/leitor_web/user_auth_test.exs`: `logout_user/1`. |
 | AUTH-004 | A confirmed user's magic link can be consumed once. Confirmation of an unconfirmed account revokes existing tokens. An unconfirmed account with a password cannot log in through a magic link. | `test/leitor/accounts_test.exs`: `login_user_by_magic_link/1`; session controller magic-link tests. |
 | AUTH-005 | Email changes require a valid, unexpired token for the current email context. Rejected changes preserve the stored email and tokens. | `test/leitor/accounts_test.exs`: `update_user_email/2`; settings confirmation tests. |
-| AUTH-006 | Protected routes require authentication. Settings require authentication within the last 10 minutes. | `test/leitor_web/user_auth_test.exs`: `require_authenticated_user/2`, `on_mount :require_authenticated`, and `on_mount :require_sudo_mode`; `test/leitor_web/live/user_live/settings_test.exs`: `Settings page`. |
+| AUTH-006 | Protected routes require authentication. Email settings require authentication within the last 10 minutes. | `test/leitor_web/user_auth_test.exs`: `require_authenticated_user/2`, `on_mount :require_authenticated`, and `on_mount :require_sudo_mode`; `test/leitor_web/live/user_live/settings_test.exs`: `Settings page`. |
 | AUTH-007 | Caller scopes retain the supplied user; an absent user produces no scope. | `test/leitor/accounts/scope_test.exs`: executable `Scope.for_user/1` examples. |
+| AUTH-008 | Only pages, creation, the combined notes/word-jars notebook, per-page notebooks, and account screens remain in the product. Every product entry requires an authenticated scope. The legacy word-jars route redirects inside the authenticated scope; retired screens have no route. Only authentication screens remain in the public LiveView session. | `page_live_test.exs`, `notebook_live_test.exs`, `learning_workflows_test.exs`, and `controllers/workspace_routes_test.exs`. |
+| AUTH-009 | Texts, page annotations, vocabulary, attempts, and hosted room management are filtered by scope; caller-supplied ownership is never cast. | `library_test.exs`, `pages_test.exs`, `notebook_live_test.exs`, `learning_test.exs`, `study_test.exs`: ownership cases. |
+| AUTH-010 | The retained Study context authorizes invitation-based collaboration, host-only advancement and closure, and bounded messages. Participant metadata omits email. Room screens and routes have been retired; stored records are preserved. | Domain `test/leitor/study_collaboration_test.exs`: synchronization, rejection, chat, and closure. |
 
-| AUTH-008 | Only the landing page and ephemeral reader are public. Saved reading and learning workspaces require an authenticated scope. | `learning_workflows_test.exs`, `study_collaboration_test.exs`, and generated resource LiveView tests. |
-| AUTH-009 | Texts, vocabulary, attempts, and hosted room management are filtered by scope; caller-supplied ownership is never cast. | `library_test.exs`, `learning_test.exs`, `study_test.exs`: ownership cases. |
-| AUTH-010 | An authenticated invitee can join a private room and send a bounded message. Only the host advances or closes it; closure revokes access. Participant metadata omits email. | Context and LiveView `study_collaboration_test.exs`: two-user synchronization, rejection, chat, and closure. |
+| AUTH-011 | Language and AI preferences at `/settings` use the existing authenticated session without requiring sudo mode. Updates cast only the caller’s embedded preferences, reject unsupported choices, preserve email and authentication tokens, and cannot target another account. Interface locale comes from the authenticated account, overriding browser parameters. | `test/leitor/preferences_test.exs` and `test/leitor_web/live/preferences_live_test.exs`. |
 
 ## Boundaries and limits
 
@@ -30,9 +31,11 @@ uses the stricter 10-minute window.
 `Library`, `Learning`, and `Study` enforce resource ownership independently of
 route authentication. A room invitation is a capability for collaboration, not
 permission to mutate the host's resources. Protected LiveViews share the existing
-`:require_authenticated_user` session; public reading uses `:current_user`.
-The password context remains for existing account compatibility and its tests;
-there is no browser password authentication or update endpoint.
+`:require_authenticated_user` session and the browser authentication plug.
+The `:current_user` session contains registration, login and confirmation screens.
+There is no browser password login or password-update endpoint. Email settings require
+recent authentication through an email link. Page annotations inherit ownership from
+their parent text; browser-supplied quotes and owner IDs are never trusted.
 
 Email delivery is tested through Swoosh's test adapter. These tests do not prove
 production mail delivery. SQL sandbox tests isolate database changes; they do not

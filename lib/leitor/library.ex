@@ -6,8 +6,44 @@ defmodule Leitor.Library do
   import Ecto.Query, warn: false
 
   alias Leitor.Accounts.Scope
+  alias Leitor.Library.Note
+  alias Leitor.Library.Reading
   alias Leitor.Library.Text
   alias Leitor.Repo
+
+  @doc "Lists margin notes for an owned reading in sentence and creation order."
+  @spec list_notes(Scope.t(), Ecto.UUID.t()) :: [Note.t()]
+  def list_notes(%Scope{} = scope, text_id) do
+    Repo.all(
+      from n in Note,
+        join: t in Text,
+        on: t.id == n.text_id,
+        where: t.user_id == ^scope.user.id and t.id == ^text_id,
+        order_by: [asc: n.sentence_index, asc: n.inserted_at, asc: n.id]
+    )
+  end
+
+  @doc """
+  Saves a margin note on an owned reading. The quote comes from the stored text,
+  never from caller attributes. Invalid anchors return `{:error, :invalid_anchor}`;
+  inaccessible readings raise `Ecto.NoResultsError`.
+  """
+  @spec create_note(Scope.t(), Ecto.UUID.t(), map()) ::
+          {:ok, Note.t()} | {:error, Ecto.Changeset.t() | :invalid_anchor}
+  def create_note(%Scope{} = scope, text_id, attrs) do
+    text = get_text!(scope, text_id)
+    changeset = Note.changeset(%Note{quote: "pending", text_id: text.id}, attrs)
+    index = Ecto.Changeset.get_field(changeset, :sentence_index)
+
+    if is_integer(index) and index >= 0 do
+      case Enum.at(Reading.prepare(text.body), index) do
+        nil -> {:error, :invalid_anchor}
+        sentence -> changeset |> Ecto.Changeset.put_change(:quote, sentence.body) |> Repo.insert()
+      end
+    else
+      {:error, changeset}
+    end
+  end
 
   @doc """
   Subscribes to scoped notifications about any text changes.
@@ -65,6 +101,37 @@ defmodule Leitor.Library do
       broadcast_text(scope, {:created, text})
       {:ok, text}
     end
+  end
+
+  @doc "Creates a reading and its session notes atomically; invalid notes roll back the reading."
+  @spec create_text_with_notes(Scope.t(), map(), [map()]) ::
+          {:ok, Text.t()} | {:error, Ecto.Changeset.t() | :invalid_anchor}
+  def create_text_with_notes(%Scope{} = scope, attrs, notes) do
+    result =
+      Repo.transact(fn ->
+        with {:ok, text} <- %Text{} |> Text.changeset(attrs, scope) |> Repo.insert(),
+             :ok <- insert_notes(scope, text.id, notes) do
+          {:ok, text}
+        end
+      end)
+
+    case result do
+      {:ok, text} ->
+        broadcast_text(scope, {:created, text})
+        result
+
+      {:error, _} ->
+        result
+    end
+  end
+
+  defp insert_notes(scope, text_id, notes) do
+    Enum.reduce_while(notes, :ok, fn attrs, :ok ->
+      case create_note(scope, text_id, attrs) do
+        {:ok, _note} -> {:cont, :ok}
+        {:error, _} = error -> {:halt, error}
+      end
+    end)
   end
 
   @doc """

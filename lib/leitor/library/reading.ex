@@ -15,6 +15,7 @@ defmodule Leitor.Library.Reading do
 
       %{
         body: body,
+        paragraph: 0,
         tokens: tokens,
         translation: sentence["translation"],
         tense: sentence["tense"],
@@ -33,21 +34,41 @@ defmodule Leitor.Library.Reading do
   @spec prepare(body()) :: [sentence()]
   def prepare(body) do
     body
-    |> String.split(~r/(?<=[.!?])\s+|\n\s*\n/, trim: true)
-    |> Enum.flat_map(&chunk/1)
-    |> Enum.map(fn text ->
+    |> String.split(~r/\n\s*\n/, trim: true)
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {paragraph, index} ->
+      paragraph
+      |> String.split(~r/(?<=[.!?])\s+/, trim: true)
+      |> Enum.flat_map(&chunk/1)
+      |> Enum.map(&{&1, index})
+    end)
+    |> Enum.map(fn {text, paragraph} ->
       tokens =
         ~r/[\p{L}\p{N}]+(?:['’\-][\p{L}]+)*|[^\s\p{L}\p{N}]/u
         |> Regex.scan(text)
-        |> Enum.map(fn [word] -> %{word: word, category: "word", ipa: "", meaning: "", definition: "", note: ""} end)
+        |> Enum.map(&plain_token/1)
 
-      %{body: text, tokens: tokens, translation: nil, tense: "Your text", focus: nil, chunks: []}
+      %{body: text, paragraph: paragraph, tokens: tokens, translation: nil, tense: "Your text", focus: nil, chunks: []}
     end)
+  end
+
+  @doc "Groups prepared sentences into ordered paragraphs with stable sentence anchors."
+  @spec paragraphs([sentence()]) :: [map()]
+  def paragraphs(sentences) do
+    sentences
+    |> Enum.with_index()
+    |> Enum.chunk_by(fn {sentence, _index} -> sentence.paragraph end)
+    |> Enum.map(fn items -> %{id: elem(hd(items), 0).paragraph, sentences: items} end)
   end
 
   @doc "Returns normalized word tokens for comparisons and vocabulary identity."
   @spec words(body()) :: [word()]
   def words(text), do: ~r/[\p{L}\p{N}]+(?:['’][\p{L}]+)*/u |> Regex.scan(String.downcase(text)) |> List.flatten()
+
+  defp plain_token([word]) do
+    category = if words(word) == [], do: "punctuation", else: "word"
+    %{word: word, category: category, ipa: "", meaning: "", definition: "", note: ""}
+  end
 
   defp chunk(text) do
     if String.length(text) > 3000,

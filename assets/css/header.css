@@ -1,0 +1,75 @@
+/* The workspace navigates between screens; the reader keeps only page controls. */
+.app-header.workspace-header .header-inner { display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:16px; min-height:52px; padding:8px 20px; }
+.app-header.workspace-header .header-left { display:flex; flex:1 1 auto; flex-basis:auto; flex-wrap:nowrap; align-items:center; gap:14px; min-width:0; }
+.app-header.workspace-header .header-actions { width:auto; flex:0 0 auto; margin:0; gap:8px; }
+.app-header.workspace-header .header-tools { padding-right:8px; margin-right:2px; gap:4px; border-right:1px solid var(--line); }
+.app-header.workspace-header .workspace-menu { gap:0; }
+/* Context, divider, then screen-owned tabs. */
+.app-header :is(.workspace-context-trigger,.workspace-filters-trigger,.workspace-header-action) { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:36px; padding:0 10px; border:0; border-radius:8px; background:transparent; color:var(--muted); font-family:var(--font-sans); font-size:13px; font-weight:400; white-space:nowrap; cursor:pointer; }
+.app-header .workspace-context-trigger { color:var(--ink); }
+.app-header :is(.workspace-context-trigger,.workspace-filters-trigger,.workspace-header-action):is(:hover,[aria-expanded=true],.active) { background:var(--soft); color:var(--ink); }
+.app-header :is(.workspace-context-trigger,.workspace-filters-trigger,.workspace-header-action):focus-visible { outline:2px solid var(--muted); outline-offset:2px; }
+.app-header .workspace-header-action.workspace-header-primary { background:var(--ink); color:var(--paper); font-weight:500; }
+.app-header .workspace-header-action.workspace-header-primary:hover { background:color-mix(in oklab,var(--ink) 85%,var(--paper)); color:var(--paper); }
+.app-header.workspace-header .header-tabs { display:flex; align-items:center; gap:16px; min-width:0; }
+.header-tab-divider { width:1px; height:20px; flex:none; background:var(--line); }
+.app-header .header-context-tabs { display:flex; align-items:center; gap:4px; margin:0; padding:0; border:0; white-space:nowrap; }
+.app-header .header-context-tabs>:is(a,button) { display:inline-flex; flex:none; align-items:center; justify-content:center; gap:7px; height:36px; padding:0 10px; margin:0; border:0; border-radius:7px; background:transparent; color:var(--muted); font-family:var(--font-sans); font-size:12px; font-weight:400; line-height:1; text-decoration:none; cursor:pointer; }
+.app-header .header-context-tabs>:is(a,button):is(:hover,[aria-current=page],[aria-pressed=true]) { color:var(--ink); background:var(--soft); text-decoration:none; }
+.app-header .header-context-tabs>:is(a,button):focus-visible { outline:2px solid var(--muted); outline-offset:-2px; }
+.workspace-submenu-heading { margin:4px 0 12px; color:var(--muted); font-size:11px; font-weight:400; }
+.workspace-submenu-divider { height:1px; margin:5px 3px; background:var(--line); }
+.app-header .popover>.workspace-filters-panel { width:320px; padding:12px; }
+.workspace-filters-panel>.workspace-submenu-heading { margin-bottom:8px; }
+.workspace-filters-panel .form-field { margin-bottom:10px; }
+.workspace-filters-panel .field-label { font-size:12px; font-weight:400; }
+.workspace-filter-form { display:grid; gap:0; }
+.workspace-filter-choices { display:flex; flex-wrap:wrap; gap:4px; padding-top:8px; margin-top:6px; border-top:1px solid var(--line); }
+.workspace-filter-choices>button { padding:6px 8px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--muted); font-size:12px; font-weight:400; cursor:pointer; }
+.workspace-filter-choices>button:is(:hover,[aria-pressed=true]) { color:var(--ink); background:var(--soft); }
+.workspace-filter-choices>button:focus-visible { outline:2px solid var(--muted); outline-offset:1px; }
+.workspace-filter-indicator { width:5px; height:5px; flex:none; border-radius:50%; background:var(--gloss-pen); }
+.app-header.reader-header .header-left { gap:8px; }
+.app-header.reader-header .context-title { flex:0 1 auto; max-width:none; min-width:0; font-weight:500; }
+.app-header.reader-header .context-detail { flex:none; margin-left:0; font-size:12px; font-weight:400; }
+@media(max-width:800px) {
+  .app-header.workspace-header .header-inner { gap:12px; padding:8px 16px; }
+  .app-header.workspace-header .header-left { gap:12px; }
+  .app-header.reader-header .context-detail { display:none; }
+}
+@media(max-width:1000px) {
+  .app-header.workspace-header:not(.reader-header) .header-inner { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px; }
+  .app-header.workspace-header:not(.reader-header) .header-left { display:contents; }
+  .app-header.workspace-header:not(.reader-header) .brand-home { grid-column:1; grid-row:1; }
+  .app-header.workspace-header:not(.reader-header) .header-actions { grid-column:2; grid-row:1; }
+  .app-header.workspace-header:not(.reader-header) .workspace-menu { grid-column:1; grid-row:1; margin-left:44px; justify-self:start; }
+  .app-header.workspace-header:not(.reader-header) .header-tabs { grid-column:1/-1; grid-row:2; width:100%; overflow-x:auto; scrollbar-width:none; }
+  .app-header.workspace-header:not(.reader-header) .header-tab-divider { display:none; }
+}
+@media(max-width:800px) {
+  .app-header.workspace-header .workspace-header-action:not(.workspace-header-primary)>span:not([class*=lucide-]) { display:none; }
+  .app-header.workspace-header .workspace-header-action:not(.workspace-header-primary) { width:36px; padding:0; gap:0; }
+}
+@media(max-width:600px) {
+  .app-header.workspace-header:not(.reader-header) .header-inner { padding-inline:12px; }
+  .app-header.workspace-header .workspace-header-action { width:36px; padding:0; gap:0; }
+  .app-header.workspace-header .workspace-header-action>span:not([class*=lucide-]) { display:none; }
+  .app-header.workspace-header:not(.reader-header) .header-tools { gap:0; padding-right:4px; margin-right:0; }
+  .app-header.workspace-header:not(.reader-header) .header-actions { gap:2px; }
+  .app-header.workspace-header .workspace-filters-trigger { width:36px; padding:0; gap:0; position:relative; }
+  .app-header.workspace-header .workspace-filters-trigger>span:not([class*=lucide-]) { display:none; }
+  .app-header.workspace-header .workspace-filter-indicator { position:absolute; top:5px; right:5px; }
+  .app-header.workspace-header .workspace-context-trigger { padding-inline:7px; }
+  .app-header.reader-header .header-inner { gap:8px; padding-inline:12px; }
+  .app-header.reader-header .header-left { gap:6px; }
+  .app-header.reader-header .header-tools { gap:2px; padding-right:6px; margin-right:0; }
+  .app-header.reader-header .header-actions { gap:2px; }
+}
+
+.workspace-filters-panel #notebook-clear { margin-top:10px; font-size:12px; }
+
+/* A single primary entry point for creating or importing a page. */
+.page-create-chevron { transition:transform .18s cubic-bezier(.22,1,.36,1); }
+.page-create-trigger[aria-expanded=true]>.page-create-chevron { transform:rotate(180deg); }
+@media(max-width:600px) { .app-header .page-create-trigger>.page-create-chevron { display:none; } }
+@media(prefers-reduced-motion:reduce) { .page-create-chevron { transition:none; } }

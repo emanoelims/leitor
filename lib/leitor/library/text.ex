@@ -25,10 +25,17 @@ defmodule Leitor.Library.Text do
   def changeset(text, attrs, user_scope) do
     text
     |> cast(attrs, [:title, :body, :position, :source, :analysis])
-    |> validate_required([:title, :body, :position, :source, :analysis])
+    |> validate_required([:title, :position, :source, :analysis])
+    |> require_reading_body()
     |> validate_length(:title, max: 180)
     |> validate_length(:body, max: 300_000)
     |> validate_number(:position, greater_than_or_equal_to: 0)
     |> put_change(:user_id, user_scope.user.id)
+  end
+
+  defp require_reading_body(changeset) do
+    if get_field(changeset, :source) == "page",
+      do: put_change(changeset, :body, get_field(changeset, :body) || ""),
+      else: validate_required(changeset, [:body])
   end
 end

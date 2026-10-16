@@ -9,11 +9,11 @@ defmodule LeitorWeb.UserLive.Settings do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} active="settings">
       <div class="auth-card stack mx-auto max-w-lg">
         <.header>
-          Account Settings
-          <:subtitle>Manage your account email address</:subtitle>
+          {gettext("Account Settings")}
+          <:subtitle>{gettext("Manage your account email")}</:subtitle>
         </.header>
       </div>
 
@@ -22,18 +22,20 @@ defmodule LeitorWeb.UserLive.Settings do
           <.input
             field={@email_form[:email]}
             type="email"
-            label="Email"
-            autocomplete="username"
+            label={gettext("Email")}
+            autocomplete="email"
+            placeholder={gettext("you@example.com")}
             spellcheck="false"
             required
           />
           <.button
             id="update-email-submit"
-            class="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-wait disabled:opacity-60"
-            phx-disable-with="Changing..."
-          >Change Email</.button>
+            variant="primary"
+            class="action action-primary w-full"
+            phx-disable-with={gettext("Changing...")}
+          >{gettext("Change Email")}</.button>
         </.form>
-        <.link href={~p"/users/log-out"} method="delete" class="action mt-6">Log out</.link>
+        <.link href={~p"/users/log-out"} method="delete" class="action mt-6">{gettext("Log out")}</.link>
       </div>
     </Layouts.app>
     """
@@ -44,10 +46,10 @@ defmodule LeitorWeb.UserLive.Settings do
     socket =
       case Accounts.update_user_email(socket.assigns.current_scope.user, token) do
         {:ok, _user} ->
-          put_flash(socket, :info, "Email changed successfully.")
+          put_flash(socket, :info, gettext("Email changed successfully."))
 
         {:error, _} ->
-          put_flash(socket, :error, "Email change link is invalid or it has expired.")
+          put_flash(socket, :error, gettext("Email change link is invalid or it has expired."))
       end
 
     {:ok, push_navigate(socket, to: ~p"/users/settings")}
@@ -57,11 +59,7 @@ defmodule LeitorWeb.UserLive.Settings do
     user = socket.assigns.current_scope.user
     email_changeset = Accounts.change_user_email(user, %{}, validate_unique: false)
 
-    socket =
-      socket
-      |> assign(:current_email, user.email)
-      |> assign(:email_form, to_form(email_changeset))
-      |> assign(:trigger_submit, false)
+    socket = assign(socket, :email_form, to_form(email_changeset))
 
     {:ok, socket}
   end

@@ -13,6 +13,8 @@ defmodule Leitor.WritingDocument do
   @typedoc "An editable prose block and its byte range in the original draft."
   @type paragraph :: %{start: non_neg_integer(), length: non_neg_integer(), text: String.t()}
 
+  @syntax_highlight [engine: :lumis, opts: [formatter: :html_linked, budget: [time_limit: 1_000, match_limit: 4096]]]
+
   @doc "Normalizes a persisted or submitted format, defaulting legacy drafts to plain text."
   @spec format(map()) :: format()
   def format(%{"format" => "markdown"}), do: "markdown"
@@ -58,11 +60,12 @@ defmodule Leitor.WritingDocument do
     |> length()
   end
 
-  @doc "Renders untrusted Markdown as sanitized HTML, with raw HTML and remote images disabled."
+  @doc "Renders sanitized Markdown with syntax-highlighted code; raw HTML and remote images remain disabled."
   @spec render(String.t()) :: String.t()
   def render(text) do
     MDEx.to_html!(text,
       extension: [tasklist: true, strikethrough: true],
+      syntax_highlight: @syntax_highlight,
       render: [unsafe: false, escape: true, tasklist_classes: true],
       sanitize: [
         rm_tags: ["img"],

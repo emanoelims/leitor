@@ -9,10 +9,29 @@ defmodule Leitor.Accounts do
 
   import Ecto.Query, warn: false
 
+  alias Leitor.Accounts.Preferences
+  alias Leitor.Accounts.Scope
   alias Leitor.Accounts.User
   alias Leitor.Accounts.UserNotifier
   alias Leitor.Accounts.UserToken
   alias Leitor.Repo
+
+  @doc "Reads the authenticated account's current preferences, including changes made in another tab."
+  @spec get_preferences(Scope.t()) :: Preferences.t()
+  def get_preferences(%Scope{user: %User{id: id}}), do: Repo.get!(User, id).preferences
+
+  @doc "Builds a scoped account changeset for language and AI preferences, without changing email or tokens."
+  @spec change_preferences(Scope.t(), Preferences.attrs()) :: Ecto.Changeset.t(User.t())
+  def change_preferences(%Scope{user: %User{id: id}}, attrs \\ %{}) do
+    User
+    |> Repo.get!(id)
+    |> Ecto.Changeset.cast(%{"preferences" => attrs}, [])
+    |> Ecto.Changeset.cast_embed(:preferences, required: true)
+  end
+
+  @doc "Persists only the authenticated account's validated preferences. Returns the updated user or a field-specific error changeset."
+  @spec update_preferences(Scope.t(), Preferences.attrs()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t(User.t())}
+  def update_preferences(scope, attrs), do: scope |> change_preferences(attrs) |> Repo.update()
 
   @doc """
   Finds a user by email, returning `nil` when no account matches.

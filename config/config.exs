@@ -59,6 +59,9 @@ config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# Compile the MDEx native artifact with its optional Lumis highlighter.
+config :mdex_native, syntax_highlighter: :lumis
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

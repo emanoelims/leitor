@@ -5,11 +5,11 @@ defmodule LeitorWeb.UserSessionController do
   alias LeitorWeb.UserAuth
 
   def create(conn, %{"_action" => "confirmed"} = params) do
-    create(conn, params, "User confirmed successfully.")
+    create(conn, params, gettext("User confirmed successfully."))
   end
 
   def create(conn, params) do
-    create(conn, params, "Welcome back!")
+    create(conn, params, gettext("Welcome back!"))
   end
 
   # magic link login
@@ -24,20 +24,18 @@ defmodule LeitorWeb.UserSessionController do
 
       _ ->
         conn
-        |> put_flash(:error, "The link is invalid or it has expired.")
+        |> put_flash(:error, gettext("The link is invalid or it has expired."))
         |> redirect(to: ~p"/users/log-in")
     end
   end
 
-  defp create(conn, _params, _info) do
-    conn
-    |> put_flash(:error, "Use the magic link sent to your email to sign in.")
-    |> redirect(to: ~p"/users/log-in")
-  end
+  defp create(conn, _params, _info),
+    do:
+      conn |> put_flash(:error, gettext("Use the link sent to your email to sign in.")) |> redirect(to: ~p"/users/log-in")
 
   def delete(conn, _params) do
     conn
-    |> put_flash(:info, "Logged out successfully.")
+    |> put_flash(:info, gettext("Logged out successfully."))
     |> UserAuth.log_out_user()
   end
 end

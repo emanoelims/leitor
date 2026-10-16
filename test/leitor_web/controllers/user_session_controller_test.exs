@@ -9,20 +9,43 @@ defmodule LeitorWeb.UserSessionControllerTest do
     %{unconfirmed_user: unconfirmed_user_fixture(), user: user_fixture()}
   end
 
-  describe "password login is disabled" do
-    test "rejects valid legacy credentials as well as invalid ones", %{conn: conn, user: user} do
+  describe "email-only authentication" do
+    test "rejects password submissions even for valid legacy credentials", %{conn: conn, user: user} do
       user = set_password(user)
 
-      for password <- [valid_user_password(), "invalid"] do
-        response =
-          post(conn, ~p"/users/log-in", %{
-            "user" => %{"email" => user.email, "password" => password, "remember_me" => "true"}
-          })
-
+      for params <- [
+            %{"user" => %{"email" => user.email, "password" => valid_user_password(), "remember_me" => "true"}},
+            %{"user" => %{"email" => user.email, "password" => "invalid"}},
+            %{"user" => %{"email" => "unknown@example.test", "password" => "invalid"}},
+            %{"user" => %{"email" => user.email}},
+            %{}
+          ] do
+        response = post(conn, ~p"/users/log-in", params)
         refute get_session(response, :user_token)
         refute response.resp_cookies["_leitor_web_user_remember_me"]
         assert redirected_to(response) == ~p"/users/log-in"
+        assert Phoenix.Flash.get(response.assigns.flash, :error) == "Use the link sent to your email to sign in."
       end
+    end
+
+    test "password updates have no route for anonymous or signed-in readers", %{conn: conn, user: user} do
+      for conn <- [conn, log_in_user(conn, user)] do
+        assert conn |> post("/users/update-password", %{"user" => %{"password" => "unused"}}) |> response(404)
+      end
+    end
+
+    test "legacy accounts use a single-use email link and can remember the device", %{conn: conn, user: user} do
+      user = set_password(user)
+      {token, _hashed_token} = generate_user_magic_link_token(user)
+      response = post(conn, ~p"/users/log-in", %{"user" => %{"token" => token, "remember_me" => "true"}})
+      assert get_session(response, :user_token)
+      assert response.resp_cookies["_leitor_web_user_remember_me"]
+      assert redirected_to(response) == ~p"/"
+
+      rejected = post(conn, ~p"/users/log-in", %{"user" => %{"token" => token}})
+      refute get_session(rejected, :user_token)
+      assert redirected_to(rejected) == ~p"/users/log-in"
+      assert Phoenix.Flash.get(rejected.assigns.flash, :error) == "The link is invalid or it has expired."
     end
   end
 

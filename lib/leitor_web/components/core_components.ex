@@ -2,32 +2,120 @@ defmodule LeitorWeb.CoreComponents do
   @moduledoc """
   Provides core UI components.
 
-  At first glance, this module may seem daunting, but its goal is to provide
-  core building blocks for your application, such as tables, forms, and
-  inputs. The components consist mostly of markup and are well-documented
-  with doc strings and declarative assigns. You may customize and style
-  them in any way you want, based on your application growth and needs.
-
-  Styling uses Tailwind CSS utilities and the application's custom design tokens.
-  Here are useful references:
-
-    * [Tailwind CSS](https://tailwindcss.com) - the foundational framework
-      we build on. You will use it for layout, sizing, flexbox, grid, and
-      spacing.
-
-    * [Heroicons](https://heroicons.com) - see `icon/1` for usage.
-
-    * [Phoenix.Component](https://phoenix-live-view.hexdocs.pm/Phoenix.Component.html) -
-      the component system used by Phoenix. Some components, such as `<.link>`
-      and `<.form>`, are defined there.
+  Application-owned function components built with Phoenix.Component, Tailwind
+  utilities, and the adapted Gloss design tokens. Buttons, form controls,
+  validation, notices, and popovers share the same palette and interaction rules.
+  No external component framework is required.
 
   """
   use Phoenix.Component
   use Gettext, backend: LeitorWeb.Gettext
 
+  import LeitorWeb.I18n, only: [t: 1]
+
   alias Phoenix.HTML.Form
   alias Phoenix.HTML.FormField
   alias Phoenix.LiveView.JS
+
+  @doc """
+  Renders a non-modal popover anchored to its trigger with Floating UI.
+
+  The browser owns disclosure state and placement, while LiveView continues
+  updating the panel content. Popovers share entrance motion, outside-click
+  dismissal, Escape dismissal with focus restoration, and exclusive opening.
+  Supply unique IDs and an accessible label; use the trigger slot for its icon.
+  Set `menu` for navigation popups containing `dropdown_item/1` rows; these add
+  arrow-key navigation, Home/End, activation, and focus restoration on Escape.
+  """
+  attr :id, :string, required: true
+  attr :label, :string, required: true
+  attr :title, :string, default: nil
+  attr :trigger_id, :string, default: nil
+  attr :trigger_class, :any, default: "icon-button"
+  attr :class, :any, default: nil
+  attr :panel_class, :any, default: nil
+  attr :placement, :string, default: "bottom-end"
+  attr :offset, :integer, default: 8
+  attr :menu, :boolean, default: false
+  slot :trigger, required: true
+  slot :inner_block, required: true
+
+  def popover(assigns) do
+    assigns =
+      assign(assigns,
+        trigger_id: assigns.trigger_id || "#{assigns.id}-trigger",
+        title: assigns.title || assigns.label
+      )
+
+    ~H"""
+    <details
+      id={@id}
+      class={["popover", @class]}
+      data-popover
+      phx-mounted={JS.ignore_attributes("open")}
+    >
+      <summary
+        id={@trigger_id}
+        class={@trigger_class}
+        aria-label={t(@label)}
+        title={@title}
+        aria-haspopup={if @menu, do: "menu", else: "dialog"}
+        aria-controls={"#{@id}-panel"}
+        aria-expanded="false"
+        phx-mounted={JS.ignore_attributes("aria-expanded")}
+      >
+        {render_slot(@trigger)}
+      </summary>
+      <span
+        id={"#{@id}-positioner"}
+        phx-hook="Floating"
+        phx-update="ignore"
+        data-panel={"#{@id}-panel"}
+        data-placement={@placement}
+        data-offset={@offset}
+        hidden
+      ></span>
+      <div
+        id={"#{@id}-panel"}
+        class={["floating-panel popover-panel", @panel_class]}
+        role={if @menu, do: "menu", else: "dialog"}
+        aria-label={t(@label)}
+        phx-mounted={JS.ignore_attributes(["style", "data-placement", "data-positioned"])}
+      >
+        {render_slot(@inner_block)}
+      </div>
+    </details>
+    """
+  end
+
+  @doc "Renders an icon and label navigation item in a shared dropdown popup."
+  attr :label, :string, required: true
+  attr :icon, :string, required: true
+  attr :navigate, :string, default: nil
+  attr :href, :any, default: nil
+  attr :method, :string, default: "get"
+  attr :current, :boolean, default: false
+  attr :danger, :boolean, default: false
+  attr :rest, :global
+
+  def dropdown_item(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      href={@href}
+      method={@method}
+      role="menuitem"
+      tabindex="-1"
+      class={["dropdown-item", @danger && "dropdown-item-danger"]}
+      aria-current={@current && "page"}
+      {@rest}
+    >
+      <.icon name={@icon} class="size-4" />
+      <span class="dropdown-item-label">{@label}</span>
+      <.icon :if={@current} name="lucide-thin-check" class="size-3.5" />
+    </.link>
+    """
+  end
 
   @doc """
   Renders flash notices.
@@ -69,15 +157,15 @@ defmodule LeitorWeb.CoreComponents do
         @kind == :info && "flash-info",
         @kind == :error && "flash-error"
       ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
+        <.icon :if={@kind == :info} name="lucide-thin-info" class="size-5 shrink-0" />
+        <.icon :if={@kind == :error} name="lucide-thin-info" class="size-5 shrink-0" />
         <div>
           <p :if={@title} class="font-semibold">{@title}</p>
-          <p>{msg}</p>
+          <p>{if is_binary(msg), do: t(msg), else: msg}</p>
         </div>
         <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+        <button type="button" class="icon-button self-start" aria-label={gettext("close")}>
+          <.icon name="lucide-thin-x" class="size-4" />
         </button>
       </div>
     </div>
@@ -169,7 +257,7 @@ defmodule LeitorWeb.CoreComponents do
   attr :type, :string,
     default: "text",
     values: ~w(checkbox color date datetime-local email file month number password
-               search select tel text textarea time url week hidden)
+               search select tel text textarea time url week hidden range)
 
   attr :field, FormField, doc: "a form field struct retrieved from the form, for example: @form[:email]"
 
@@ -202,13 +290,15 @@ defmodule LeitorWeb.CoreComponents do
   end
 
   def input(%{type: "checkbox"} = assigns) do
+    assigns = field_state(assigns)
+
     assigns =
       assign_new(assigns, :checked, fn ->
         Form.normalize_value("checkbox", assigns[:value])
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="form-field">
       <label for={@id}>
         <input
           type="hidden"
@@ -217,92 +307,139 @@ defmodule LeitorWeb.CoreComponents do
           disabled={@rest[:disabled]}
           form={@rest[:form]}
         />
-        <span class="label">
+        <span class="field-check-label">
           <input
             type="checkbox"
             id={@id}
             name={@name}
             value="true"
             checked={@checked}
-            class={@class || "checkbox"}
+            aria-invalid={@invalid? && "true"}
+            aria-describedby={@described_by}
+            class={@class || "field-check"}
             {@rest}
-          />{@label}
+          />{t(@label)}
         </span>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id} class="field-errors">
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(%{type: "select"} = assigns) do
+    assigns = field_state(assigns)
+
     ~H"""
-    <div class="fieldset mb-2">
-      <label for={@id}>
-        <span :if={@label} class="field-label">{@label}</span>
+    <div class="form-field">
+      <label :if={@label} for={@id} id={@id && "#{@id}-label"} class="field-label">{t(@label)}</label>
+      <div class="field-select-control">
         <select
           id={@id}
           name={@name}
-          class={[@class || "field", @errors != [] && (@error_class || "select-error")]}
+          class={[@class || "field", @errors != [] && (@error_class || "field-invalid")]}
           multiple={@multiple}
+          aria-invalid={@invalid? && "true"}
+          aria-describedby={@described_by}
           {@rest}
         >
-          <option :if={@prompt} value="">{@prompt}</option>
+          <option :if={@prompt} value="">{t(@prompt)}</option>
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
-      </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+        <div
+          :if={@id && !@multiple}
+          id={"#{@id}-picker"}
+          phx-hook="Select"
+          phx-update="ignore"
+          data-native-select={@id}
+          class="field-select-picker"
+        >
+        </div>
+      </div>
+      <div :if={@errors != []} id={@error_id} class="field-errors">
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(%{type: "textarea"} = assigns) do
+    assigns = field_state(assigns)
+
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="form-field">
       <label for={@id}>
-        <span :if={@label} class="field-label">{@label}</span>
+        <span :if={@label} class="field-label">{t(@label)}</span>
         <textarea
           id={@id}
           name={@name}
+          aria-invalid={@invalid? && "true"}
+          aria-describedby={@described_by}
           class={[
             @class || "field textarea",
-            @errors != [] && (@error_class || "textarea-error")
+            @errors != [] && (@error_class || "field-invalid")
           ]}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id} class="field-errors">
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
+    assigns = field_state(assigns)
+
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="form-field">
       <label for={@id}>
-        <span :if={@label} class="field-label">{@label}</span>
+        <span :if={@label} class="field-label">{t(@label)}</span>
         <input
           type={@type}
           name={@name}
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+          aria-invalid={@invalid? && "true"}
+          aria-describedby={@described_by}
           class={[
             @class || "field",
-            @errors != [] && (@error_class || "input-error")
+            @errors != [] && (@error_class || "field-invalid")
           ]}
           {@rest}
         />
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id} class="field-errors">
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
+  end
+
+  defp field_state(assigns) do
+    error_id = if assigns.id && assigns.errors != [], do: "#{assigns.id}-errors"
+
+    described_by =
+      [assigns.rest[:"aria-describedby"], error_id]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+
+    assign(assigns,
+      invalid?: assigns.errors != [],
+      error_id: error_id,
+      described_by: if(described_by == "", do: nil, else: described_by),
+      rest: Map.delete(assigns.rest, :"aria-describedby")
+    )
   end
 
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
+    <p class="field-error">
+      <.icon name="lucide-thin-info" class="size-4 shrink-0" />
       {render_slot(@inner_block)}
     </p>
     """
@@ -317,12 +454,12 @@ defmodule LeitorWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-4"]}>
+    <header class={["component-header", @actions != [] && "component-header-actions"]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8">
+        <h1>
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="muted">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -410,10 +547,10 @@ defmodule LeitorWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <ul class="list">
-      <li :for={item <- @item} class="list-row">
-        <div class="list-col-grow">
-          <div class="font-bold">{item.title}</div>
+    <ul class="detail-list">
+      <li :for={item <- @item} class="detail-list-row">
+        <div class="detail-list-content">
+          <div class="detail-list-title">{item.title}</div>
           <div>{render_slot(item)}</div>
         </div>
       </li>
@@ -422,7 +559,11 @@ defmodule LeitorWeb.CoreComponents do
   end
 
   @doc """
-  Renders a [Heroicon](https://heroicons.com).
+  Renders the Leitor brand mark, a bundled Heroicon, or a Lucide reader icon.
+
+  The `lucide-` prefix selects the reader icons used by the Gloss reference.
+  Their SVGs and ISC license are kept in `assets/vendor/lucide` and bundled
+  into app.css, using the same mask approach as Heroicons.
 
   Heroicons come in three styles – outline, solid, and mini.
   By default, the outline style is used, but solid and mini may
@@ -442,9 +583,24 @@ defmodule LeitorWeb.CoreComponents do
   attr :name, :string, required: true
   attr :class, :any, default: "size-4"
 
+  def icon(%{name: "leitor-mark"} = assigns) do
+    ~H"""
+    <span class={["leitor-mark", @class]} aria-hidden="true">
+      <span class="leitor-mark-page"></span>
+      <span class="leitor-mark-note"></span>
+    </span>
+    """
+  end
+
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} />
+    """
+  end
+
+  def icon(%{name: "lucide-" <> _} = assigns) do
+    ~H"""
+    <span class={[@name, @class]} aria-hidden="true" />
     """
   end
 

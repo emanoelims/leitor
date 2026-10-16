@@ -31,6 +31,17 @@ The unmanaged Postgres app `sisteo-apps-db` hosts a separate `leitor` database
 and non-superuser `leitor` role. The app connects over Fly's private IPv6 network.
 This deployment does not copy local development data or modify Sisteo's schema.
 
+When bootstrapping a new attachment with `--superuser=false`, an administrator
+must grant the application role `CREATE` on its own database:
+
+```sql
+GRANT CREATE ON DATABASE leitor TO leitor;
+```
+
+This database-local permission lets the versioned first migration install the
+trusted `citext` extension; it does not make the role a superuser. Do not grant
+cluster-wide privileges or run schema migrations manually in the SQL console.
+
 Fly secrets:
 
 - `DATABASE_URL`: assigned by the database attachment.

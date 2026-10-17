@@ -1,0 +1,116 @@
+{
+  "title": "Transmissão em movimento",
+  "caption": "Engrenagens evolventes e biela com articulações derivadas da mesma geometria. Estudo local de validação do motor.",
+  "before": "Duas engrenagens, uma biela e um cursor. Explore como a rotação se transforma em deslocamento, mantendo os dentes engrenados e os pinos conectados.",
+  "after": "Este estudo foi construído para verificar as novas peças do motor do Leitor. É uma demonstração local revisada, não uma geração aprovada automaticamente pela IA. O modelo descreve cinemática ideal; não calcula forças, desgaste ou fabricação.",
+  "model": "import {externalGearPair, sliderCrank} from '/leitor/mechanics.mjs'\nexport const train = externalGearPair({teethA:20,teethB:40,module:1.5,samples:8})\nexport const initial = () => ({angle:36,playing:false,locked:false,detail:false})\nexport function pose(state) {\n  const angle=state.angle*Math.PI/180, angles=train.phaseAt(angle)\n  const linkage=sliderCrank({radius:8,rodLength:30,side:-1},angle)\n  return {angles,linkage,driven:-state.angle*train.ratio}\n}\nexport function step(state,action,value) {\n  if(action==='reset') return initial()\n  if(action==='lock') return {...state,locked:!state.locked,playing:false}\n  if(action==='detail') return {...state,detail:!state.detail}\n  if(state.locked) return state\n  if(action==='angle') return {...state,angle:Math.max(0,Math.min(720,Number(value)||0)),playing:false}\n  if(action==='play') return {...state,playing:!state.playing}\n  if(action==='advance') return {...state,angle:(state.angle+30)%720}\n  return state\n}\nexport function advance(state,delta) {\n  if(!state.playing||state.locked) return state\n  return {...state,angle:(state.angle+Math.max(0,Math.min(.05,delta))*30)%720}\n}\n",
+  "geometry": "import * as k from '/kit/iso-kit.mjs'\nimport * as G from '/kit/lathe.mjs'\nimport {mPrism,mItems,mSvg,mArc} from '/kit/facets.mjs'\nimport {train,pose} from './model.mjs'\nconst circle=r=>mArc(0,0,r,0,2*Math.PI,40).slice(0,-1)\nconst frame=(x,y,z,angle=0)=>({o:[x,y,z],u:[Math.cos(angle),Math.sin(angle),0],v:[-Math.sin(angle),Math.cos(angle),0],a:[0,0,1]})\nconst project=(p,P)=>k.iso(p,P)\nconst path=(points,P,closed=true)=>k.pathOf(points.map(p=>project(p,P)),closed)\nfunction slot(a,b,r) {\n  const phi=Math.atan2(b[1]-a[1],b[0]-a[0]),points=[]\n  for(let i=0;i<=16;i++){const q=phi-Math.PI/2+Math.PI*i/16;points.push([b[0]+r*Math.cos(q),b[1]+r*Math.sin(q)])}\n  for(let i=0;i<=16;i++){const q=phi+Math.PI/2+Math.PI*i/16;points.push([a[0]+r*Math.cos(q),a[1]+r*Math.sin(q)])}\n  return points\n}\nexport function draw(state) {\n  const p=pose(state),detail=state.detail\n  const bounds=detail?k.boxCorners({x:7,y:-13,w:22,d:26},19,30):[\n    ...k.boxCorners({x:-46,y:-33,w:125,d:66},-2,2),\n    ...k.boxCorners({x:-16.5,y:-16.5,w:33,d:33},20,27),\n    ...k.boxCorners({x:13.5,y:-31.5,w:63,d:63},20,27),\n    ...k.boxCorners({x:-44,y:-9,w:29,d:18},2,35),\n    ...k.boxCorners({x:-10,y:-10,w:20,d:20},29,35)]\n  const P=k.fitProjection(bounds,900,430,{pad:detail?85:30,azimuth:detail?0:75,elevation:detail?88:42})\n  let layers=[]\n  const solid=(shape,tone='mid')=>layers.push(k.solidSvg(shape,{tone,crease:'faint'}))\n  const mesh=(rings,F,s0,s1,tone='mid')=>layers.push(mSvg(mItems(mPrism(rings,F,s0,s1,{tone}),P)[0]))\n  if(!detail){\n    solid(k.slabOf({x:-46,y:-33,w:125,d:66,r:4},-2,4,P,8,1),'lo')\n    for(const x of [-40,72])for(const y of [-27,27]){\n      solid(k.cylinder(x,y,2.5,2,1.2,P,20,.25),'lo')\n      layers.push(k.lineSvg(k.segment([x-1,y,3.3],[x+1,y,3.3],P),{tone:'mid'}))\n    }\n    for(const x of [0,train.distance]){\n      solid(k.cylinder(x,0,6.5,2,9,P,40,1),'mid')\n      solid(k.cylinder(x,0,4.5,11,20,P,32,.4),'hi')\n    }\n    // Guide rails end below the connecting rod plane and pass through the\n    // two actual slider bushings. Slider's pin is in the rod's z=32 plane.\n    for(const y of [-5,5])solid(G.disc(-43,-17,1.2,G.frameAlong([0,y,29],[1,0,0]),P),'mid')\n    for(const x of [-42,-18])solid(k.slabOf({x:x-2,y:-9,w:4,d:18,r:1},2,28,P,4,.3),'lo')\n  }\n  // Both gears occupy the SAME XY frame, share a pitch tangent, and rotate\n  // according to the exact phase pair. True concave meshes retain tooth gaps.\n  for(const [gear,x,angle] of [[train.first,0,p.angles[0]],[train.second,train.distance,p.angles[1]]]) {\n    const windows=gear.teeth===40?Array.from({length:4},(_,i)=>{\n      const start=i*Math.PI/2+.22,end=(i+1)*Math.PI/2-.22\n      return [...mArc(0,0,23,start,end,12),...mArc(0,0,8,end,start,12)]\n    }):[]\n    mesh([gear.outline,circle(3.2),...windows],frame(x,0,0,angle),20,24,'hi')\n    if(!detail){\n      solid(k.cylinder(x,0,5,24,3,P,32,.4),'hi')\n      const mark=[x+gear.pitchRadius*.76*Math.cos(angle),gear.pitchRadius*.76*Math.sin(angle),24.03]\n      const mark2=[x+gear.pitchRadius*.94*Math.cos(angle),gear.pitchRadius*.94*Math.sin(angle),24.03]\n      layers.push(`<path d=\"${path([mark,mark2],P,false)}\" class=\"bench-accent\"/>`)\n      for(let i=0;i<3;i++){\n        const a=angle+i*2*Math.PI/3\n        solid(k.cylinder(x+7*Math.cos(a),7*Math.sin(a),.9,24,1,P,12,.1),'lo')\n      }\n    }\n  }\n  if(detail){\n    for(const [center,r] of [[[0,0,24.04],train.first.pitchRadius],[[train.distance,0,24.04],train.second.pitchRadius]]){\n      layers.push(`<path d=\"${path(circle(r).map(([x,y])=>[x+center[0],y,center[2]]),P)}\" class=\"bench-pitch\"/>`)\n    }\n  }else{\n    solid(k.cylinder(0,0,3,27,5,P,32,.3),'hi')\n    mesh([slot([0,0],p.linkage.pin,3)],frame(0,0,0),29,31,'hi')\n    // The slider, crank pin and rod are all derived from the same closure.\n    const [sx]=p.linkage.slider\n    solid(k.slabOf({x:sx-4,y:-7,w:8,d:14,r:1.4},27,4,P,6,.5),'hi')\n    mesh([slot(p.linkage.pin,p.linkage.slider,2)],frame(0,0,0),31,33,'hi')\n    for(const [x,y] of [p.linkage.pin,p.linkage.slider]){\n      solid(k.cylinder(x,y,1.5,29,5,P,20,.2),'hi')\n      solid(k.cylinder(x,y,2.1,34,1,P,24,.2),'mid')\n    }\n  }\n  return `<svg class=\"iso-svg\" role=\"img\" aria-label=\"${detail?'Detalhe dos dentes engrenados':'Engrenagens acopladas a uma biela e cursor'}\" viewBox=\"0 0 900 430\">${layers.join('')}</svg>`\n}\n",
+  "figure": "import {initial,pose,step,advance} from './model.mjs'\nimport {draw} from './geometry.mjs'\nexport function mount(root,env){\n  let state=initial(),visible=true,reduced=env.reducedMotion,last=0,raf=0,disposed=false\n  root.innerHTML=`<section class=\"bench\"><header class=\"bench-head\"><span>ESTUDO MECÂNICO · 01</span><span>20 : 40</span></header><div id=\"bench-art\"></div><div class=\"bench-readings\"><div><span>Entrada</span><output id=\"bench-input\"></output></div><div><span>Saída</span><output id=\"bench-output\"></output></div><div><span>Curso do cursor</span><output id=\"bench-travel\"></output></div></div><div class=\"bench-controls\"><button id=\"bench-play\">Iniciar</button><button id=\"bench-lock\" aria-pressed=\"false\">Travar</button><button id=\"bench-detail\" aria-pressed=\"false\">Ver dentes</button><button id=\"bench-reset\">Reiniciar</button></div><label class=\"bench-angle\" for=\"bench-angle\">Girar o eixo<span>0–720°</span></label><input id=\"bench-angle\" type=\"range\" min=\"0\" max=\"720\" value=\"36\" step=\"1\"><p id=\"bench-status\" aria-live=\"polite\"></p><p class=\"bench-note\">A engrenagem de 20 dentes dá duas voltas para a de 40 completar uma. A biela transforma o giro em um curso de 16 mm.</p></section>`\n  const q=s=>root.querySelector(s),art=q('#bench-art')\n  function render(){\n    const p=pose(state)\n    art.innerHTML=draw(state)\n    q('#bench-input').textContent=`${state.angle.toFixed(0)}°`\n    q('#bench-output').textContent=`${p.driven.toFixed(0)}°`\n    q('#bench-travel').textContent=`${p.linkage.displacement.toFixed(1)} / 16 mm`\n    q('#bench-angle').value=String(state.angle)\n    q('#bench-lock').setAttribute('aria-pressed',String(state.locked))\n    q('#bench-detail').setAttribute('aria-pressed',String(state.detail))\n    q('#bench-detail').textContent=state.detail?'Ver conjunto':'Ver dentes'\n    q('#bench-play').textContent=reduced?'Avançar 30°':state.playing?'Pausar':'Iniciar'\n    q('#bench-status').textContent=state.locked?'Eixo travado · destrave para girar':state.detail?'Dentes em detalhe · círculos primitivos tracejados':state.playing?'Em movimento · relação 2:1':'Pausado · arraste para explorar'\n  }\n  function tick(now){\n    raf=0\n    if(disposed||!visible||reduced||!state.playing)return\n    state=advance(state,last?(now-last)/1000:0);last=now;render();raf=requestAnimationFrame(tick)\n  }\n  function schedule(){cancelAnimationFrame(raf);raf=0;last=0;if(visible&&!reduced&&state.playing)raf=requestAnimationFrame(tick)}\n  const click=e=>{const id=e.target.closest('button')?.id;if(!id)return\n    const action={'bench-play':reduced?'advance':'play','bench-lock':'lock','bench-detail':'detail','bench-reset':'reset'}[id]\n    if(action){state=step(state,action);render();schedule()}}\n  const input=e=>{if(e.target.id==='bench-angle'){state=step(state,'angle',e.target.value);render();schedule()}}\n  const environment=e=>{visible=e.detail.visible!==false;reduced=Boolean(e.detail.reducedMotion);root.dataset.theme=e.detail.theme;render();schedule()}\n  root.addEventListener('click',click);root.addEventListener('input',input);root.addEventListener('figure:environment',environment)\n  render()\n  return()=>{disposed=true;cancelAnimationFrame(raf);root.removeEventListener('click',click);root.removeEventListener('input',input);root.removeEventListener('figure:environment',environment);root.replaceChildren()}\n}\n",
+  "css": ".bench{--anatomy-weight:.8px;padding:24px;color:var(--anatomy-strong);background:var(--anatomy-card);border:1px solid var(--anatomy-faint);border-radius:18px;font-family:Arial,sans-serif}.bench-head{display:flex;justify-content:space-between;font:11px var(--anatomy-mono);letter-spacing:.12em;color:var(--anatomy-muted)}#bench-art{margin:16px -12px 4px;overflow:hidden;min-height:150px}.bench-accent{fill:none;stroke:#b38142;stroke-width:2.8;stroke-linecap:round;vector-effect:non-scaling-stroke}.bench-pitch{fill:none;stroke:#b38142;stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke}.bench-readings{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:18px 0;border-top:1px solid var(--anatomy-faint)}.bench-readings span{display:block;font-size:12px;color:var(--anatomy-muted);margin-bottom:7px}.bench-readings output{font:20px var(--anatomy-mono);letter-spacing:-.04em}.bench-controls{display:flex;flex-wrap:wrap;gap:6px}.bench-controls button{border:1px solid var(--anatomy-faint);border-radius:8px;padding:9px 14px;background:transparent;color:var(--anatomy-strong);cursor:pointer;font-size:13px;min-height:38px}.bench-controls button:hover,.bench-controls button[aria-pressed=true]{background:var(--anatomy-shade-1);border-color:var(--anatomy-mid)}.bench-controls button:focus-visible{outline:2px solid #b38142;outline-offset:2px}.bench-controls #bench-play{background:var(--anatomy-strong);color:var(--anatomy-card);border-color:transparent}.bench-angle{display:flex;justify-content:space-between;font-size:12px;margin:22px 0 8px;color:var(--anatomy-muted)}#bench-angle{width:100%;accent-color:#b38142;cursor:pointer}#bench-status{font-size:12px;line-height:1.5;color:var(--anatomy-text);margin:12px 0}.bench-note{font-size:13px;line-height:1.6;color:var(--anatomy-muted);margin:16px 0 0;max-width:58ch}@media(max-width:500px){.bench{--anatomy-weight:.8px;padding:16px 12px}.bench-readings{gap:6px}.bench-readings span{font-size:11px}.bench-readings output{font-size:15px}.bench-controls{gap:5px}.bench-controls button{padding:9px 11px;font-size:12px}.bench-head{font-size:9px}}\n\nhtml[data-theme=dark] .bench{--anatomy-shade-0:#242421;--anatomy-shade-1:#2a2a27;--anatomy-shade-2:#30302c;--anatomy-shade-3:#383833;--anatomy-top:#353531;--anatomy-paper:#272724;--anatomy-lo:#68685f;--anatomy-mid:#98988c}\n",
+  "experiments": [
+    {
+      "name": "Travamento impede movimento",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#bench-lock",
+          "value": ""
+        },
+        {
+          "action": "range",
+          "selector": "#bench-angle",
+          "value": "90"
+        }
+      ],
+      "selector": "#bench-input",
+      "contains": "36°"
+    },
+    {
+      "name": "Saída gira em sentido oposto na metade da velocidade",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#bench-lock",
+          "value": ""
+        },
+        {
+          "action": "range",
+          "selector": "#bench-angle",
+          "value": "90"
+        }
+      ],
+      "selector": "#bench-output",
+      "contains": "-45°"
+    },
+    {
+      "name": "Cursor atinge limite interno",
+      "steps": [
+        {
+          "action": "range",
+          "selector": "#bench-angle",
+          "value": "180"
+        }
+      ],
+      "selector": "#bench-travel",
+      "contains": "0.0 / 16 mm"
+    },
+    {
+      "name": "Duas voltas de entrada equivalem a uma de saída",
+      "steps": [
+        {
+          "action": "range",
+          "selector": "#bench-angle",
+          "value": "720"
+        }
+      ],
+      "selector": "#bench-output",
+      "contains": "-360°"
+    },
+    {
+      "name": "Detalhe e avanço preservam engrenamento",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#bench-detail",
+          "value": ""
+        },
+        {
+          "action": "click",
+          "selector": "#bench-play",
+          "value": ""
+        }
+      ],
+      "selector": "#bench-status",
+      "contains": "Dentes em detalhe"
+    },
+    {
+      "name": "Reiniciar restaura posição e destrava",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#bench-reset",
+          "value": ""
+        }
+      ],
+      "selector": "#bench-input",
+      "contains": "36°"
+    }
+  ],
+  "capture_steps": [
+    {
+      "action": "range",
+      "selector": "#bench-angle",
+      "value": "90"
+    },
+    {
+      "action": "click",
+      "selector": "#bench-detail",
+      "value": ""
+    },
+    {
+      "action": "click",
+      "selector": "#bench-detail",
+      "value": ""
+    }
+  ]
+}

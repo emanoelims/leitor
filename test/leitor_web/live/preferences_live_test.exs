@@ -33,6 +33,7 @@ defmodule LeitorWeb.PreferencesLiveTest do
 
   test "invalid changes stay on the form and valid choices survive reload", %{conn: conn} do
     scope = user_scope_fixture()
+    {:ok, _} = Leitor.AI.put_credential(scope, %{provider: "anthropic", api_key: "test-preferences-own-key"})
     conn = log_in_user(conn, scope.user)
     {:ok, view, _} = live(conn, ~p"/settings")
     assert has_element?(view, "#preferences-locale option[value=en][selected]")
@@ -81,5 +82,40 @@ defmodule LeitorWeb.PreferencesLiveTest do
     {:ok, reader, html} = live(conn, ~p"/pages/#{page.id}")
     assert html =~ "Original English text."
     assert has_element?(reader, "#account-preferences", "Preferências")
+  end
+
+  test "shared accounts see Haiku only and keys are never echoed, including invalid submissions", %{conn: conn} do
+    scope = user_scope_fixture()
+    {:ok, view, html} = live(log_in_user(conn, scope.user), ~p"/settings")
+    refute html =~ "option value=\"anthropic:claude-opus"
+    refute has_element?(view, "#preferences-reading-model option[value='anthropic:claude-opus-5-5']")
+    assert has_element?(view, "#ai-account-allowance", "0 / 20")
+    key = "test-own-account-key-1234"
+    render_submit(view, "save-key", %{"credential" => %{"provider" => "anthropic", "api_key" => key}})
+    refute render(view) =~ key
+    assert has_element?(view, "#ai-key-value[value='']")
+    assert has_element?(view, "#preferences-reading-model option[value='anthropic:claude-opus-5-5']")
+    [credential] = Leitor.AI.credentials(scope)
+    render_submit(view, "save-key", %{"credential" => %{"provider" => "bad", "api_key" => key}})
+    refute render(view) =~ key
+    render_click(view, "delete-key", %{"id" => credential.id})
+    assert Leitor.AI.credentials(scope) == []
+    refute has_element?(view, "#preferences-reading-model option[value='anthropic:claude-opus-5-5']")
+  end
+
+  test "changing provider keys requires recent authentication but reading preferences does not", %{conn: conn} do
+    scope = user_scope_fixture()
+    stale = log_in_user(conn, scope.user, token_authenticated_at: DateTime.shift(DateTime.utc_now(:second), minute: -21))
+    {:ok, view, _} = live(stale, ~p"/settings")
+
+    render_submit(view, "save-key", %{"credential" => %{"provider" => "anthropic", "api_key" => "test-stale-account-key"}})
+
+    assert_redirect(view, ~p"/users/log-in")
+    assert Leitor.AI.credentials(scope) == []
+    {:ok, metadata} = Leitor.AI.put_credential(scope, %{provider: "anthropic", api_key: "test-stale-account-key"})
+    {:ok, view, _} = live(stale, ~p"/settings")
+    render_click(view, "delete-key", %{"id" => metadata.id})
+    assert_redirect(view, ~p"/users/log-in")
+    assert Leitor.AI.credentials(scope) != []
   end
 end

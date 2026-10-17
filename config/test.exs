@@ -26,6 +26,8 @@ config :leitor, LeitorWeb.Endpoint,
   secret_key_base: "Z7gmgTXF4Tjv5Cx/OE88lM5v8bJmEZiFDpJYx2HKwiKGTxZUCIEWkPHePkIYGTEB",
   server: false
 
+config :leitor, :ai_limits, %{cooldown_seconds: 0}
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

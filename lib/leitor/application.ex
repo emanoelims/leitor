@@ -12,6 +12,8 @@ defmodule Leitor.Application do
       Leitor.Repo,
       {DNSCluster, query: Application.get_env(:leitor, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Leitor.PubSub},
+      {Task.Supervisor, name: Leitor.GenerationTasks},
+      {DynamicSupervisor, name: Leitor.GenerationSupervisor, strategy: :one_for_one},
       LeitorWeb.Presence,
       # Start a worker by calling: Leitor.Worker.start_link(arg)
       # {Leitor.Worker, arg},

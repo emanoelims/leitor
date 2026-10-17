@@ -65,3 +65,66 @@ invariant benefits from generated inputs. Give them a clear invariant and an
 independent expected result, preserve reduced failures as regression cases, and
 include the suite in CI before claiming it as evidence. A separate fuzz or
 benchmark framework is unnecessary until a concrete workload requires it.
+
+## Account AI authorization
+
+`/settings` remains inside the existing authenticated browser pipeline and
+`:require_authenticated_user` LiveView session. No additional public route was
+introduced. Reading preferences does not require recent authentication; saving
+or removing provider keys requires the existing 20-minute sudo window.
+
+`Leitor.AI` assigns credential ownership from the caller scope, encrypts input,
+and omits plaintext/ciphertext from returned metadata. Deletion queries include
+both account and credential IDs. Request-local credentials never modify global
+provider configuration. Shared calls pin Haiku on the server even when a caller
+saves a premium preference or forges browser model parameters. Personal keys
+unlock supported models only for their owner; decryption failures never fall
+back to the application's key. Quotas and concurrency are reserved transactionally
+under database row locks before the provider is contacted. Finishing a lease is
+scoped and idempotent, without refunding attempted credits.
+
+Evidence: `test/leitor/ai_test.exs`, `test/leitor_web/live/preferences_live_test.exs`
+and `test/leitor_web/live/page_live_test.exs` cover ownership, encryption, tampering,
+key redaction, recent authentication, request model pinning, budget boundaries,
+capacity, cancellation and unavailable credentials. These tests do not verify
+provider credentials or every multi-machine concurrent schedule.
+
+## Private executable figures
+
+`GET /figures/:id` is a controller route in the authenticated
+`[:artifact, :require_authenticated_user]` scope. The artifact pipeline accepts
+JSON and shares session, CSRF, secure headers, locale and scope loading through
+`:browser_session`. It is not a LiveView route.
+Only a ready artifact with the caller's `user_id` can be fetched; drafts and
+foreign IDs return 404. Private source and execution evidence are not exposed
+by this endpoint. The browser receives only the accepted bundle, style and
+integrity digest, with private no-store caching. Programs run in opaque-origin
+iframes, never the application's JavaScript realm. The current artifact
+reference does not grant another account access when pasted into its page.
+
+Editor retries keep private checkpoint IDs in durable account-owned generation
+records, never in client request parameters. Workers survive browser disconnects;
+recovery reads the caller's latest attempt and does not reserve credits again for
+running or completed work. Explicit figure adjustments accept only an owned ready
+base revision before reserving credits. Failed adjustments cannot replace the
+original executable figure. Only unchanged requests resume their saved source; changed prompt,
+format, title or context starts a new program. `Artifacts.get_revision/2` still
+checks the caller's scope. Each continuation reserves normal account credits,
+and repaired code must pass fresh isolated execution and independent review.
+Versioned coding checkpoints can reference the revision that established their
+passing interaction and mechanical contracts. Resolving that reference also
+requires the caller's account scope, valid source and successful execution
+evidence. Foreign, missing, malformed and failed references are rejected before
+calling the model. A restored contract does not grant execution or publication.
+The existing authenticated `/pages/new` and `/pages/:id` LiveViews retain their
+router scope and `:require_authenticated_user` session; no new route is added.
+
+Evidence: `figure_controller_test.exs` covers authentication, ownership and draft
+denial; `figure_program_test.exs` covers rejected reviews, foreign continuation
+denial, persisted contract recovery and token bounds; `page_live_test.exs` covers request-bound continuation,
+changed context, late checkpoint notifications, reconnecting to running and
+completed attempts, and rejection messages; `generations_test.exs` covers scoped
+recovery, cancellation, expiration and unauthorized base revisions;
+`figure_runner_test.exs` exercises the real isolated compiler/browser explicitly
+when `LEITOR_RUN_SANDBOX_TESTS=1`. Source-analysis tests are supplementary and do
+not establish that arbitrary JavaScript can be safely executed on a host.

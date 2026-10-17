@@ -4,6 +4,42 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-17
+
+### Added
+
+- An original program-authoring loop with streamed source, isolated compilation
+  and browser experiments, screenshot-based review and bounded repair attempts.
+  Reviewed programs use private immutable artifacts and opaque sandboxed reader
+  frames; failed proposals remain non-executable drafts. A separate private Fly
+  checker deploys before Phoenix after each stable GitHub release.
+- Durable account-owned generation recovery after browser disconnects, including
+  completed results without another paid request, and in-editor AI adjustments
+  that preserve the original figure until a new revision passes review.
+- Immutable mechanical and interaction contracts across bounded coding stages,
+  saved recovery and automatic repairs; mandatory observed motion prevents
+  decorative play controls from passing the execution gate.
+- A versioned interactive-figure engine built on the MIT-licensed Anatomy drawing
+  kit, with freely authored solid compositions, assembly opening, camera controls,
+  part inspection, and a backwards-compatible workbench with live queue simulation and individual station
+  controls, counters, manual stepping, themes and reduced-motion support.
+- Validated portable figure blueprints generated with Claude and saved in page
+  Markdown. Additional creative generation formats are marked as coming soon;
+  existing SVG and animated-scene pages remain readable and editable.
+- MIT project license and retained third-party kit attribution.
+- Encrypted account provider keys, personal Claude model selection, and saved
+  settings for future image and narration providers, including ElevenLabs.
+- Server-enforced shared Haiku access, daily account/global credit allowances,
+  personal-key resource limits, and transactional concurrency reservations.
+
+### Security
+
+- Bind encrypted provider keys to account and provider with AES-256-GCM, omit
+  secrets from returned metadata, clear submitted key fields, and require recent
+  email authentication for key changes. Shared execution ignores browser model
+  overrides. SVG blocks reject scripts, HTML, external references, and arbitrary
+  animation code.
+
 ## [0.2.1] - 2026-10-16
 
 ### Fixed

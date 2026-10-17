@@ -50,20 +50,22 @@ defmodule Leitor.Generations.Worker do
     Process.demonitor(reference, [:flush])
     AI.finish(state.scope, state.lease_id)
     Generations.finish(state.scope, state.generation.id, result)
-    {:stop, :normal, state}
+    {:stop, :normal, %{state | lease_id: nil}}
   end
 
   def handle_info({:DOWN, reference, :process, _pid, _reason}, %{task: %{ref: reference}} = state) do
     AI.finish(state.scope, state.lease_id)
     Generations.finish(state.scope, state.generation.id, {:error, :provider_error})
-    {:stop, :normal, state}
+    {:stop, :normal, %{state | lease_id: nil}}
   end
 
-  def handle_info({:generation_cancel, _id}, state), do: {:stop, :normal, state}
+  def handle_info({:generation_cancel, _id}, state), do: {:stop, :normal, %{state | lease_id: nil}}
 
   def handle_info(:deadline, state) do
+    Task.shutdown(state.task, :brutal_kill)
+    AI.finish(state.scope, state.lease_id)
     Generations.finish(state.scope, state.generation.id, {:error, :figure_budget_exceeded})
-    {:stop, :normal, state}
+    {:stop, :normal, %{state | lease_id: nil}}
   end
 
   def handle_info({:generation_changed, _id}, state), do: {:noreply, state}

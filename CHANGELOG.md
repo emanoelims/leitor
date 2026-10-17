@@ -7,10 +7,14 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 ### Added
 
 - A Dictionary action in the selection toolbar. Its answer opens in the same
-  margin card as Define and Explain: a Brazilian Portuguese translation chosen
-  from the surrounding passage (DeepL), phonetics when available (Free Dictionary
-  API), and English senses with examples (Wiktionary). The card keeps its meaning
-  and part of speech for word jars. Configure `DEEPL_API_KEY` to enable translations.
+  margin card as Define and Explain: IPA, inflected forms, and Brazilian
+  Portuguese translations grouped by sense from a local import of English
+  Wiktionary (kaikki.org), with the meaning in the current passage chosen by a
+  contextual DeepL translation and optional bilingual examples from Azure
+  Translator. The card keeps its meaning and part of speech for word jars.
+- `mix leitor.dictionary.import` and `Leitor.Release.import_dictionary/1` load
+  the dictionary. Configure `DEEPL_API_KEY`, `AZURE_TRANSLATOR_KEY`, and
+  `AZURE_TRANSLATOR_REGION` to enable the optional services.
 
 ## [0.2.1] - 2026-10-16
 

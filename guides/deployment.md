@@ -58,7 +58,20 @@ Fly secrets:
   The application adds the `Leitor` display name.
 - `ANTHROPIC_API_KEY`: the Claude API credential.
 - `DEEPL_API_KEY`: optional DeepL API credential for contextual dictionary
-  translations. Without it, the dictionary shows English entries only.
+  translations.
+- `AZURE_TRANSLATOR_KEY` and `AZURE_TRANSLATOR_REGION`: optional Azure
+  Translator credential and resource region for bilingual dictionary examples.
+
+The dictionary lives in the `dictionary_entries` table, about 400 MB for the
+English import. After the migration that creates it, import it once from a
+running machine; the download goes to the machine's temporary directory and is
+removed afterwards:
+
+```sh
+fly ssh console --app leitor -C "/app/bin/leitor eval 'Leitor.Release.import_dictionary(\"https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz\")'"
+```
+
+Re-running the import replaces every entry; words may be missing while it runs.
 
 GitHub's encrypted `FLY_API_TOKEN` secret contains an app-scoped deployment token
 for `leitor`, initially valid for one year. Rotate it before expiry with

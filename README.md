@@ -191,21 +191,37 @@ words and punctuation. AI suggestions still require the learner's judgment.
 ### Dictionary configuration
 
 The selection toolbar's Dictionary action answers in a margin card, like Define
-and Explain, and keeps the translation and part of speech for word jars. DeepL
-translates the selected term into Brazilian Portuguese, using its paragraph (up
-to 1,000 characters) as context so the translation follows the meaning in the
-text. Wiktionary's REST API supplies English senses and examples for terms of up
-to three words, and the keyless [Free Dictionary API](https://dictionaryapi.dev/)
-adds phonetics when it answers; that service is intermittent, so it never decides
-the result. Either main source may be missing; the card shows whatever was found.
+and Explain, and keeps the translation and part of speech for word jars. It
+combines three sources:
 
-Set `DEEPL_API_KEY` in the environment or the ignored `mise.local.toml`; never
-commit it. Free keys end in `:fx` and use DeepL's free API host automatically.
-Without a key, the dictionary shows English entries only.
+- **Local dictionary.** An import of English Wiktionary from
+  [kaikki.org](https://kaikki.org/dictionary/English/) (Wiktextract) supplies IPA,
+  inflected forms, Brazilian Portuguese translations grouped by sense, and
+  English senses. Inflections such as *ran* resolve to their lemma. Content is
+  CC BY-SA by Wiktionary contributors.
+- **DeepL** translates the term using its paragraph (up to 1,000 characters) as
+  context. When that translation appears in a dictionary sense, the card shows
+  it first as the meaning *in this passage*.
+- **Azure Translator** (optional) adds up to two bilingual example sentences for
+  that translation.
+
+Import the dictionary once per database. It replaces existing entries, takes a
+few minutes, and stores about 1.3 million entries (about 400 MB):
+
+```sh
+mise exec -- mix leitor.dictionary.import https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz
+```
+
+Set the optional credentials in the environment or the ignored
+`mise.local.toml`; never commit them. Free DeepL keys end in `:fx` and use
+DeepL's free API host automatically. Regional Azure resources also need their
+region. Without these keys, the card uses the local dictionary only.
 
 ```toml
 [env]
 DEEPL_API_KEY = "your-deepl-key:fx"
+AZURE_TRANSLATOR_KEY = "your-azure-translator-key"
+AZURE_TRANSLATOR_REGION = "brazilsouth"
 ```
 
 ## Persistence

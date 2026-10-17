@@ -627,8 +627,12 @@ defmodule LeitorWeb.PageLive do
     |> assign(help_stream: nil)
     |> start_async(:help, fn ->
       with {:ok, entry} <- Dictionary.lookup(quote, context) do
-        category = entry.meanings |> List.first(%{}) |> Map.get(:part_of_speech) |> Dictionary.jar_category()
-        {:ok, %{"answer" => Dictionary.markdown(entry), "meaning" => entry.translation || "", "category" => category}}
+        {:ok,
+         %{
+           "answer" => Dictionary.markdown(entry),
+           "meaning" => Dictionary.meaning(entry),
+           "category" => entry |> Dictionary.part_of_speech() |> Dictionary.jar_category()
+         }}
       end
     end)
   end

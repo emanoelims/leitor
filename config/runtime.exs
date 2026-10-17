@@ -22,9 +22,16 @@ end
 
 config :leitor, LeitorWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "8080"))]
 
-# Optional: contextual dictionary translations. Without it, lookups show English entries only.
+# Optional: contextual dictionary translations. Without it, lookups use the local dictionary only.
 if deepl_api_key = System.get_env("DEEPL_API_KEY") do
   config :leitor, Leitor.Dictionary, deepl_api_key: deepl_api_key
+end
+
+# Optional: bilingual dictionary examples. Regional Azure resources also need the region.
+if azure_translator_key = System.get_env("AZURE_TRANSLATOR_KEY") do
+  config :leitor, Leitor.Dictionary,
+    azure_translator_key: azure_translator_key,
+    azure_translator_region: System.get_env("AZURE_TRANSLATOR_REGION")
 end
 
 if config_env() == :dev do

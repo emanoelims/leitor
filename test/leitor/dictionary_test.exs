@@ -1,184 +1,178 @@
 defmodule Leitor.DictionaryTest do
-  use ExUnit.Case, async: false
+  use Leitor.DataCase, async: false
+
+  import Leitor.DictionaryFixtures
 
   alias Leitor.Dictionary
 
   doctest Dictionary
 
-  @wiktionary %{
-    "en" => [
-      %{
-        "partOfSpeech" => "Verb",
-        "language" => "English",
-        "definitions" => [
-          %{
-            "definition" =>
-              ~s(To move <a rel="mw:WikiLink" href="/wiki/swiftly">swiftly</a>.\n<ol><li>A nested sense.</li></ol>),
-            "parsedExamples" => [%{"example" => "<b>Run</b>, and you might catch the train&#33;"}]
-          },
-          %{"definition" => "To <i>manage</i> &amp; direct.", "examples" => ["She <b>runs</b> a shop."]},
-          %{"definition" => ~s(<span class="usage-label-sense"></span>)},
-          %{"definition" => "To operate.", "examples" => ["She <b>runs</b> a shop."]},
-          %{"definition" => "A fourth sense."}
-        ]
-      },
-      %{"partOfSpeech" => "Symbol", "language" => "Translingual", "definitions" => [%{"definition" => "A code."}]},
-      %{"partOfSpeech" => "Noun", "language" => "English", "definitions" => [%{"definition" => "An act of running."}]},
-      %{"partOfSpeech" => "Verb", "definitions" => [%{"definition" => "Merged later."}]}
-    ],
-    "nl" => [%{"partOfSpeech" => "Noun", "definitions" => [%{"definition" => "Ignored."}]}]
-  }
-
-  @pronunciation [
-    %{
-      "phonetics" => [
-        %{"text" => "/ɹʌn/", "audio" => "http://insecure.example/run.mp3"},
-        %{"audio" => "https://api.dictionaryapi.dev/media/pronunciations/en/run-au.mp3"},
-        %{"audio" => "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3"}
-      ]
-    }
-  ]
-
   setup do
+    dictionary_fixture()
     previous = Application.get_env(:leitor, Dictionary)
     on_exit(fn -> Application.put_env(:leitor, Dictionary, previous) end)
     :ok
   end
 
-  defp stub(deepl, wiktionary, pronunciation \\ &Plug.Conn.send_resp(&1, 404, "")) do
+  defp configure(options),
+    do: Application.put_env(:leitor, Dictionary, Keyword.merge(Application.get_env(:leitor, Dictionary), options))
+
+  defp stub(deepl, azure \\ &Plug.Conn.send_resp(&1, 500, "")) do
     test = self()
 
     Req.Test.stub(Dictionary, fn conn ->
-      case conn.host do
-        "en.wiktionary.org" ->
-          send(test, {:wiktionary, conn.request_path, Plug.Conn.get_req_header(conn, "user-agent")})
-          wiktionary.(conn)
-
-        "api.dictionaryapi.dev" ->
-          send(test, {:pronunciation, conn.request_path})
-          pronunciation.(conn)
-
-        host ->
-          {:ok, body, conn} = Plug.Conn.read_body(conn)
-          send(test, {:deepl, host, Plug.Conn.get_req_header(conn, "authorization"), Jason.decode!(body)})
-          deepl.(conn)
-      end
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      send(test, {conn.host, conn.request_path, conn.query_string, conn.req_headers, Jason.decode!(body)})
+      if conn.host == "api.cognitive.microsofttranslator.com", do: azure.(conn), else: deepl.(conn)
     end)
   end
 
   defp translated(text), do: &Req.Test.json(&1, %{"translations" => [%{"text" => text}]})
   defp status(code), do: &Plug.Conn.send_resp(&1, code, "")
 
-  test "combines a contextual translation, English senses and pronunciation" do
-    stub(translated("dirigir"), &Req.Test.json(&1, @wiktionary), &Req.Test.json(&1, @pronunciation))
+  defp azure_examples(conn) do
+    case conn.request_path do
+      "/dictionary/lookup" ->
+        Req.Test.json(conn, [
+          %{
+            "normalizedSource" => "run",
+            "translations" => [%{"normalizedTarget" => "correr"}, %{"normalizedTarget" => "dirigir"}]
+          }
+        ])
 
-    assert {:ok, entry} = Dictionary.lookup(" Run, ", "She will run the company.")
+      "/dictionary/examples" ->
+        Req.Test.json(conn, [
+          %{
+            "examples" => [
+              %{
+                "sourcePrefix" => "I have a hospital to ",
+                "sourceTerm" => "run",
+                "sourceSuffix" => ".",
+                "targetPrefix" => "Eu tenho um hospital para ",
+                "targetTerm" => "dirigir",
+                "targetSuffix" => "."
+              },
+              %{"sourcePrefix" => "incomplete"}
+            ]
+          }
+        ])
+    end
+  end
 
-    assert entry.term == "Run"
+  test "highlights the passage's meaning and adds bilingual examples" do
+    configure(azure_translator_key: "azure-key", azure_translator_region: "brazilsouth")
+    stub(translated("dirigir"), &azure_examples/1)
+
+    assert {:ok, entry} = Dictionary.lookup(" run, ", "She will run the company.")
+
     assert entry.translation == "dirigir"
     assert entry.phonetic == "/ɹʌn/"
-    assert entry.audio == "https://api.dictionaryapi.dev/media/pronunciations/en/run-us.mp3"
+    assert entry.forms == ["runs", "ran"]
+    assert entry.context == %{part_of_speech: "verb", sense: "to be in charge of", words: ["dirigir", "gerir"]}
 
-    assert entry.meanings == [
+    assert [%{source: %{term: "run"}, target: %{prefix: "Eu tenho um hospital para ", term: "dirigir"}}] =
+             entry.examples
+
+    assert entry.parts == [
              %{
                part_of_speech: "verb",
-               senses: [
-                 %{definition: "To move swiftly.", example: "Run, and you might catch the train!"},
-                 %{definition: "To manage & direct.", example: "She runs a shop."},
-                 %{definition: "To operate.", example: nil}
-               ]
+               groups: [%{sense: "to move quickly", words: ["correr"]}],
+               senses: [%{definition: "To move swiftly.", example: nil}]
              },
-             %{part_of_speech: "noun", senses: [%{definition: "An act of running.", example: nil}]}
+             %{part_of_speech: "adjective", groups: [], senses: [%{definition: "Melted.", example: "Run *butter*."}]}
            ]
 
-    assert_received {:wiktionary, "/api/rest_v1/page/definition/run", ["Leitor/" <> _]}
-    assert_received {:pronunciation, "/api/v2/entries/en/run"}
+    assert_received {"api-free.deepl.com", "/v2/translate", _, headers,
+                     %{"text" => ["run"], "target_lang" => "PT-BR", "context" => "She will run the company."}}
 
-    assert_received {:deepl, "api-free.deepl.com", ["DeepL-Auth-Key test-key:fx"],
-                     %{"text" => ["Run"], "target_lang" => "PT-BR", "context" => "She will run the company."}}
+    assert {"authorization", "DeepL-Auth-Key test-key:fx"} in headers
+    assert_received {"api.cognitive.microsofttranslator.com", "/dictionary/lookup", query, headers, [%{"Text" => "run"}]}
+    assert query =~ "from=en" and query =~ "to=pt"
+    assert {"ocp-apim-subscription-region", "brazilsouth"} in headers
+    assert_received {_, "/dictionary/examples", _, _, [%{"Text" => "run", "Translation" => "dirigir"}]}
 
-    assert Dictionary.markdown(entry) =~ "**dirigir** · /ɹʌn/\n\n*verb*\n\n1. To move swiftly. — *Run, and"
-    assert Dictionary.markdown(entry) =~ "\n\n*noun*\n\n1. An act of running."
+    markdown = Dictionary.markdown(entry)
+    assert markdown =~ "**dirigir** · /ɹʌn/\n\n*Forms:* runs, ran\n\n**In this passage** · *verb* · *to be in charge of*"
+    assert markdown =~ "- I have a hospital to **run**. → Eu tenho um hospital para **dirigir**."
+    assert markdown =~ "1. Melted. — *Run \\*butter\\*.*"
+    assert Dictionary.meaning(entry) == "dirigir"
+    assert Dictionary.part_of_speech(entry) == "verb"
   end
 
-  test "keeps a translation without senses and skips long phrases" do
-    stub(translated("decolar"), status(404))
-    assert {:ok, %{translation: "decolar", meanings: [], audio: nil}} = Dictionary.lookup("take off", "")
-    assert_received {:wiktionary, "/api/rest_v1/page/definition/take_off", _agent}
-    refute_received {:pronunciation, _path}
+  test "resolves inflections and works from the local dictionary alone" do
+    configure(deepl_api_key: nil)
+    stub(status(500))
 
-    stub(translated("um pouco mais longo"), status(500))
-    assert {:ok, %{translation: "um pouco mais longo"}} = Dictionary.lookup("a bit longer than this", "")
-    refute_received {:wiktionary, _path, _agent}
+    assert {:ok, entry} = Dictionary.lookup("ran", "He ran home.")
+    assert %{translation: nil, lemma: "run", note: "simple past of run", context: nil, examples: []} = entry
+    assert [%{part_of_speech: "verb", groups: [_, _]}, %{part_of_speech: "adjective"}] = entry.parts
+    refute_received {_, _, _, _, _}
+
+    assert Dictionary.markdown(entry) =~ "**correr** · /ɹʌn/\n\n*simple past of run*"
+    assert Dictionary.meaning(entry) == "correr"
+    assert Dictionary.part_of_speech(entry) == "verb"
   end
 
-  test "uses the paid DeepL host and works without a DeepL key" do
-    Application.put_env(
-      :leitor,
-      Dictionary,
-      Keyword.put(Application.get_env(:leitor, Dictionary), :deepl_api_key, "paid")
-    )
+  test "keeps DeepL alone for unknown words and skips Azure examples without a matching translation" do
+    configure(azure_translator_key: "azure-key")
+    stub(translated("por acaso"), &azure_examples/1)
 
-    stub(translated("correr"), status(404))
-    assert {:ok, %{translation: "correr"}} = Dictionary.lookup("run", "")
-    assert_received {:deepl, "api.deepl.com", ["DeepL-Auth-Key paid"], _body}
+    assert {:ok, %{translation: "por acaso", parts: [], context: nil, examples: []} = entry} =
+             Dictionary.lookup("serendipitously", "")
 
-    Application.put_env(:leitor, Dictionary, Keyword.delete(Application.get_env(:leitor, Dictionary), :deepl_api_key))
-    stub(status(500), &Req.Test.json(&1, @wiktionary))
-    assert {:ok, %{translation: nil, meanings: [_, _]} = entry} = Dictionary.lookup("run", "")
-    refute_received {:deepl, _host, _auth, _body}
-    assert Dictionary.markdown(%{entry | meanings: []}) == "**run**"
+    refute_received {_, "/dictionary/examples", _, _, _}
+    assert Dictionary.markdown(entry) == "**por acaso**"
+    assert Dictionary.meaning(entry) == "por acaso"
+    assert Dictionary.part_of_speech(entry) == nil
   end
 
-  test "distinguishes unknown terms from unavailable providers" do
-    stub(translated("xqzv"), status(404))
+  test "reports unknown terms, unavailable providers and invalid input" do
+    stub(translated("xqzv"))
     assert Dictionary.lookup("xqzv", "") == {:error, :not_found}
 
-    stub(translated("xqzv"), &Req.Test.json(&1, %{"nl" => []}))
-    assert Dictionary.lookup("xqzv", "") == {:error, :not_found}
+    stub(status(456))
+    assert Dictionary.lookup("xqzv", "") == {:error, :unavailable}
 
-    stub(status(456), status(500), &Req.Test.json(&1, @pronunciation))
-    assert Dictionary.lookup("run", "") == {:error, :unavailable}
-
-    stub(translated(""), &Req.Test.json(&1, ["unexpected"]))
-    assert Dictionary.lookup("run", "") == {:error, :unavailable}
+    configure(deepl_api_key: "paid")
+    stub(status(503))
+    assert {:ok, %{translation: nil, parts: [_ | _]}} = Dictionary.lookup("run", "")
+    assert_received {"api.deepl.com", _, _, _, _}
 
     assert Dictionary.lookup(String.duplicate("a", 201), "") == {:error, :invalid_input}
   end
 
-  test "retries intermittent gateway errors but not missing entries" do
+  test "retries DeepL gateway errors" do
     {:ok, attempts} = Agent.start_link(fn -> 0 end)
 
-    stub(status(456), fn conn ->
+    stub(fn conn ->
       case Agent.get_and_update(attempts, &{&1, &1 + 1}) do
         0 -> Plug.Conn.send_resp(conn, 522, "")
-        _ -> Req.Test.json(conn, @wiktionary)
+        _ -> Req.Test.json(conn, %{"translations" => [%{"text" => "maravilhoso"}]})
       end
     end)
 
-    assert {:ok, %{meanings: [_, _]}} = Dictionary.lookup("run", "")
+    assert {:ok, %{translation: "maravilhoso", context: %{sense: "excellent"}}} = Dictionary.lookup("wonderful", "")
     assert Agent.get(attempts, & &1) == 2
-
-    {:ok, missing} = Agent.start_link(fn -> 0 end)
-
-    stub(status(456), fn conn ->
-      Agent.update(missing, &(&1 + 1))
-      Plug.Conn.send_resp(conn, 404, "")
-    end)
-
-    assert Dictionary.lookup("run", "") == {:error, :unavailable}
-    assert Agent.get(missing, & &1) == 1
   end
 
-  test "escapes Markdown structure in dictionary text" do
+  test "keeps Markdown within the annotation limit" do
+    group = %{sense: String.duplicate("s", 100), words: [String.duplicate("w", 100)]}
+    parts = for _ <- 1..30, do: %{part_of_speech: "noun", groups: [group], senses: []}
+
     entry = %{
       term: "x",
-      translation: "*a* [b]",
+      translation: nil,
+      lemma: nil,
+      note: nil,
       phonetic: nil,
-      audio: nil,
-      meanings: [%{part_of_speech: "noun", senses: [%{definition: "# not_a heading", example: nil}]}]
+      forms: [],
+      context: nil,
+      examples: [],
+      parts: parts
     }
 
-    assert Dictionary.markdown(entry) == "**\\*a\\* \\[b\\]**\n\n*noun*\n\n1. \\# not\\_a heading"
+    markdown = Dictionary.markdown(entry)
+    assert String.length(markdown) <= 3900
+    assert markdown =~ "**#{String.duplicate("w", 100)}**"
   end
 end

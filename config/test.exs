@@ -3,7 +3,7 @@ import Config
 # Only in tests, remove the complexity from the password hashing algorithm
 config :argon2_elixir, t_cost: 1, m_cost: 8
 
-# Dictionary lookups never leave the test process; Req.Test stubs both providers.
+# Dictionary lookups never leave the test process; Req.Test stubs DeepL and Azure.
 config :leitor, Leitor.Dictionary,
   deepl_api_key: "test-key:fx",
   req_options: [plug: {Req.Test, Leitor.Dictionary}, retry_delay: 0]

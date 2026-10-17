@@ -295,6 +295,20 @@ defmodule Leitor.FigureProgramTest do
   end
 
   test "disabled isolation refuses execution rather than falling back to the host" do
+    previous = Application.get_env(:leitor, :figure_runner)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:leitor, :figure_runner, previous),
+        else: Application.delete_env(:leitor, :figure_runner)
+    end)
+
+    for config <- [nil, [], [enabled: false]] do
+      Application.put_env(:leitor, :figure_runner, config)
+      assert {:error, :runner_unavailable} = Runner.check(%{})
+    end
+
+    Application.delete_env(:leitor, :figure_runner)
     assert {:error, :runner_unavailable} = Runner.check(%{})
   end
 

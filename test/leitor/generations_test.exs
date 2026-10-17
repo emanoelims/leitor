@@ -13,7 +13,10 @@ defmodule Leitor.GenerationsTest do
     Application.put_env(:leitor, :language_test_owner, self())
 
     on_exit(fn ->
-      Application.put_env(:leitor, :language_adapter, previous)
+      if previous,
+        do: Application.put_env(:leitor, :language_adapter, previous),
+        else: Application.delete_env(:leitor, :language_adapter)
+
       Application.delete_env(:leitor, :language_test_owner)
     end)
 

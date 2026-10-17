@@ -300,7 +300,9 @@ defmodule LeitorWeb.PageLiveTest do
     Application.put_env(:leitor, :language_test_owner, self())
 
     on_exit(fn ->
-      Application.put_env(:leitor, :figure_runner, previous_runner)
+      if previous_runner,
+        do: Application.put_env(:leitor, :figure_runner, previous_runner),
+        else: Application.delete_env(:leitor, :figure_runner)
 
       if previous_adapter,
         do: Application.put_env(:leitor, :figure_runner_adapter, previous_adapter),

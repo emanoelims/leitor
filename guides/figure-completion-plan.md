@@ -49,9 +49,9 @@ external image or speech providers, or relax execution and account boundaries.
 
 - [x] Focused regressions, browser checks, real isolated checks, `mix precommit`
   and coverage at or above 83 percent pass.
-- [ ] Review changes, update English documentation and Portuguese translations,
+- [x] Review changes, update English documentation and Portuguese translations,
   commit without `.sprite`, and pass the required GitHub checks.
-- [ ] Publish a new stable GitHub release, deploy through its workflow only, and
+- [x] Publish a new stable GitHub release, deploy through its workflow only, and
   verify explanation and isolated execution in production.
 
 Record actual outcomes in the accompanying quality report; do not replace
@@ -60,4 +60,17 @@ observed failures with later retries or promise correctness for unseen requests.
 Local verification on 2026-10-17: `mix precommit` passed; coverage passed at
 85.10 percent (362 examples, including eight doctests). All 23 real isolated
 cases passed across the full run and the focused theme-fixture correction.
-The required GitHub run will repeat the complete isolated suite together.
+The required GitHub runs repeated the complete isolated suite together and passed
+on the feature PR, `main` and stable release.
+
+[Version 0.4.0](https://github.com/emanoelims/leitor/releases/tag/v0.4.0) was
+published from commit `7f813e1` after the main checks passed. Its
+[release workflow](https://github.com/emanoelims/leitor/actions/runs/39057442784)
+deployed the private checker before Phoenix and completed successfully.
+Production reported version 0.4.0, no pending migrations and a running queue.
+A real normally authorized Haiku explanation streamed successfully and recorded
+one measured provider call. An isolated production figure passed 22 model checks,
+five UI experiments, observed animation, reduced-motion stability and mobile
+framing, with no external requests or runtime errors. The uploaded temporary
+fixture was removed. Public database readiness and the browser login screen also
+passed. No local account data or provider key was uploaded.

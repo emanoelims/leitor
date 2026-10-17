@@ -352,9 +352,9 @@ Reset text settings to apply the current defaults.
 
 ## Creative pages and personal AI keys
 
-The `/` menu generates interactive explanatory figures. Other creative formats
-are shown as **Coming soon**. An isolated program author runs locally and through
-a separate private Fly checker in production:
+The `/` menu generates interactive mechanisms, scientific diagrams and explanatory
+illustrations. Other creative formats are shown as **Coming soon**. An isolated
+program author runs locally and through a separate private Fly checker in production:
 Claude writes original geometry, simulation and controls, the container compiles
 and browser-tests them, and a screenshot review may request a rewrite. Accepted
 `anatomy-program@1` references load private immutable artifacts in sandboxed
@@ -363,6 +363,12 @@ Build the separate runner image before using it; see [the figure guide](guides/f
 Generation survives browser disconnection. Recover a running or completed attempt
 from the page, and use **Adjust with AI** on an existing figure to refine it while
 preserving its passing mechanical tests and surrounding text.
+**Versions** previews and restores related accepted versions without another AI
+charge. Save the page to keep a restoration. Busy requests can wait in a bounded,
+uncharged queue; account preferences show actual tokens, estimated API costs,
+duration and outcomes. See [AI usage](guides/ai-usage.md) and the
+[six-case quality report](guides/figure-quality-report.md) for measurement limits
+and observed generation results.
 
 Without the program runner, generations use `anatomy-scene@1`: the model
 specifies an original object's solids, positions, orientations, dimensions,

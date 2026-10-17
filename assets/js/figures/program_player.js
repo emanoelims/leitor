@@ -1,4 +1,5 @@
 import {t} from '../i18n'
+import {baseFigureStyle} from './kit/environment.mjs'
 
 // Only an account-owned, reviewed artifact can reach this player. Program code
 // executes in an opaque-origin sandbox, never in the Phoenix page's realm.
@@ -37,7 +38,7 @@ export function mountProgram(element,blueprint) {
       if(/<\/script/i.test(bundle)||/<\/style/i.test(artifact.style))throw Error('Invalid document')
       const theme=['dark','ink'].includes(document.documentElement.dataset.theme)?'dark':'light'
       const policy=`default-src 'none'; script-src 'sha256-${hash}'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'`
-      iframe.srcdoc=`<!doctype html><html data-theme="${theme}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${artifact.style}</style></head><body><main id="figure-root"></main><script>${bundle}</script></body></html>`
+      iframe.srcdoc=`<!doctype html><html data-theme="${theme}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${baseFigureStyle}</style><style>${artifact.style}</style></head><body><main id="figure-root"></main><script>${bundle}</script></body></html>`
       if(!disposed)stage.replaceChildren(iframe)
     }).catch(error=>{if(error.name!=='AbortError'&&!disposed)status.textContent=t('Illustration unavailable')})
   return()=>{disposed=true;abort.abort();observer.disconnect();intersection.disconnect();window.removeEventListener('message',message);document.removeEventListener('visibilitychange',environment);iframe.remove()}

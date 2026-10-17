@@ -4,7 +4,7 @@ defmodule Leitor.MixProject do
   def project do
     [
       app: :leitor,
-      version: "0.3.1",
+      version: "0.4.0",
       name: "Leitor",
       source_url: "https://github.com/emanoelims/leitor",
       docs: docs(),
@@ -105,6 +105,8 @@ defmodule Leitor.MixProject do
         "guides/authentication-contracts.md",
         "guides/deployment.md",
         "guides/figures.md",
+        "guides/figure-quality-report.md",
+        "guides/ai-usage.md",
         {"LICENSE", [title: "License"]}
       ],
       groups_for_modules: [

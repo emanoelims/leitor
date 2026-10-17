@@ -50,10 +50,14 @@ export const IllustrationCode = hook => CodeBlock.extend({
       }
       refine.type='button';refine.textContent=t('Adjust with AI')
       refine.onclick=()=>hook.ai?.refine(current.textContent,getPos(),current.nodeSize)
-      toolbar.append(refine,edit); pre.append(contentDOM); dom.append(preview, toolbar, pre)
+      const history = document.createElement('button')
+      history.type='button';history.textContent=t('Versions')
+      history.onclick=()=>hook.figureHistory?.open(current.textContent,getPos(),history)
+      toolbar.append(refine,history,edit); pre.append(contentDOM); dom.append(preview, toolbar, pre)
       const update = () => {
         const illustrated = languages.has(current.attrs.language)
         try {refine.hidden=JSON.parse(current.textContent).engine!=='anatomy-program'} catch (_) {refine.hidden=true}
+        history.hidden = refine.hidden
         dom.className = illustrated ? 'illustration-editor' : ''
         preview.hidden = toolbar.hidden = !illustrated
         if (!illustrated) {pre.hidden = false; return}

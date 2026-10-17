@@ -44,7 +44,7 @@ defmodule Leitor.Generations.Request do
     |> validate_length(:context, max: 24_000)
     |> validate_length(:title, max: 180)
     |> validate_length(:draft_body, max: 300_000)
-    |> validate_inclusion(:format, ["visual_explainer"])
+    |> validate_inclusion(:format, Enum.map(Leitor.WritingFormat.options(), &elem(&1, 1)))
     |> validate_number(:insertion, greater_than_or_equal_to: 0, less_than_or_equal_to: 1_000_000)
     |> validate_number(:replace_from, greater_than_or_equal_to: 0, less_than_or_equal_to: 1_000_000)
     |> validate_number(:replace_to, greater_than: 0, less_than_or_equal_to: 1_000_000)

@@ -5,6 +5,7 @@ defmodule Leitor.Figures.Artifact do
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "figure_artifacts" do
     belongs_to :user, Leitor.Accounts.User, type: :binary_id
+    belongs_to :parent, __MODULE__, type: :binary_id
     field :title, :string
     field :caption, :string
     field :model, :string

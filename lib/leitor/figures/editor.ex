@@ -38,12 +38,12 @@ defmodule Leitor.Figures.Editor do
   def write(state, prompt, options) do
     instruction =
       mode_instruction(state) <>
-        "Resolve the assembly topology, joint constraints, axial stack and camera visibility in the pure model before drawing. Record that compact design in model.mjs; do not spend the whole response on a plan. Work in bounded modules, then render and iterate. " <>
+        model_guidance(state) <>
         "Iterate from actual images and errors. Prefer patch_file over rewriting entire files. " <>
         "Preserve existing passing experiment contracts; after your first successful render the experiments are frozen. " <>
         "Write checks.mjs before geometry: import your pure model and export synchronous verify(), returning 3–24 unique {name,passed} checks. " <>
         "Call verify_model before building geometry, and after changing mechanical equations: it executes the pure model checks in isolation without requiring the drawing or UI. Fix failed constraints before spending tokens on the illustration. A model-only success never replaces a full render or visual review. " <>
-        "Sample a complete cycle, joint closure/contact, travel limits and actual state transitions, not constants or duplicated equations. " <>
+        "Sample a complete cycle, limiting cases, conservation or causal constraints and actual state transitions, not constants or duplicated equations. Mechanical subjects additionally need joint closure/contact and travel checks. " <>
         "The existing checks.mjs prefix is frozen after a passing render. Strengthen it only by appending new exported verifyExtra1(), verifyExtra2(), etc.; each returns additional named checks, all of which must pass. Never replace or edit the original assertions. " <>
         repair_strategy(state) <>
         "Never hide expected assertion text or fake evidence to pass tests. If localization conflicts with frozen tests, preserve the tested language and explain the limitation. " <>
@@ -97,6 +97,19 @@ defmodule Leitor.Figures.Editor do
   defp mode_instruction(_state),
     do:
       "You are editing an existing interactive figure with real coding tools. Read the relevant files and correct observed defects. "
+
+  defp model_guidance(%{profile: profile}) when profile in ["scientific_diagram", "explanatory_illustration"] do
+    Leitor.WritingFormat.instruction(profile) <>
+      "Resolve the process, equations, parameter bounds, units, visual layers and camera before drawing. The requested scientific/editorial profile takes priority over generic mechanical drawing advice in kit documentation. Record a compact design in model.mjs and build complete modules instead of spending the response on a plan. Render and inspect real captures. "
+  end
+
+  defp model_guidance(_state),
+    do:
+      "Resolve the assembly topology, joint constraints, axial stack and camera visibility in the pure model before drawing. Record that compact design in model.mjs; do not spend the whole response on a plan. Work in bounded modules, then render and iterate. "
+
+  defp repair_strategy(%{profile: profile}) when profile in ["scientific_diagram", "explanatory_illustration"] do
+    "Repair the observed scientific or causal defect, preserving correct earlier work and immutable tests. A precise 2D diagram is valid; do not add supports, bearings or 3D assembly conventions to a nonmechanical subject. Align visual state to the pure model, maintain legible units/labels and inspect actual captures. "
+  end
 
   defp repair_strategy(%{evidence: [_ | _]}) do
     "Review failures require repairing the physical cause, not another cosmetic patch. Rebuild the affected geometry module when needed, preserving exports and passing tests. " <>

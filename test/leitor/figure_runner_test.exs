@@ -46,6 +46,45 @@ defmodule Leitor.FigureRunnerTest do
     assert byte_size(result.bundle) > 500
   end
 
+  for name <- ~w(cardan cam governor ratchet refraction lunar) do
+    @tag fixture: name
+    test "the original quality campaign #{name} retains its model, controls, motion and mobile framing", %{fixture: name} do
+      attrs = "test/fixtures/figures/#{name}-program.json" |> File.read!() |> Jason.decode!()
+      {:ok, source} = Source.new(attrs)
+      assert {:ok, result} = Runner.check(Source.files(source))
+      assert result.report["ok"], inspect(result.report)
+      assert length(result.report["model_checks"]) >= 14
+      assert Enum.all?(result.report["model_checks"], & &1["passed"])
+      assert length(result.report["checks"]) >= 5
+      assert result.report["animation_observed"]
+      assert result.report["reduced_motion_stable"]
+      assert result.report["mobile_framing"]["clipped"] == false
+      assert result.report["network"] == []
+      assert result.report["errors"] == []
+    end
+  end
+
+  test "unstyled labels inherit the shared reader/checker foreground in both themes" do
+    code =
+      ~s|export function mount(root){root.innerHTML='<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30"/></svg><label id="label">A readable label</label><button id="turn">Dark theme</button><output id="state"></output>';const out=root.querySelector('#state');out.textContent=getComputedStyle(root).color;root.querySelector('#turn').onclick=()=>{document.documentElement.dataset.theme='dark';out.textContent=getComputedStyle(root.querySelector('#label')).color;root.querySelector('circle').setAttribute('fill',out.textContent)};return ()=>root.replaceChildren()}|
+
+    files = %{
+      program()
+      | "figure.mjs" => code,
+        "experiments" => [
+          %{
+            "name" => "readable dark labels",
+            "steps" => [%{"action" => "click", "selector" => "#turn", "value" => ""}],
+            "selector" => "#state",
+            "contains" => "233, 227, 214"
+          }
+        ]
+    }
+
+    assert {:ok, result} = Runner.check(files)
+    assert result.report["ok"], inspect(result.report)
+  end
+
   test "the reviewed lock retains six mechanical outcomes, animation and accessible mobile captures" do
     attrs = "test/fixtures/figures/lock-program.json" |> File.read!() |> Jason.decode!()
     assert {:ok, source} = Source.new(attrs)

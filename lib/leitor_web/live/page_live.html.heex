@@ -105,6 +105,7 @@
       <p>
         {gettext("Your figure generation is saved.")}<small>{t(
           case @generation_recovery.status do
+            "queued" -> "It is waiting for capacity. Credits are reserved only when it starts."
             "running" -> "It is still working. You can leave this page and return."
             "ready" -> "Your result is ready to add to the editor."
             _ -> "Your draft is safe. Continue from the saved request."
@@ -121,7 +122,7 @@
       {gettext("Recover generation")}<.icon name="lucide-arrow-right" class="size-4" />
     </button>
     <button
-      :if={@generation_recovery.status != "running"}
+      :if={@generation_recovery.status not in ["running", "queued"]}
       id="page-generation-dismiss"
       type="button"
       class="icon-button"

@@ -36,7 +36,7 @@ jobs:
         with:
           version: '0.4.116'
       - name: Deploy the private figure checker
-        run: flyctl deploy . --remote-only --ha=false --no-public-ips --config figure_service/fly.toml --dockerfile figure_service/Dockerfile
+        run: flyctl deploy . --remote-only --ha=false --no-public-ips --config figure_service/fly.toml
         env:
           FLY_API_TOKEN: ${{ secrets.FIGURE_RUNNER_DEPLOY_TOKEN }}
       - name: Deploy the published release

@@ -38,6 +38,7 @@ defmodule Leitor.Figures.Agent do
       deadline: System.monotonic_time(:millisecond) + timeout,
       rounds: if(review_only, do: 0, else: author_rounds(budget)),
       usage: [],
+      review_usage: [],
       resume: nil,
       baseline: nil,
       frozen_contracts: nil,
@@ -358,9 +359,16 @@ defmodule Leitor.Figures.Agent do
       }
     }
 
-    with {:ok, attrs} when is_map(attrs) <- state.adapter.review(state.model, prompt, result.images, schema, options),
+    {decision, usage} = request_review(state, prompt, result.images, schema, options)
+
+    state = %{
+      state
+      | remaining: state.remaining - usage.output_tokens,
+        review_usage: state.review_usage ++ [usage]
+    }
+
+    with {:ok, attrs} when is_map(attrs) <- decision,
          {:ok, review} <- Review.new(attrs) do
-      state = %{state | remaining: state.remaining - state.review_tokens}
       decision = Ecto.embedded_dump(review, :json)
       if review.accept, do: publish(state, source, result, decision), else: repair(state, source, result, decision)
     else
@@ -373,6 +381,37 @@ defmodule Leitor.Figures.Agent do
 
       _ ->
         invalid_review(state, source, result)
+    end
+  end
+
+  defp request_review(state, prompt, images, schema, options) do
+    buffer = :ets.new(:figure_review_usage, [:set, :private])
+    measured = Keyword.get(options, :usage_callback, fn _usage -> :ok end)
+
+    options =
+      Keyword.put(options, :usage_callback, fn usage ->
+        :ets.insert(buffer, {:usage, usage})
+        measured.(usage)
+      end)
+
+    try do
+      result = state.adapter.review(state.model, prompt, images, schema, options)
+
+      usage =
+        case :ets.lookup(buffer, :usage) do
+          [{:usage, %{billing_usage_complete: false}}] ->
+            %{output_tokens: state.review_tokens, measured: false}
+
+          [{:usage, %{output_tokens: spent}}] when is_integer(spent) and spent > 0 and spent <= state.review_tokens ->
+            %{output_tokens: spent, measured: true}
+
+          _ ->
+            %{output_tokens: state.review_tokens, measured: false}
+        end
+
+      {result, usage}
+    after
+      :ets.delete(buffer)
     end
   end
 
@@ -441,7 +480,7 @@ defmodule Leitor.Figures.Agent do
       caption: source.caption,
       model: state.model,
       source: Source.dump(source),
-      report: Map.put(evidence, :profile, state.profile),
+      report: evidence |> Map.put(:profile, state.profile) |> Map.put(:review_usage, state.review_usage),
       status: status,
       parent_id: state.parent_id,
       bundle: bundle,

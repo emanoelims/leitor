@@ -46,9 +46,9 @@ defmodule Leitor.FigureRunnerTest do
     assert byte_size(result.bundle) > 500
   end
 
-  for name <- ~w(cardan cam governor ratchet refraction lunar) do
+  for name <- ~w(cardan cam governor ratchet refraction lunar steam-native) do
     @tag fixture: name
-    test "the original quality campaign #{name} retains its model, controls, motion and mobile framing", %{fixture: name} do
+    test "the retained #{name} program preserves its model, controls, motion and mobile framing", %{fixture: name} do
       attrs = "test/fixtures/figures/#{name}-program.json" |> File.read!() |> Jason.decode!()
       {:ok, source} = Source.new(attrs)
       assert {:ok, result} = Runner.check(Source.files(source))
@@ -77,6 +77,34 @@ defmodule Leitor.FigureRunnerTest do
             "steps" => [%{"action" => "click", "selector" => "#turn", "value" => ""}],
             "selector" => "#state",
             "contains" => "233, 227, 214"
+          }
+        ]
+    }
+
+    assert {:ok, result} = Runner.check(files)
+    assert result.report["ok"], inspect(result.report)
+  end
+
+  test "dark material defaults remain visible while authored palettes and light surfaces are preserved" do
+    code =
+      ~s|export function mount(root){root.innerHTML='<svg viewBox="0 0 100 100"><circle class="iso-shade" data-shade="0" cx="50" cy="50" r="30"/></svg><button id="theme">Dark</button><button id="custom">Custom</button><output id="state"></output>';const out=root.querySelector('#state'),circle=root.querySelector('circle');out.textContent=getComputedStyle(circle).fill;if(out.textContent!=='rgb(220, 220, 217)')throw Error('Light palette changed');root.querySelector('#theme').onclick=()=>{root.dataset.theme='dark';out.textContent=getComputedStyle(circle).fill;circle.setAttribute('fill',out.textContent)};root.querySelector('#custom').onclick=()=>{root.classList.add('custom');out.textContent=getComputedStyle(circle).fill;circle.setAttribute('fill',out.textContent)};return ()=>root.replaceChildren()}|
+
+    files = %{
+      program()
+      | "figure.mjs" => code,
+        "css" => ".custom{--anatomy-shade-0:#456789} svg{width:100%;max-height:300px}",
+        "experiments" => [
+          %{
+            "name" => "visible default material",
+            "steps" => [%{"action" => "click", "selector" => "#theme", "value" => ""}],
+            "selector" => "#state",
+            "contains" => "rgb(36, 36, 33)"
+          },
+          %{
+            "name" => "authored palette wins",
+            "steps" => [%{"action" => "click", "selector" => "#custom", "value" => ""}],
+            "selector" => "#state",
+            "contains" => "rgb(69, 103, 137)"
           }
         ]
     }

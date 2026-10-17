@@ -28,9 +28,13 @@ Ancestry starts with new adjustments; existing artifacts are not assigned invent
 history. No new route or authentication scope is introduced: existing authenticated
 PageLive events and the ownership-checked artifact controller serve this feature.
 
-The trusted player and checker share foreground/color-scheme defaults before
-generated CSS. This keeps inherited labels readable in light and dark themes;
-authors setting custom backgrounds must also supply suitable foreground colors.
+The trusted player and checker share foreground/color-scheme and shaded-material
+defaults before generated CSS. Dark surfaces remain distinguishable from the
+background, while the kit's light palette and explicit authored colors win their
+normal cascade. The player reapplies current defaults and then the original
+authored CSS even for older reviewed artifacts, without changing their hashed
+executable bundles. Authors setting custom backgrounds must also supply suitable
+foreground colors.
 See [AI usage](ai-usage.md) for waiting queues, recovery and measured costs.
 
 ## Isolated program author
@@ -71,6 +75,20 @@ two observations separated by elapsed time. Failure withholds the executable
 bundle and returns a repair diagnostic before visual review. Model-only checks
 remain independent of drawing and animation. The existing data-only scene format
 remains available for static compositions.
+
+For personal reservations above 32,768 output tokens, a first construction that
+has spent at least half its authorized output budget hands its next successful
+render directly to independent review. It does not spend further coding turns
+on self-revision first. The exact validated source and passing execution evidence
+remain bound together; the independent verdict is still required. Repairs retain
+the existing frozen checks, stage ceiling and total deadline.
+
+Review budget accounting uses validated actual output usage when supplied by the
+provider, forwarding the original scoped measurement callback once. Unknown,
+incomplete or invalid counters conservatively consume the full allocation.
+Unspent review tokens remain within the same existing reservation for repairs;
+this never increases credits, token ceilings or the number of authoring stages.
+The report's `review_usage` records the charged output and whether it was measured.
 
 Visual review is a heuristic; mechanism-specific tests and human assessment
 remain necessary. Generated experiments are evidence, not an independent proof

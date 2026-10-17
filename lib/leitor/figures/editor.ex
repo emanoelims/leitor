@@ -1,5 +1,5 @@
 defmodule Leitor.Figures.Editor do
-  @moduledoc "An iterative coding-tool loop for original figures and revisions. The model writes bounded modules, renders in isolation and sees actual captures before submitting."
+  @moduledoc "An iterative coding-tool loop for original figures and revisions. Modules render in isolation; expensive first construction hands passing evidence to independent review before spending more on self-revision."
   alias Leitor.Figures.Artifacts
   alias Leitor.Figures.Runner
   alias Leitor.Figures.Source
@@ -49,6 +49,7 @@ defmodule Leitor.Figures.Editor do
         "Never hide expected assertion text or fake evidence to pass tests. If localization conflicts with frozen tests, preserve the tested language and explain the limitation. " <>
         "read_file('kit.md') documents the kit; read_file('facets.mjs') exposes meshes and clipping; read_file('occlusion.mjs') exposes Leitor's bounded opaque surface ordering. read_file('mechanics.mjs') exposes verified involute gears and slider-crank closure. Use it for supported mechanisms instead of approximate teeth or separately positioned pins. No shell, network or external assets are available. " <>
         "Use finish only after render passes and you have inspected all captures for the user's requested craftsmanship. " <>
+        "For a first construction that has used half of a personal output budget, the host hands a passing render directly to independent review so its concrete feedback arrives while repair capacity remains. " <>
         "The default mobile view must fit the whole assembly and its travel, not crop the rack ends, base or supports to enlarge a detail. Offer any close-up as an explicitly labeled optional inspection view. The checker measures actual SVG drawing bounds against the mobile viewBox; hiding overflow does not repair framing. " <>
         "Original geometry and simulation code are allowed. Never replace the program with a generic preset.\n" <> prompt
 
@@ -114,6 +115,8 @@ defmodule Leitor.Figures.Editor do
   defp repair_strategy(%{evidence: [_ | _]}) do
     "Review failures require repairing the physical cause, not another cosmetic patch. Rebuild the affected geometry module when needed, preserving exports and passing tests. " <>
       "Put every mechanically relevant XYZ position and axial interval in the pure model and consume those exact values in geometry. Append checks for real 3D overlap/contact and clearance, not only planar alignment. " <>
+      "Material paths, inlets, outlets, emitted streams and labels must use the same world-space anchors as the solids, rather than screen-space offsets. Plan the camera and inspection sections so both the actuator and causal contact are legible. " <>
+      "When continuing a saved visual rejection without captures, first render its baseline to inspect the actual defect, then change the affected source and render again. Do not submit an unchanged rejected program for another independent review. " <>
       "Create actual cut faces and visible bearing seats. A dashed outline, floating contact marker, flat inset or prose is not a replacement for a visible connected solid in the main 3D scene. Preserve earlier fixes, then render and inspect all captures. "
   end
 
@@ -387,6 +390,7 @@ defmodule Leitor.Figures.Editor do
          editor
          | checked: checked,
            verified: verified,
+           done: not is_nil(checked) and review_handoff?(editor),
            contracts: contracts,
            check_contract: check_contract,
            contract_revision: contract_revision
@@ -405,6 +409,13 @@ defmodule Leitor.Figures.Editor do
         {editor, "Invalid program metadata"}
     end
   end
+
+  defp review_handoff?(%{owner: %{options: options, evidence: [], remaining: remaining}, spent: spent}) do
+    budget = Keyword.get(options, :max_tokens, 6000)
+    budget > 32_768 and remaining - spent <= div(budget, 2)
+  end
+
+  defp review_handoff?(_editor), do: false
 
   defp attrs(editor) do
     case Jason.decode(Map.fetch!(editor.files, "metadata.json")) do

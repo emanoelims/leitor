@@ -12,7 +12,12 @@ defmodule LeitorWeb.FigureController do
         conn
         |> put_resp_header("cache-control", "private, no-store")
         |> put_resp_header("x-content-type-options", "nosniff")
-        |> json(%{bundle: Base.encode64(artifact.bundle), style: artifact.style, digest: artifact.digest})
+        |> json(%{
+          bundle: Base.encode64(artifact.bundle),
+          style: artifact.style,
+          custom_style: Map.get(artifact.source, "css", ""),
+          digest: artifact.digest
+        })
     end
   end
 end

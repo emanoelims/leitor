@@ -4,6 +4,27 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-17
+
+### Fixed
+
+- Debit independent figure reviews by measured output usage, retaining the
+  conservative allocation when provider counters are unavailable or incomplete.
+- Hand expensive first passing renders to independent review earlier, preserving
+  repair capacity within the existing token, credit and time limits.
+- Improve dark mechanical surface contrast in the shared reader/checker
+  environment while preserving light surfaces and explicit authored palettes.
+- Guide continued visual repairs to inspect the rejected source and align
+  material paths, contact points and section views with model coordinates.
+
+### Validation
+
+The previously rejected steam-driven cane mill passed one normal continuation.
+Its unchanged accepted program is retained for isolated regression tests, with
+24 model checks, six original UI experiments, motion and mobile framing. The
+quality report records both the failed attempt and successful continuation.
+No migrations, dependencies, secrets or generation-limit increases are required.
+
 ## [0.4.0] - 2026-10-17
 
 ### Added

@@ -2,7 +2,7 @@ import {readFile,writeFile} from 'node:fs/promises'
 import {build} from 'esbuild'
 import {chromium} from 'playwright-core'
 import {inspectSources} from './policy.mjs'
-import {baseFigureStyle} from './leitor/environment.mjs'
+import {composeFigureStyle} from './leitor/environment.mjs'
 
 const output='/output'
 let browser,page
@@ -53,7 +53,7 @@ try {
   if(Buffer.byteLength(bundle)>1_000_000)throw Error('Bundle exceeds one megabyte')
   await writeFile(`${output}/bundle.js`,bundle)
   const kit=await readFile('/runner/kit/iso.css','utf8')
-  const style=`${kit}\n${baseFigureStyle}\n${request.css}`
+  const style=composeFigureStyle(kit,request.css)
   // Generated code never runs in Node. It is only parsed and bundled there.
   const html=`<!doctype html><html data-theme="light"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'"><style>${style.replace(/<\/style/gi,'')} html[data-theme=light] body{background:#faf9f6}html[data-theme=dark] body{background:#141310}</style></head><body><main id="figure-root"></main><script>${bundle.replace(/<\/script/gi,'<\\/script')}</script></body></html>`
   browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--js-flags=--max-old-space-size=128']})

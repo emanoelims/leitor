@@ -50,6 +50,45 @@ is not uniformly perfect across unseen requests; model-authored checks and AI
 review are bounded evidence, not a proof of scientific accuracy or aesthetic
 quality. New domains still need representative human checks.
 
+## Subsequent difficult-case failure
+
+A later UI request, "Elabore um engenho de cana movido a vapor", failed independent
+review after about twelve minutes. This is a seventh, separate development case;
+it does not alter the original frozen campaign. Nineteen model checks, six UI
+experiments and motion/mobile gates passed, but cane contact was hidden, the
+actuator was hard to inspect and some prose did not match the displayed state.
+The result correctly remained a private non-executable draft.
+
+Actual provider output was 59,111 of the existing 65,536-token reservation. The
+engine had charged both reviews their full 4,000-token allocations, leaving
+6,425 unused output tokens unavailable for repair. Independent review also arrived
+after 49,536 authoring tokens, although a full passing render existed earlier.
+The engine now charges measured review usage, falls back conservatively for
+missing counters and hands expensive first passing renders to the independent
+reviewer earlier. No generated geometry or simulation was manually changed.
+
+One ordinary four-credit continuation then succeeded in 410 seconds with 32,007
+measured output tokens, including 774 for the independent review. It retained
+the original nineteen checks byte-for-byte, appended five real checks and kept
+all six original UI experiments. Fresh review accepted both the drawing and the
+numerical explanation. This is a successful continuation of a failed attempt,
+not another first-attempt success in the frozen six-case campaign.
+
+Human reader checks exercised feeding, one-turn advancement (96% and 0.40 L),
+the section view, three-turn discharge (one stalk and 0.60 L), continuous playback,
+pause and speed changes (80 rpm at the engine, 26.7 rpm at the rollers). The cut
+faces expose the cane's contact with the rollers; the cylinder remains smaller
+than the mill in the assembled view. These are idealized kinematics, not a steam
+pressure, torque or extraction simulation.
+
+The dark kit defaults still hid solid surfaces against the background. Shared
+reader/checker material defaults now separate their shaded faces while retaining
+the light palette and explicit authored colors. Stored reviewed bundles keep
+their original executable bytes; their authored CSS is applied after current
+host defaults. A dedicated isolated regression checks that cascade. The accepted
+continuation is retained unchanged as `steam-native-program.json` for free
+regression execution; the original failed outcome remains recorded above.
+
 ## Reproduction
 
 `mix leitor.figure.evaluate --list` and `--case SLUG` inspect frozen briefs without
@@ -63,7 +102,7 @@ Run unchanged retained programs without AI charges using:
 LEITOR_RUN_SANDBOX_TESTS=1 mise exec -- mix test test/leitor/figure_runner_test.exs
 ```
 
-The full isolated suite includes 23 cases, including older execution/security
-regressions, these six programs and shared theme inheritance. PostgreSQL retains
+The full isolated suite includes 25 cases, including older execution/security
+regressions, these seven programs and shared theme inheritance. PostgreSQL retains
 the account-owned source and bounded review evidence. Local temporary captures
 are not uploaded to production or committed as user data.

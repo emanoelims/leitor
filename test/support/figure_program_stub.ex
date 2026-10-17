@@ -38,6 +38,18 @@ defmodule Leitor.FigureProgramStub do
   def review(_model, _prompt, _images, _schema, options) do
     send(self(), {:allocation, Keyword.fetch!(options, :max_tokens)})
 
+    case Process.get(:figure_review_usage) do
+      [first | rest] ->
+        Process.put(:figure_review_usage, rest)
+        Keyword.fetch!(options, :usage_callback).(first)
+
+      usage when is_map(usage) ->
+        Keyword.fetch!(options, :usage_callback).(usage)
+
+      _ ->
+        :ok
+    end
+
     accept =
       case Process.get(:accept_figure, true) do
         [first | rest] ->

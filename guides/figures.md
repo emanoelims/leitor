@@ -52,6 +52,15 @@ Minor aesthetic refinements are reported without blocking an otherwise polished,
 correct figure. Intentional cutaway occlusion and required mechanical separation
 are evaluated in context.
 
+Mobile framing uses a fresh default 390-pixel browser view, independently of
+prior inspection actions. The runner records actual drawing bounds and rejects
+substantial overhang beyond the largest visible SVG's viewBox (more than 5 percent
+of an axis or 4 units, whichever is greater). Hiding overflow or choosing an
+automatically cropped close-up cannot pass this gate. This catches geometric
+clipping even when the HTML document itself does not overflow. Optional labeled
+inspection views retain their desktop tested/detail evidence. This bound is a
+framing regression, not proof that every part or motion pose is correct.
+
 Optional `capture_steps` (up to eight ordinary UI actions) arrange screenshots
 after all experiment assertions pass. They are separate from the immutable
 experiment contracts: revising a visual pose must not weaken a mechanical test.
@@ -599,3 +608,29 @@ after two minutes. Individual checks retain the 75-second container and
 executable bundle. Stable GitHub releases deploy this private service before
 Phoenix. PostgreSQL retains final account-owned artifacts; the checker's job
 files and containers are disposable.
+
+## Automatically authored rack and pinion
+
+`test/fixtures/figures/rack-program.json` preserves the exact accepted program
+from a new-page editor request. Construction began with empty modules. Its first
+bounded job passed mechanical checks but failed visual review for occlusion,
+guide engagement, bearing seating and mobile framing. A second explicitly
+requested job continued the saved revision and retained the existing assertions;
+the independent reviewer accepted its repair. Visual inspection then found an
+automatic mobile close-up cropping the base and rack ends despite that acceptance.
+A new default-view framing gate rejected this source while the other fixtures
+still passed. An explicit in-editor AI adjustment repaired only the projection
+and layout, preserving the model, all 22 checks and the five experiments exactly.
+The corrected immutable revision passed fresh execution and independent review.
+No generated geometry, simulation or mechanical check was manually edited.
+This is evidence for bounded recovery
+and repair, not a single-attempt or universal-generation success claim.
+
+The figure models a 20-tooth, module-4 pinion with compatible straight rack
+flanks, a 20-degree pressure angle, a 40 mm pitch radius and about ±90.2 mm
+travel. Its pure model derives no-slip advance from `x = r * theta`. Authored
+model checks (22 assertions), five UI experiments and the observed-motion gate passed. Reader
+checks additionally confirmed forward motion, reverse travel, both automatic
+stops, reset and visible contact inspection. The opt-in suite rechecks the
+unchanged source in light, interacted, dark and mobile views. The study describes
+ideal kinematics, not load, friction, shaft deflection or manufacturing tolerance.

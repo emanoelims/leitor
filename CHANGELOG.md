@@ -4,6 +4,16 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-17
+
+### Fixed
+
+- Use OverlayFS for the private checker's disposable container layers instead
+  of copying the full Chromium filesystem for every check. Keep the existing
+  isolation, resource ceilings and execution deadlines.
+- Record bounded checker completion/failure timings without source, credentials
+  or provider data, improving production execution diagnostics.
+
 ## [0.3.0] - 2026-10-17
 
 ### Added

@@ -178,3 +178,30 @@ privilege prepares its nested daemon only; generated inner containers retain all
 resource and capability restrictions. Stop and remove the test service afterwards.
 The real checker regression suite remains opt-in:
 `LEITOR_RUN_SANDBOX_TESTS=1 mise exec -- mix test test/leitor/figure_runner_test.exs`.
+
+The daemon uses `overlay2` for disposable writable layers. The original VFS
+configuration passed local checks but exceeded the production request deadline
+while preparing the full Chromium filesystem for a new container. VFS makes a
+deep copy of parent layers; OverlayFS reuses immutable lower layers. See the
+[Docker VFS documentation](https://docs.docker.com/engine/storage/drivers/vfs-driver/)
+and [OverlayFS documentation](https://docs.docker.com/engine/storage/drivers/overlayfs-driver/).
+The Fly kernel and backing filesystem must support overlay mounts; startup still
+fails closed if the runtime probe cannot enforce its limits. This changes storage
+preparation, not network isolation, user privileges, CPU/memory caps or deadlines.
+Checker logs contain only job IDs, bounded outcome categories and elapsed time;
+source, screenshots and credentials are omitted.
+
+`figure_runtime` is a dedicated encrypted 5 GB Fly volume mounted at `/data`;
+Docker uses `/data/docker` on that ext4 filesystem. Fly's application root is
+itself an overlay filesystem and cannot be the writable upper layer of another
+overlay mount. Provision the volume before publishing the corrective release:
+
+```sh
+fly volumes create figure_runtime --app leitor-figures --region gru --size 5
+```
+
+The archive's SHA-256 label identifies the cached runtime image across restarts.
+Only obsolete untagged runtime images and stopped containers bearing the
+`leitor.figure=true` label are eligible for startup cleanup. User artifacts stay
+in PostgreSQL; request files remain temporary. Other images/containers are not
+pruned. The volume is an operational cache, not a user-content backup.

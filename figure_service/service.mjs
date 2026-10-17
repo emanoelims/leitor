@@ -28,6 +28,7 @@ function command(args,timeout=100000){return new Promise((resolve,reject)=>{
 async function bounded(path,limit){const stat=await lstat(path);if(!stat.isFile()||stat.size>limit)throw Error('Invalid output');return readFile(path)}
 async function run(id,source){
   let directory
+  const started=Date.now()
   const name=`figure-${id}`
   try{
     directory=await mkdtemp(`${tmpdir()}/figure-`)
@@ -36,7 +37,7 @@ async function run(id,source){
     for(const file of ['figure.mjs','geometry.mjs','model.mjs','checks.mjs'])await writeFile(`${input}/${file}`,source[file])
     const request=Object.fromEntries(Object.entries(source).filter(([key])=>!key.endsWith('.mjs')))
     await writeFile(`${input}/request.json`,JSON.stringify(request))
-    await command(['run','--rm','--name',name,'--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--pids-limit','256','--memory','2g','--memory-swap','2g','--cpus','2','--shm-size','128m','--tmpfs','/tmp:rw,noexec,nosuid,size=256m','--mount',`type=bind,source=${input},target=/input,readonly`,'--mount',`type=bind,source=${output},target=/output`,'leitor-figure:runtime'])
+    await command(['run','--rm','--name',name,'--label','leitor.figure=true','--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--pids-limit','256','--memory','2g','--memory-swap','2g','--cpus','2','--shm-size','128m','--tmpfs','/tmp:rw,noexec,nosuid,size=256m','--mount',`type=bind,source=${input},target=/input,readonly`,'--mount',`type=bind,source=${output},target=/output`,'leitor-figure:runtime'])
     const report=JSON.parse(await bounded(`${output}/report.json`,50000))
     const names=['light.png','tested.png','detail.png','interaction.png','dark.png','mobile.png']
     if(typeof report.ok!=='boolean'||!Array.isArray(report.images)||report.images.length>6||new Set(report.images).size!==report.images.length||report.images.some(n=>!names.includes(n)))throw Error('Invalid report')
@@ -45,7 +46,13 @@ async function run(id,source){
     const result={report,images}
     if(report.ok&&!report.model_only){result.bundle=(await bounded(`${output}/bundle.js`,1000000)).toString();result.style=(await bounded(`${output}/style.css`,100000)).toString()}
     jobs.set(id,{status:'complete',result})
-  }catch(_error){jobs.set(id,{status:'failed'})}
+    console.log(JSON.stringify({event:'figure_check_complete',id,ok:report.ok,elapsed_ms:Date.now()-started}))
+  }catch(error){
+    const causes=new Map([['Runner deadline exceeded','deadline'],['Runner execution failed','execution'],['Runner output limit','output_limit']])
+    const cause=error.code==='ENOENT'?'runtime_unavailable':causes.get(error.message)||'invalid_output'
+    console.error(JSON.stringify({event:'figure_check_failed',id,cause,elapsed_ms:Date.now()-started}))
+    jobs.set(id,{status:'failed'})
+  }
   finally{
     await command(['rm','-f',name],10000).catch(()=>{})
     if(directory)await rm(directory,{recursive:true,force:true})

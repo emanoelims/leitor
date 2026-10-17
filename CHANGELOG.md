@@ -4,6 +4,39 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-17
+
+### Added
+
+- Scientific-diagram and explanatory-illustration profiles using the same
+  isolated authoring, interaction, motion and independent review gates.
+- Accepted figure version history with sandboxed previews and free restoration
+  of related account-owned versions, preserving surrounding page text.
+- An uncharged waiting queue, bounded to one request per account and fifty
+  globally, with cancellation, ten-minute expiry and normal authorization
+  before dispatch. Running paid work is never automatically repeated.
+- Account activity with actual provider token counters, dated cost estimates,
+  duration and outcomes; missing and partial measurements remain explicit.
+- Six unchanged generated regression programs covering Cardan transmission,
+  a cam, governor, ratchet, refraction and lunar phases. The quality report
+  preserves initial human findings and the separate paid confirmation.
+
+### Fixed
+
+- Require independent review evidence that explanatory equations and claims
+  agree with the actual model and observable readouts.
+- Share trusted foreground and color-scheme defaults between the reader and
+  checker so inherited text remains readable in dark figures.
+- Preserve retry checkpoints when a request waits for capacity, release canceled
+  workers' leases, and retry remote admission only after explicit busy rejection.
+
+### Migration
+
+Three additive migrations introduce accepted-revision ancestry, AI measurements
+and queued-generation indexes/status. Legacy records remain unmeasured. The
+release workflow deploys the updated private checker before migrating and rolling
+out Phoenix. No new secrets or provider credentials are required.
+
 ## [0.3.1] - 2026-10-17
 
 ### Fixed

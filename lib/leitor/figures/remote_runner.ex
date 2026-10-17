@@ -1,7 +1,7 @@
 defmodule Leitor.Figures.RemoteRunner do
   @moduledoc "Authenticated transport to the private isolated checker. Provider credentials never enter this protocol."
 
-  @doc "Submits bounded program files and polls the checker within one wall-clock deadline. Redirects and automatic request retries are disabled."
+  @doc "Submits bounded files and polls within one 100-second deadline. Only an explicit pre-admission 429 busy response may wait and resubmit; redirects, transport failures and uncertain admissions are never retried."
   @spec check(map(), keyword()) :: {:ok, map()} | {:error, :runner_unavailable | :runner_timeout | :invalid_response}
   def check(program, config) do
     request =
@@ -17,16 +17,31 @@ defmodule Leitor.Figures.RemoteRunner do
       )
 
     deadline = System.monotonic_time(:millisecond) + 100_000
+    submit(request, program, deadline, config)
+  end
 
-    case Req.post(request, url: "/checks", json: program) do
-      {:ok, %{status: 202, body: %{"id" => id}}} ->
-        case Ecto.UUID.cast(id) do
-          {:ok, id} -> poll(request, id, deadline, config)
-          :error -> {:error, :invalid_response}
-        end
+  defp submit(request, program, deadline, config) do
+    if System.monotonic_time(:millisecond) >= deadline do
+      {:error, :runner_timeout}
+    else
+      case Req.post(request, url: "/checks", json: program) do
+        {:ok, %{status: 202, body: %{"id" => id}}} ->
+          poll_accepted(request, id, deadline, config)
 
-      _ ->
-        {:error, :runner_unavailable}
+        {:ok, %{status: 429, body: %{"error" => "busy"}}} ->
+          Process.sleep(Keyword.get(config, :poll_interval, 500))
+          submit(request, program, deadline, config)
+
+        _ ->
+          {:error, :runner_unavailable}
+      end
+    end
+  end
+
+  defp poll_accepted(request, id, deadline, config) do
+    case Ecto.UUID.cast(id) do
+      {:ok, id} -> poll(request, id, deadline, config)
+      :error -> {:error, :invalid_response}
     end
   end
 

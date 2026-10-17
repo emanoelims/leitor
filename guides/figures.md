@@ -1,5 +1,38 @@
 # Interactive figures
 
+## Profiles, revisions and evidence
+
+The composer offers three active profiles: interactive mechanism
+(`visual_explainer`), scientific diagram (`scientific_diagram`) and explanatory
+illustration (`explanatory_illustration`). Profiles change authoring and review
+instructions, not the isolation boundary. A scientific diagram may use a precise
+2D drawing; it is not forced into an isometric machine. All profiles still need
+meaningful controls, state-derived animation, model/interaction checks, theme and
+mobile evidence, and independent approval. Other creative formats remain marked
+as coming soon.
+
+Independent review must return validated consistency evidence for explanatory
+equations, signs, units, bounds and observable readouts. A contradictory
+explanation prevents acceptance even when the visual verdict alone is positive.
+This is an additional heuristic gate, not formal verification. See the
+[six-case quality report](figure-quality-report.md) for actual initial findings,
+automatic repairs and retained limitations.
+
+Accepted AI adjustments establish immutable ancestry. In the editor, **Versions**
+lists up to twenty related accepted account-owned versions, including descendants
+so an older restored version can return forward. Previews use the ordinary
+sandboxed runtime. Restoration costs no credits, replaces only the unchanged
+selected figure block and requires saving the page to persist it. Foreign,
+unrelated and draft targets are rejected; a stale editor block is not overwritten.
+Ancestry starts with new adjustments; existing artifacts are not assigned invented
+history. No new route or authentication scope is introduced: existing authenticated
+PageLive events and the ownership-checked artifact controller serve this feature.
+
+The trusted player and checker share foreground/color-scheme defaults before
+generated CSS. This keeps inherited labels readable in light and dark themes;
+authors setting custom backgrounds must also supply suitable foreground colors.
+See [AI usage](ai-usage.md) for waiting queues, recovery and measured costs.
+
 ## Isolated program author
 
 With `:figure_runner` enabled, authenticated page generation uses an authoring

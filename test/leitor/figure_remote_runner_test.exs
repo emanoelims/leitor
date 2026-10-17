@@ -82,6 +82,31 @@ defmodule Leitor.FigureRemoteRunnerTest do
     end
   end
 
+  test "only explicit pre-admission busy responses wait; accepted work is submitted exactly once" do
+    id = Ecto.UUID.generate()
+    key = {__MODULE__, make_ref()}
+    Process.put(key, 0)
+
+    Req.Test.stub(__MODULE__, fn conn ->
+      case conn.method do
+        "POST" ->
+          count = Process.get(key)
+          Process.put(key, count + 1)
+
+          if count == 0,
+            do: conn |> Plug.Conn.put_status(429) |> Req.Test.json(%{error: "busy"}),
+            else: conn |> Plug.Conn.put_status(202) |> Req.Test.json(%{id: id})
+
+        "GET" ->
+          assert conn.request_path == "/checks/#{id}"
+          Req.Test.json(conn, %{report: %{ok: true, model_only: true, images: []}, images: []})
+      end
+    end)
+
+    assert {:ok, _} = RemoteRunner.check(%{}, config())
+    assert Process.get(key) == 2
+  end
+
   defp stub_result(result) do
     id = Ecto.UUID.generate()
 

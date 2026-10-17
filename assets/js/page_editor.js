@@ -11,6 +11,7 @@ import {computePosition, flip, offset, shift} from "@floating-ui/dom"
 import {IllustrationCode, starterIllustration, starterScene} from "./illustration"
 import {starterFigure} from './figures/index'
 import {PageAI} from "./page_ai"
+import {FigureHistory} from "./figure_history"
 import {UnsavedChanges} from "./unsaved_changes"
 import {PageDraft} from "./page_draft"
 
@@ -45,6 +46,7 @@ export const PageEditor = {
       onSelectionUpdate: () => this.updateMenu(), onBlur: () => this.closeMenu()
     })
     this.ai = new PageAI(this)
+    this.figureHistory = new FigureHistory(this)
     const title = this.input.form.querySelector('#page-title')
     const originalTitle = title.value, originalBody = this.editor.isEmpty ? '' : this.editor.getMarkdown()
     const snapshot = () => ({title:title.value, body:this.editor.isEmpty ? '' : this.editor.getMarkdown()})
@@ -130,6 +132,7 @@ export const PageEditor = {
     chain.run(); this.closeMenu()
   },
   destroyed() {
+    this.figureHistory.destroy()
     this.draft.destroy()
     this.unsavedChanges.destroy()
     this.ai.destroy()

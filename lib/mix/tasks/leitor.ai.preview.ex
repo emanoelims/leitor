@@ -17,7 +17,6 @@ defmodule Mix.Tasks.Leitor.Ai.Preview do
   alias Leitor.Accounts
   alias Leitor.Accounts.Scope
   alias Leitor.AI
-  alias Leitor.AI.Client
   alias Leitor.Figures.Artifacts
   alias Leitor.Figures.Source
   alias Leitor.Language
@@ -111,8 +110,8 @@ defmodule Mix.Tasks.Leitor.Ai.Preview do
     Mix.shell().info("Generating with #{client.model}; provisional Markdown: #{path}")
 
     options =
-      client
-      |> Client.options()
+      scope
+      |> AI.execution_options(client)
       |> Keyword.merge(figure_scope: scope, figure_revision: revision, figure_review_only: review_only)
 
     case Language.generate_page_text(request, on_delta, preferences, options) do
@@ -121,6 +120,7 @@ defmodule Mix.Tasks.Leitor.Ai.Preview do
         Mix.shell().info("Validated preview saved: /pages/#{page.id}")
 
       {:error, reason} ->
+        AI.finish(scope, client.lease_id, :failed)
         Mix.raise("Preview failed (#{reason}); inspect the preserved Markdown stream")
     end
   end

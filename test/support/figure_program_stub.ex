@@ -48,7 +48,13 @@ defmodule Leitor.FigureProgramStub do
           value
       end
 
-    {:ok, %{"accept" => accept, "critique" => "Check construction and motion."}}
+    {:ok,
+     %{
+       "accept" => accept,
+       "critique" => "Check construction and motion.",
+       "explanation_consistent" => Process.get(:consistent_explanation, true),
+       "explanation_evidence" => "The stated limit agrees with the sampled model."
+     }}
   end
 
   def check(_files) do

@@ -16,6 +16,22 @@ defmodule LeitorWeb.PreferencesLiveTest do
     assert {:error, {:redirect, %{to: "/users/log-in"}}} = live(conn, ~p"/settings")
   end
 
+  test "usage activity is scoped and refreshes without exposing provider keys", %{conn: conn} do
+    scope = user_scope_fixture()
+    other = user_scope_fixture()
+    {:ok, client} = Leitor.AI.prepare(scope, :read)
+    Leitor.AI.record_usage(scope, client.lease_id, %{input_tokens: 1000, output_tokens: 100})
+    Leitor.AI.finish(scope, client.lease_id)
+    {:ok, foreign} = Leitor.AI.prepare(other, :illustration)
+    {:ok, view, _} = live(log_in_user(conn, scope.user), ~p"/settings")
+    assert has_element?(view, "#ai-activity", "AI activity")
+    assert has_element?(view, "#ai-attempts", "1000 / 100")
+    assert has_element?(view, "#ai-attempts", "US$ 0.00015")
+    refute has_element?(view, "#ai_attempts-#{foreign.lease_id}")
+    send(view.pid, :refresh_usage)
+    assert has_element?(view, "#ai-attempts", "Explanation")
+  end
+
   test "preferences remain available outside sudo mode and public pages remember the locale", %{conn: conn} do
     scope = user_scope_fixture()
 

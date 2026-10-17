@@ -3,6 +3,7 @@ import {t} from "./i18n"
 import {computePosition, flip, offset, shift} from '@floating-ui/dom'
 import {closeHistory} from '@tiptap/pm/history'
 import {Decoration, DecorationSet} from '@tiptap/pm/view'
+import {replacementRange} from './figures/revision.mjs'
 
 export class PageAI {
   constructor(hook) {
@@ -46,13 +47,7 @@ export class PageAI {
     hook.handleEvent('page-ai-result', result => this.result(result))
     hook.handleEvent('page-ai-recover', payload => this.recover(payload))
     hook.handleEvent('page-ai-chunk', chunk => this.chunk(chunk))
-    hook.handleEvent('page-ai-stage', ({request_id,stage})=>{
-      if(request_id!==this.requestId||!this.inline)return
-      const labels={building:'Building the figure…',model:'Building the mechanism…',geometry:'Drawing the geometry…',figure:'Connecting the controls…',testing:'Testing the interaction…',reviewing:'Reviewing the result…',refining:'Refining the figure…'}
-      let status=this.inline.querySelector('.figure-generation-stage')
-      if(!status){status=document.createElement('p');status.className='figure-generation-stage';status.setAttribute('role','status');this.inline.append(status)}
-      status.textContent=t(labels[stage]||'Drawing illustration…')
-    })
+    hook.handleEvent('page-ai-stage', ({request_id,stage}) => {if(request_id===this.requestId)this.setStage(stage)})
     hook.handleEvent('page-ai-stopped', ({request_id}) => {
       if (request_id === this.requestId) {this.requestId = null; this.close()}
     })
@@ -74,10 +69,13 @@ export class PageAI {
     if(reference.engine!=='anatomy-program'||!reference.artifact_id)return
     this.insertion=from
     this.replacement={id:reference.artifact_id,from,to:from+size}
+    this.format.value=reference.profile||'visual_explainer'
+    this.format.dispatchEvent(new Event('change',{bubbles:true}))
     this.prompt.value='';this.retryPrompt=null;this.retryFormat=null
     this.error.hidden=true;this.updateRetry();this.showPrompt()
   }
   showPrompt() {
+    this.hook.figureHistory?.close(false)
     this.panel.querySelector('[data-ai-title]').textContent=t(this.replacement?'Adjust with AI':'Generate with AI')
     this.panel.style.visibility = 'hidden'
     this.panel.hidden = false
@@ -90,7 +88,7 @@ export class PageAI {
     if (this.panel.hidden || this.editor.isDestroyed) return
     const rect = this.editor.view.coordsAtPos(this.insertion)
     const reference = {contextElement: this.editor.view.dom, getBoundingClientRect: () => new DOMRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)}
-    computePosition(reference, this.panel, {strategy: 'fixed', placement: 'bottom-start', middleware: [offset(8), flip(), shift({padding: 12})]}).then(({x, y}) => {
+    computePosition(reference, this.panel, {strategy: 'fixed', placement: 'bottom-start', middleware: [offset(8), flip(), shift({padding: 12, crossAxis: true})]}).then(({x, y}) => {
       if (!this.panel.hidden) {
         Object.assign(this.panel.style, {left: `${x}px`, top: `${y}px`, visibility: 'visible'})
         if (focus) this.prompt.focus({preventScroll: true})
@@ -112,7 +110,14 @@ export class PageAI {
       base_revision_id:this.replacement?.id, replace_from:this.replacement?.from, replace_to:this.replacement?.to
     })
   }
-  prepare() {
+  setStage(stage) {
+    if (!this.inline) return
+    const labels={queued:'Queued for generation…',building:'Building the figure…',model:'Building the mechanism…',geometry:'Drawing the geometry…',figure:'Connecting the controls…',testing:'Testing the interaction…',reviewing:'Reviewing the result…',refining:'Refining the figure…'}
+    let status=this.inline.querySelector('.figure-generation-stage')
+    if(!status){status=document.createElement('p');status.className='figure-generation-stage';status.setAttribute('role','status');this.inline.append(status)}
+    status.textContent=t(labels[stage]||'Drawing illustration…')
+  }
+  prepare(stage = 'building') {
     this.panel.hidden = true
     this.prompt.disabled = true
     this.format.disabled = true
@@ -123,13 +128,14 @@ export class PageAI {
     this.inline.setAttribute('contenteditable', 'false')
     this.inline.setAttribute('aria-busy', 'true')
     this.inline.append(this.panel.querySelector('#page-ai-waiting').content.cloneNode(true))
+    this.setStage(stage)
     this.editor.view.dom.classList.add('is-ai-generating')
     this.editor.view.dom.setAttribute('aria-busy', 'true')
     this.editor.setEditable(false, false)
     this.editor.view.dispatch(this.editor.state.tr.setMeta('addToHistory', false))
     document.getElementById('page-save').disabled = true
   }
-  recover({request_id, request, status, markdown, retryable}) {
+  recover({request_id, request, status, stage, markdown, retryable}) {
     if(this.requestId)return
     const current=this.editor.getMarkdown()
     const unchanged=this.editor.isEmpty||current===request.draft_body
@@ -151,7 +157,7 @@ export class PageAI {
       this.showPrompt();this.showError(t('This figure is already in your draft.'));return
     }
     if(status==='failed'){this.showPrompt();return}
-    this.requestId=request_id;this.prepare()
+    this.requestId=request_id;this.prepare(stage)
     if(status==='ready')this.result({request_id,markdown})
   }
   decorations(doc) {
@@ -187,14 +193,12 @@ export class PageAI {
     this.editor.view.dispatch(closeHistory(this.editor.state.tr))
     if(this.replacement){
       const {from,id}=this.replacement
-      const node=this.editor.state.doc.nodeAt(from)
+      const range=replacementRange(this.editor.state.doc,from,id)
       const fence=markdown.match(/```leitor-figure\s*\n[\s\S]*?\n```/)
-      let reference
-      try {reference=JSON.parse(node?.textContent)} catch (_) {}
-      if(node?.type.name!=='codeBlock'||node.attrs.language!=='leitor-figure'||reference?.artifact_id!==id||!fence){
+      if(!range||!fence){
         this.showPrompt();this.showError(t('The original figure changed. Your saved result is safe to recover.'));return
       }
-      this.editor.chain().focus().insertContentAt({from,to:from+node.nodeSize},fence[0],{contentType:'markdown'}).run()
+      this.editor.chain().focus().insertContentAt(range,fence[0],{contentType:'markdown'}).run()
       this.replacement=null
     }else this.editor.chain().focus().setTextSelection(this.insertion).insertContent(markdown, {contentType: 'markdown'}).run()
     this.hook.pushEvent('generation-applied',{request_id})

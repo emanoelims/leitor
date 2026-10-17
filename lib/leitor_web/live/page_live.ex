@@ -4,7 +4,7 @@ defmodule LeitorWeb.PageLive do
 
   alias Leitor.Accounts
   alias Leitor.AI
-  alias Leitor.AI.Client
+  alias Leitor.Figures.Artifacts
   alias Leitor.Generations
   alias Leitor.Generations.Request
   alias Leitor.Language
@@ -110,6 +110,28 @@ defmodule LeitorWeb.PageLive do
 
   def handle_event("preview-artwork", _, socket), do: {:reply, %{html: ""}, socket}
 
+  def handle_event("figure-history", %{"artifact_id" => id}, %{assigns: %{editing: true}} = socket) do
+    {:reply, %{versions: Artifacts.history(socket.assigns.current_scope, id)}, socket}
+  end
+
+  def handle_event("figure-history", _, socket), do: {:reply, %{versions: []}, socket}
+
+  def handle_event(
+        "restore-figure",
+        %{"current_id" => current, "target_id" => target},
+        %{assigns: %{editing: true, generation_id: nil}} = socket
+      ) do
+    result =
+      case Artifacts.restore_reference(socket.assigns.current_scope, current, target) do
+        {:ok, reference} -> %{source: Jason.encode!(reference)}
+        {:error, :invalid_revision} -> %{error: "This version is unavailable."}
+      end
+
+    {:reply, result, socket}
+  end
+
+  def handle_event("restore-figure", _, socket), do: {:reply, %{error: "This version is unavailable."}, socket}
+
   def handle_event("preview-svg", %{"source" => source}, socket) do
     src =
       case Leitor.Illustration.image(source) do
@@ -177,7 +199,7 @@ defmodule LeitorWeb.PageLive do
         socket = assign(socket, editing: true, generation_recovery: generation)
 
         socket =
-          if generation.status == "running" do
+          if generation.status in ["running", "queued"] do
             Generations.subscribe(scope, generation.id)
             attach_generation(socket, generation)
           else
@@ -718,7 +740,7 @@ defmodule LeitorWeb.PageLive do
     do:
       {:noreply,
        socket
-       |> reset_help_stream()
+       |> reset_help_stream(:failed)
        |> assign(
          busy: false,
          pending: nil,
@@ -729,7 +751,7 @@ defmodule LeitorWeb.PageLive do
   @impl true
   def terminate(_reason, socket) do
     AI.finish(socket.assigns.current_scope, socket.assigns.generation_lease_id)
-    AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id)
+    AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id, :cancelled)
     :ok
   end
 
@@ -737,6 +759,7 @@ defmodule LeitorWeb.PageLive do
     owner = self()
     id = make_ref()
     preferences = Accounts.get_preferences(socket.assigns.current_scope)
+    scope = socket.assigns.current_scope
 
     work = fn client ->
       Language.page_help(
@@ -747,7 +770,7 @@ defmodule LeitorWeb.PageLive do
         history,
         fn fragment -> send(owner, {:help_fragment, id, fragment}) end,
         preferences,
-        Client.options(client)
+        AI.execution_options(scope, client)
       )
     end
 
@@ -762,8 +785,8 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
-  defp reset_help_stream(socket) do
-    AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id)
+  defp reset_help_stream(socket, outcome \\ :completed) do
+    AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id, outcome)
 
     if socket.assigns.help_stream && socket.assigns.help_stream.timer,
       do: Process.cancel_timer(socket.assigns.help_stream.timer)
@@ -772,7 +795,7 @@ defmodule LeitorWeb.PageLive do
   end
 
   defp stop_page_help(socket) do
-    socket |> cancel_async(:help) |> reset_help_stream() |> assign(busy: false, pending: nil)
+    socket |> cancel_async(:help) |> reset_help_stream(:cancelled) |> assign(busy: false, pending: nil)
   end
 
   defp cancel_page_generation(%{assigns: %{generation_id: nil}} = socket), do: socket
@@ -809,6 +832,7 @@ defmodule LeitorWeb.PageLive do
       generation_preview: %{text: "", timer: nil, limit: 12_000}
     )
     |> start_async({:generate_page, generation.client_id}, fn -> Generations.await(scope, generation.id) end)
+    |> push_event("page-ai-stage", %{request_id: generation.client_id, stage: generation.stage})
   end
 
   defp reset_page_generation(socket) do
@@ -830,6 +854,7 @@ defmodule LeitorWeb.PageLive do
 
   defp generation_error(:unavailable), do: "AI is unavailable. Configure the Claude API key to generate text."
   defp generation_error(:invalid_input), do: "Describe what to write using 1–2,000 characters."
+  defp generation_error(reason) when reason in [:quota_exceeded, :busy, :credential_unavailable], do: ai_error(reason)
   defp generation_error(:figure_review_failed), do: "The figure did not pass the quality review. Your page is unchanged."
 
   defp generation_error(:figure_budget_exceeded),

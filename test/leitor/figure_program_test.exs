@@ -34,6 +34,27 @@ defmodule Leitor.FigureProgramTest do
     assert {:error, _} = Program.new(%{attrs | artifact_id: "bad"})
   end
 
+  test "a visual acceptance cannot publish an explanation contradicted by the model", %{scope: scope} do
+    Process.put(:consistent_explanation, false)
+
+    assert {:error, :figure_review_failed} =
+             Agent.generate(
+               Leitor.FigureProgramStub,
+               "model",
+               "A figure",
+               scope,
+               fn _ -> flunk("Contradiction published") end,
+               max_tokens: 6000,
+               total_timeout: 90_000
+             )
+
+    artifact = Repo.one!(Artifact)
+    assert artifact.status == "draft"
+    assert artifact.report["visual"]["accept"] == false
+    assert artifact.report["visual"]["critique"] =~ "Explanation conflict"
+    assert artifact.bundle == nil
+  end
+
   test "personal budgets create original files through native tools before independent review", %{scope: scope} do
     source = Leitor.FigureProgramStub.proposal()
 
@@ -275,6 +296,7 @@ defmodule Leitor.FigureProgramTest do
     assert match?({:ok, _}, result), inspect(Enum.map(Repo.all(Artifact), & &1.report))
     revised = Repo.one!(from a in Artifact, where: a.status == "ready" and a.id != ^original.id)
     assert revised.source["geometry"] == "export const shape=2"
+    assert revised.parent_id == original.id
     assert revised.source["checks"] == source["checks"]
     assert revised.source["experiments"] == source["experiments"]
     assert Artifacts.get_ready(scope, original.id).bundle == "original checked bundle"

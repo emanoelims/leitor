@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "max_attempts": 6,
+  "max_credits": 24,
+  "cases": [
+    {
+      "slug": "universal-joint",
+      "title": "Junta universal · transmissão em ângulo",
+      "format": "visual_explainer",
+      "prompt": "Crie uma junta universal de Cardan original, em corte e perspectiva, com dois garfos, cruzeta e apoios conectados. Quero variar o ângulo entre os eixos e reproduzir a rotação para observar a velocidade não uniforme do eixo de saída. Inclua inspeção das articulações e leitura dos ângulos. Não substitua por engrenagens nem por um eixo reto."
+    },
+    {
+      "slug": "cam-follower",
+      "title": "Came e seguidor · movimento programado",
+      "format": "visual_explainer",
+      "prompt": "Crie um came radial com seguidor de rolete guiado e mola de retorno, em perspectiva. A rotação deve produzir subida, repouso e descida suaves, mantendo contato real entre came e rolete. Quero reproduzir, pausar, variar a velocidade e inspecionar a lei de deslocamento. Mostre a estrutura que sustenta o conjunto."
+    },
+    {
+      "slug": "centrifugal-governor",
+      "title": "Regulador centrífugo · equilíbrio em movimento",
+      "format": "visual_explainer",
+      "prompt": "Crie um regulador centrífugo de duas esferas, com eixo vertical, braços articulados e luva deslizante conectada. Quero variar a rotação e observar a abertura dos braços e o deslocamento da luva, sem mudar o comprimento dos braços. Explique as simplificações do modelo. Inclua reprodução e inspeção."
+    },
+    {
+      "slug": "ratchet-pawl",
+      "title": "Catraca e lingueta · avanço em um sentido",
+      "format": "visual_explainer",
+      "prompt": "Crie uma catraca com lingueta e alavanca oscilante, suportada em um mecanismo real e bem acabado. Ao reproduzir, a roda deve avançar no curso de trabalho e permanecer parada no retorno, sem atravessar a lingueta. Quero pausar, avançar um ciclo, reiniciar e inspecionar o contato. Mostre o sentido permitido e o bloqueado."
+    },
+    {
+      "slug": "optical-refraction",
+      "title": "Refração · luz na fronteira",
+      "format": "scientific_diagram",
+      "prompt": "Crie em português um diagrama científico interativo de refração da luz na fronteira entre dois meios. Quero controlar o ângulo de incidência e os índices n1 e n2, ver os raios incidente, refletido e transmitido com a normal e os ângulos corretos. Demonstre também reflexão interna total quando fisicamente possível. Anime pulsos ao longo dos caminhos corretos, com reprodução e pausa. Mostre a lei de Snell e as simplificações. A composição 2D deve ser precisa, legível e bonita."
+    },
+    {
+      "slug": "lunar-phases",
+      "title": "Fases da Lua · dois pontos de vista",
+      "format": "explanatory_illustration",
+      "prompt": "Crie em português uma ilustração explicativa interativa das fases da Lua. Mostre ao mesmo tempo Sol, Terra e Lua em órbita numa vista superior e o disco lunar como visto da Terra. Quero reproduzir ou pausar a órbita, arrastar a posição e comparar as fases principais. A iluminação deve permanecer alinhada ao Sol; as fases não são causadas pela sombra da Terra. Sincronize a fração iluminada e os nomes das fases com um único modelo. Deixe claras as simplificações de escala e da órbita. Faça uma composição editorial refinada, legível no celular."
+    }
+  ]
+}

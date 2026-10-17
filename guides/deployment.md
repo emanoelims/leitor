@@ -34,6 +34,19 @@ back if deployment fails; future schema changes must remain compatible with the
 previous release during rollout. Redeploy an earlier compatible image through
 the Fly dashboard for emergency recovery, accounting for any applied migrations.
 
+Version 0.4.0 includes three additive migrations for artifact parent references,
+AI measurements, and queued-generation indexes/status. Existing attempts remain
+unmeasured. No new secrets are required. Queue dispatch runs only in serving
+Phoenix instances, not migration or operator CLI processes. Do not interrupt
+active paid generations for a routine rollout: check active attempts first and
+wait for them to finish. Running work is never automatically replayed after a
+restart. The updated checker image includes the shared trusted theme defaults
+used by the reader, and must deploy before Phoenix.
+
+Completion telemetry and privacy-preserving timing logs are documented in
+[AI usage](ai-usage.md). After deployment, check both streamed explanations and
+an isolated figure execution; idle readiness alone does not exercise either.
+
 ## Database and secrets
 
 The unmanaged Postgres app `sisteo-apps-db` hosts a separate `leitor` database

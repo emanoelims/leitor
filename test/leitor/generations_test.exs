@@ -27,6 +27,16 @@ defmodule Leitor.GenerationsTest do
     }
   end
 
+  test "explicitly empty optional context remains a valid request through provider completion", %{scope: scope} do
+    request = attrs() |> Map.fetch!(:request) |> Map.merge(%{context: nil, draft_body: nil})
+    assert {:ok, job} = Generations.start(scope, nil, %{attrs() | request: request})
+    assert job.request.context == ""
+    assert job.request.draft_body == ""
+    assert_receive {:language_started, task}
+    send(task, {:complete, {:ok, figure_response("An empty draft is valid.")}})
+    assert {:ok, _} = Generations.await(scope, job.id)
+  end
+
   test "a completed attempt is recoverable without another reservation or provider call", %{scope: scope} do
     assert {:ok, job} = Generations.start(scope, nil, attrs())
     assert_receive {:language_started, task}

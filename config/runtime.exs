@@ -89,3 +89,32 @@ if config_env() == :prod do
   config :leitor, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
   config :leitor, :mail_from, {"Leitor", System.fetch_env!("MAIL_FROM")}
 end
+
+if config_env() != :test do
+  config :leitor, :ai_limits, %{
+    daily_limit: System.get_env("AI_DAILY_CREDITS", "20"),
+    global_daily_limit: System.get_env("AI_GLOBAL_DAILY_CREDITS", "200"),
+    personal_daily_limit: System.get_env("AI_PERSONAL_DAILY_CREDITS", "200"),
+    max_concurrent: System.get_env("AI_ACCOUNT_CONCURRENCY", "1"),
+    global_concurrent: System.get_env("AI_GLOBAL_CONCURRENCY", "2"),
+    cooldown_seconds: System.get_env("AI_COOLDOWN_SECONDS", "2")
+  }
+end
+
+if secret = System.get_env("AI_ENCRYPTION_SECRET") do
+  if byte_size(secret) < 32, do: raise("AI_ENCRYPTION_SECRET must contain at least 32 bytes")
+  config :leitor, :ai_encryption_secret, secret
+end
+
+if url = System.get_env("FIGURE_RUNNER_URL") do
+  token = System.fetch_env!("FIGURE_RUNNER_TOKEN")
+  uri = URI.parse(url)
+
+  private_host =
+    is_binary(uri.host) and (String.ends_with?(uri.host, ".flycast") or String.ends_with?(uri.host, ".internal"))
+
+  if byte_size(token) < 32 or not (uri.scheme == "https" or (uri.scheme == "http" and private_host)),
+    do: raise("Figure runner requires authenticated HTTPS or a private Fly endpoint")
+
+  config :leitor, :figure_runner, enabled: true, url: url, token: token
+end

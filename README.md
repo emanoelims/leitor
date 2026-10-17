@@ -349,3 +349,60 @@ line-height choices of 1.50, 1.64, and 1.82. At widths up to 640px, line-height
 is reduced by 0.05 for every reading face. Font-specific size ratios and the
 0.95em paragraph gap match the reference; existing saved sizes remain intact.
 Reset text settings to apply the current defaults.
+
+## Creative pages and personal AI keys
+
+The `/` menu generates interactive explanatory figures. Other creative formats
+are shown as **Coming soon**. An isolated program author runs locally and through
+a separate private Fly checker in production:
+Claude writes original geometry, simulation and controls, the container compiles
+and browser-tests them, and a screenshot review may request a rewrite. Accepted
+`anatomy-program@1` references load private immutable artifacts in sandboxed
+iframes. The generated code cannot access the reader's session or provider keys.
+Build the separate runner image before using it; see [the figure guide](guides/figures.md).
+Generation survives browser disconnection. Recover a running or completed attempt
+from the page, and use **Adjust with AI** on an existing figure to refine it while
+preserving its passing mechanical tests and surrounding text.
+
+Without the program runner, generations use `anatomy-scene@1`: the model
+specifies an original object's solids, positions, orientations, dimensions,
+assembly offsets and rotation. No predefined factory or workbench is used.
+Anatomy's MIT-licensed projection and lathe helpers construct and shade the
+geometry. Inspect individual parts, open the assembly, turn the camera and
+control motion. Existing workbench pages remain compatible with `anatomy-flow@1`.
+
+A `leitor-figure` fence stores a compact validated blueprint with the page.
+The registry separates data contracts and browser lifecycle from generation.
+See [the figure guide](guides/figures.md) for the primitive vocabulary, budgets
+and current limitations. The data-only engine is geometric composition; the
+program engine authors and reviews real code, with bounded attempts and runtime.
+Neither guarantees physical correctness. The slash menu's
+Example figure is explicitly a preset; AI generation builds its own composition.
+Existing SVG and animated-scene documents remain readable and editable.
+
+Preferences include encrypted account provider keys and future image/narration
+model choices. SVG is active; external image generation and narration are not
+enabled yet. Shared text generation uses Haiku with daily account/global limits.
+A personal Anthropic key unlocks the other supported Claude models without
+spending the shared allowance. See [deployment configuration](guides/deployment.md#account-ai-budgets-and-provider-keys).
+
+For an explicitly authorized development account, the operator task can import the
+configured application key into that account's encrypted personal vault and select
+its writing model. It is unavailable in test and production and prints no key:
+
+```sh
+mise exec -- mix leitor.ai.configure --user-id UUID --use-application-key --writing-model anthropic:claude-opus-5-5
+```
+
+For reproducible visual review in development, `mix leitor.ai.preview --user-id
+UUID --brief tmp/brief.txt --title "Visual study" --format visual_explainer`
+uses the same scoped authorization and selected model as the editor. It preserves
+the provisional Markdown under ignored `tmp/` for diagnosis and creates a private
+page only after complete validation. This contacts the provider and consumes an
+attempt; it does not run as part of tests.
+
+## License
+
+Leitor is MIT licensed; see [LICENSE](LICENSE). Third-party code and fonts retain
+their own notices. The bundled Anatomy kit is MIT licensed, with its upstream
+notice and pinned provenance in `assets/vendor/anatomy/`.

@@ -94,6 +94,43 @@
       </div>
     </dl>
   </StudyComponents.dialog>
+  <section
+    :if={@generation_recovery && is_nil(@generation_id) && !@generation_applied}
+    id="page-generation-recovery"
+    class="generation-recovery"
+    aria-label={gettext("Saved generation")}
+  >
+    <div>
+      <.icon name="lucide-sparkles" class="size-4" />
+      <p>
+        {gettext("Your figure generation is saved.")}<small>{t(
+          case @generation_recovery.status do
+            "running" -> "It is still working. You can leave this page and return."
+            "ready" -> "Your result is ready to add to the editor."
+            _ -> "Your draft is safe. Continue from the saved request."
+          end
+        )}</small>
+      </p>
+    </div>
+    <button
+      id="page-generation-recover"
+      type="button"
+      class="workspace-header-action"
+      phx-click="recover-generation"
+    >
+      {gettext("Recover generation")}<.icon name="lucide-arrow-right" class="size-4" />
+    </button>
+    <button
+      :if={@generation_recovery.status != "running"}
+      id="page-generation-dismiss"
+      type="button"
+      class="icon-button"
+      phx-click="dismiss-generation"
+      aria-label={gettext("Dismiss saved generation")}
+    >
+      <.icon name="lucide-x" class="size-4" />
+    </button>
+  </section>
   <%= if @editing do %>
     <.form
       for={@form}

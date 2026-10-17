@@ -119,17 +119,16 @@ defmodule Leitor.PageDocument do
     end)
   end
 
-  defp render_node(%{__struct__: module} = node, blocks) when module in [MDEx.Paragraph, MDEx.Heading, MDEx.CodeBlock] do
-    id = length(blocks)
-    text = prose(node)
-    html = safe_html(node)
-
-    if String.trim(text) == "" do
-      {html, blocks}
+  defp render_node(%MDEx.CodeBlock{info: info, literal: literal} = node, blocks) do
+    if info in Leitor.Illustration.languages() do
+      {Leitor.Illustration.render(literal, info), blocks}
     else
-      {~s(<div class="page-prose-block"><span class="page-block-number" aria-hidden="true">#{id + 1}</span><div id="page-block-#{id}" data-page-block="#{id}">#{html}</div></div>),
-       blocks ++ [%{id: id, text: text}]}
+      render_prose_node(node, blocks)
     end
+  end
+
+  defp render_node(%{__struct__: module} = node, blocks) when module in [MDEx.Paragraph, MDEx.Heading, MDEx.CodeBlock] do
+    render_prose_node(node, blocks)
   end
 
   defp render_node(%MDEx.List{nodes: nodes, list_type: type}, blocks) do
@@ -152,6 +151,19 @@ defmodule Leitor.PageDocument do
   end
 
   defp render_node(node, blocks), do: {safe_html(node), blocks}
+
+  defp render_prose_node(node, blocks) do
+    id = length(blocks)
+    text = prose(node)
+    html = safe_html(node)
+
+    if String.trim(text) == "" do
+      {html, blocks}
+    else
+      {~s(<div class="page-prose-block"><span class="page-block-number" aria-hidden="true">#{id + 1}</span><div id="page-block-#{id}" data-page-block="#{id}">#{html}</div></div>),
+       blocks ++ [%{id: id, text: text}]}
+    end
+  end
 
   # MDEx/Lumis trim trailing whitespace from highlighted code. Keep that suffix
   # outside the token spans so browser text and saved byte anchors stay identical.

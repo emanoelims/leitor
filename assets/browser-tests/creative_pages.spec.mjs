@@ -1,0 +1,66 @@
+import {test,expect} from '@playwright/test'
+import {signIn} from './authentication.mjs'
+
+async function insertWorkbench(page) {
+  await signIn(page)
+  await page.goto('/pages/new')
+  await page.locator('#page-title').fill('The idea workshop')
+  await page.getByRole('textbox',{name:'Your page text'}).fill('/figure')
+  await page.locator('#writing-block-figure').click()
+  const figure=page.locator('.leitor-figure')
+  await expect(figure.locator('svg')).toBeVisible()
+  return figure
+}
+
+test('the workbench blocks at paused stations and conserves actual work through a saved page',async({page},testInfo)=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message))
+  let figure=await insertWorkbench(page)
+  await figure.locator('[data-action="play"]').click()
+  await figure.locator('.figure-settings input[type="checkbox"]').uncheck()
+  await figure.locator('[data-action="reset"]').click()
+  await figure.locator('[data-action="station-1"]').click()
+  await figure.locator('[data-action="burst"]').click()
+  for(let i=0;i<8;i++)await figure.locator('[data-action="step"]').click()
+  await expect(figure).toHaveAttribute('data-queued','4')
+  await expect(figure).toHaveAttribute('data-completed','0')
+  await expect(figure).toHaveAttribute('data-rejected','2')
+  await figure.locator('[data-action="station-1"]').click()
+  for(let i=0;i<24;i++)await figure.locator('[data-action="step"]').click()
+  await expect(figure).toHaveAttribute('data-completed','6')
+  await expect(figure).toHaveAttribute('data-queued','0')
+  await page.getByRole('button',{name:'Edit figure',exact:true}).click()
+  await expect(page.locator('.illustration-editor pre code')).toContainText('anatomy-flow')
+  await page.getByRole('button',{name:'Hide figure source',exact:true}).click()
+  await page.locator('#page-save').click()
+  figure=page.locator('#page-reading .leitor-figure')
+  await expect(figure.locator('svg')).toBeVisible()
+  await page.reload()
+  await expect(figure.locator('figcaption')).toContainText('Os tempos são ilustrativos')
+  await page.screenshot({path:testInfo.outputPath('workbench-reading.png'),fullPage:true})
+  await page.setViewportSize({width:390,height:844})
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+  await page.screenshot({path:testInfo.outputPath('workbench-mobile.png'),fullPage:true})
+  expect(errors).toEqual([])
+})
+
+test('reduced motion starts still and manual stepping remains functional',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'})
+  const figure=await insertWorkbench(page)
+  await expect(figure).toHaveAttribute('data-paused','true')
+  await expect(figure.locator('[data-action="play"]')).toBeDisabled()
+  await figure.locator('.figure-settings input[type="checkbox"]').uncheck()
+  await figure.locator('[data-action="add"]').click()
+  await figure.locator('[data-action="step"]').click()
+  await expect(figure).toHaveAttribute('data-queued','0')
+  await expect(figure.locator('.figure-readout')).toContainText('Processing: 1')
+})
+
+test('unavailable formats remain disabled in the shared popup',async({page})=>{
+  await signIn(page);await page.goto('/pages/new')
+  await page.getByRole('textbox',{name:'Your page text'}).fill('/ai')
+  await page.locator('#writing-block-ai').click()
+  await expect(page.locator('#page-ai-format')).toHaveValue('visual_explainer')
+  await page.locator('#page-ai-format-trigger').click()
+  await expect(page.locator('#page-ai-format-options button').filter({hasText:'Manga'})).toBeDisabled()
+  await expect(page.locator('#page-ai-composer')).toContainText('Coming soon')
+})

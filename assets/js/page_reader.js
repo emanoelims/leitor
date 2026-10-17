@@ -1,3 +1,4 @@
+import {mountScenes, destroyScenes} from "./scene_player"
 import {computePosition, offset, flip, shift, hide, autoUpdate} from "@floating-ui/dom"
 import {ReadingPosition} from './reading_position'
 let selectionGeometry = null
@@ -20,6 +21,7 @@ const jumpToPageBlock = block => {
 
 export const PageReader = {
   mounted() {
+    mountScenes(this.el)
     this.position = new ReadingPosition(this.el)
     this.marks = JSON.parse(this.el.dataset.marks || '[]')
     this.select = () => {
@@ -37,7 +39,7 @@ export const PageReader = {
       this.pushEvent('select',{start_block:Number(first.dataset.pageBlock),end_block:Number(last.dataset.pageBlock),start_offset:prefix(first,range.startContainer,range.startOffset),end_offset:prefix(last,range.endContainer,range.endOffset),selection_version:selectionGeometry.version})
     }
     this.onClick = e => {
-      if (this.el.closest('.page-focus-mode') || e.target.closest('a')) return
+      if (this.el.closest('.page-focus-mode') || e.target.closest('a,button')) return
       const mark = e.target.closest('[data-page-mark]')
       if (!window.getSelection()?.isCollapsed) {e.preventDefault(); return}
       if (mark) {if(mark.dataset.pageMark!=='pending')this.pushEvent('activate-mark', {id:mark.dataset.pageMark}); return}
@@ -139,7 +141,7 @@ export const PageReader = {
       base+=bytes(block.textContent)+2
     })
   },
-  destroyed() {this.position.destroy();this.jumpVersion=(this.jumpVersion||0)+1;cancelAnimationFrame(this.jumpFrame);this.focusObserver.disconnect();cancelAnimationFrame(this.focusFrame);window.removeEventListener('scroll',this.updateFocus);window.removeEventListener('resize',this.updateFocus);this.el.removeEventListener('mouseup',this.select);this.el.removeEventListener('touchend',this.select);this.el.removeEventListener('click',this.onClick);window.removeEventListener('keydown',this.onKey)}
+  destroyed() {destroyScenes(this.el);this.position.destroy();this.jumpVersion=(this.jumpVersion||0)+1;cancelAnimationFrame(this.jumpFrame);this.focusObserver.disconnect();cancelAnimationFrame(this.focusFrame);window.removeEventListener('scroll',this.updateFocus);window.removeEventListener('resize',this.updateFocus);this.el.removeEventListener('mouseup',this.select);this.el.removeEventListener('touchend',this.select);this.el.removeEventListener('click',this.onClick);window.removeEventListener('keydown',this.onKey)}
 }
 
 export const PagePopup = {

@@ -1,3 +1,4 @@
+import {toggleIllustration} from "./illustration"
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
 // import "./user_socket.js"
@@ -128,4 +129,15 @@ window.addEventListener("leitor:copy", async ({detail}) => {
   const status=document.getElementById(detail.status_id)
   try {await navigator.clipboard.writeText(detail.text);if(status)status.textContent=t("Copied.")}
   catch (_) {if(status)status.textContent=t("Clipboard unavailable. You can select and copy the text.")}
+})
+
+// Both streamed previews and rendered reading pages use the same motion control.
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-illustration-toggle]')
+  if (button) toggleIllustration(button)
+})
+
+window.addEventListener('phx:clear-provider-key', () => {
+  const input = document.getElementById('ai-key-value')
+  if (input) input.value = ''
 })

@@ -29,6 +29,8 @@ config :leitor, LeitorWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:leitor, ~w(--watch)]}
   ]
 
+config :leitor, :figure_runner, enabled: true, image: "leitor-figure-runner:1"
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

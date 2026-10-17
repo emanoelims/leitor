@@ -100,12 +100,12 @@ msgstr "deve ser maior ou igual a %{number}"
 msgid "must be equal to %{number}"
 msgstr "deve ser igual a %{number}"
 
-#: lib/leitor_web/i18n.ex:26
+#: lib/leitor_web/i18n.ex:141
 #, elixir-autogen, elixir-format
 msgid "did not change"
 msgstr "não foi alterado"
 
-#: lib/leitor_web/i18n.ex:25
+#: lib/leitor_web/i18n.ex:140
 #, elixir-autogen, elixir-format
 msgid "must have the @ sign and no spaces"
 msgstr "deve conter @ e não pode ter espaços"

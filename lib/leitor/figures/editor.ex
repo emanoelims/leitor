@@ -49,6 +49,7 @@ defmodule Leitor.Figures.Editor do
         "Never hide expected assertion text or fake evidence to pass tests. If localization conflicts with frozen tests, preserve the tested language and explain the limitation. " <>
         "read_file('kit.md') documents the kit; read_file('facets.mjs') exposes meshes and clipping; read_file('occlusion.mjs') exposes Leitor's bounded opaque surface ordering. read_file('mechanics.mjs') exposes verified involute gears and slider-crank closure. Use it for supported mechanisms instead of approximate teeth or separately positioned pins. No shell, network or external assets are available. " <>
         "Use finish only after render passes and you have inspected all captures for the user's requested craftsmanship. " <>
+        "The default mobile view must fit the whole assembly and its travel, not crop the rack ends, base or supports to enlarge a detail. Offer any close-up as an explicitly labeled optional inspection view. The checker measures actual SVG drawing bounds against the mobile viewBox; hiding overflow does not repair framing. " <>
         "Original geometry and simulation code are allowed. Never replace the program with a generic preset.\n" <> prompt
 
     images = Enum.map(Map.get(state, :review_images, []), &ContentPart.image/1)

@@ -19,6 +19,10 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 - Immutable mechanical and interaction contracts across bounded coding stages,
   saved recovery and automatic repairs; mandatory observed motion prevents
   decorative play controls from passing the execution gate.
+- A fresh mobile-default framing gate that rejects SVG clipping even when HTML
+  overflow is hidden, preserving separate optional inspection views.
+- An unchanged automatically authored rack-and-pinion regression with 22 model
+  checks, five UI experiments, contact inspection and real bounded motion.
 - A versioned interactive-figure engine built on the MIT-licensed Anatomy drawing
   kit, with freely authored solid compositions, assembly opening, camera controls,
   part inspection, and a backwards-compatible workbench with live queue simulation and individual station

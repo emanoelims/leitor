@@ -248,4 +248,30 @@ defmodule Leitor.FigureRunnerTest do
     assert result.report["network"] == []
     assert length(result.images) == 6
   end
+
+  test "the automatically authored rack and pinion preserves real motion, no-slip checks and both travel limits" do
+    attrs = "test/fixtures/figures/rack-program.json" |> File.read!() |> Jason.decode!()
+    assert {:ok, source} = Source.new(attrs)
+    assert {:ok, result} = Runner.check(Source.files(source))
+    assert result.report["ok"], inspect(result.report)
+    assert length(result.report["model_checks"]) >= 22
+    assert Enum.all?(result.report["model_checks"], & &1["passed"])
+    assert length(result.report["checks"]) == 5
+    assert Enum.all?(result.report["checks"], & &1["passed"])
+    assert result.report["animation_observed"]
+    assert result.report["reduced_motion_stable"]
+    refute result.report["mobile_framing"]["clipped"]
+    assert result.report["errors"] == []
+    assert result.report["network"] == []
+    assert length(result.images) == 6
+  end
+
+  test "a drawing clipped inside its mobile SVG fails even without document overflow" do
+    files = Map.update!(program(), "figure.mjs", &String.replace(&1, ~s(cx="50"), ~s(cx="95")))
+    assert {:ok, result} = Runner.check(files)
+    refute result.report["ok"]
+    assert result.report["mobile_framing"]["clipped"]
+    assert Enum.any?(result.report["errors"], &String.contains?(&1, "mobile drawing is clipped"))
+    refute Map.has_key?(result, :bundle)
+  end
 end

@@ -21,7 +21,7 @@ defmodule Leitor.Generations.Request do
   @typedoc "An owned, bounded editor request; it contains no provider credentials."
   @type t :: %__MODULE__{}
 
-  @doc "Casts and validates generation instructions and an optional rich-editor snapshot."
+  @doc "Casts and validates generation instructions and an optional rich-editor snapshot. Explicitly nil optional draft strings normalize to empty text before authorization."
   @spec changeset(t(), map()) :: Ecto.Changeset.t(t())
   def changeset(request, attrs) do
     request
@@ -37,6 +37,8 @@ defmodule Leitor.Generations.Request do
       :replace_from,
       :replace_to
     ])
+    |> update_change(:context, &(&1 || ""))
+    |> update_change(:draft_body, &(&1 || ""))
     |> validate_required([:prompt, :title, :format, :insertion])
     |> validate_length(:prompt, min: 1, max: 2000)
     |> validate_length(:context, max: 24_000)

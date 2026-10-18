@@ -90,8 +90,14 @@ Dialyzer analysis, dependency auditing, and passing tests with coverage.
 The CI audit uses `mix hex.audit` to check for known advisories and retired Hex
 dependencies. Run `mise exec -- mix hex.audit` separately when changing
 dependencies. This check needs network access and is separate from the local
-`precommit` alias. A clean result is not a guarantee that every dependency is
-free of vulnerabilities. Document and review any necessary exception narrowly.
+`precommit` alias. Document and review any necessary exception narrowly.
+
+Dependabot security alerts and security updates are enabled on the repository.
+GitHub's dependency graph does not read `mix.lock`, so the `Dependency
+submission` workflow uses `erlef/mix-dependency-submission` to submit the
+resolved Mix dependencies whenever `mix.exs` or `mix.lock` changes on `main`.
+Alerts then cover Hex packages as well as GitHub Actions. A clean result from
+either tool is not a guarantee that every dependency is free of vulnerabilities.
 
 `mix format` uses [Styler](https://github.com/adobe/elixir-styler) for Elixir
 and `Phoenix.LiveView.HTMLFormatter` for HEEx. Styler automatically organizes

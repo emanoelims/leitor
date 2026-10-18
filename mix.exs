@@ -4,7 +4,7 @@ defmodule Leitor.MixProject do
   def project do
     [
       app: :leitor,
-      version: "0.4.1",
+      version: "0.5.0",
       name: "Leitor",
       source_url: "https://github.com/emanoelims/leitor",
       docs: docs(),

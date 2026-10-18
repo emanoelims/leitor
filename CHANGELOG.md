@@ -4,6 +4,8 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-18
+
 ### Added
 
 - A Dictionary action in the selection toolbar. Its answer opens in the same

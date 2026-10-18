@@ -4,6 +4,7 @@ defmodule LeitorWeb.PageLive do
 
   alias Leitor.Accounts
   alias Leitor.AI
+  alias Leitor.Dictionary
   alias Leitor.Figures.Artifacts
   alias Leitor.Generations
   alias Leitor.Generations.Request
@@ -422,7 +423,13 @@ defmodule LeitorWeb.PageLive do
     mark = Pages.get_mark!(socket.assigns.current_scope, id)
 
     if !socket.assigns.busy and mark.text_id == socket.assigns.text.id and mark.kind in ["answer", "definition"] do
-      action = if mark.kind == "definition", do: "define", else: "ask"
+      action =
+        cond do
+          mark.question == "Dictionary" -> "dictionary"
+          mark.kind == "definition" -> "define"
+          true -> "ask"
+        end
+
       blocks = socket.assigns.document.blocks
 
       {:noreply,
@@ -441,7 +448,7 @@ defmodule LeitorWeb.PageLive do
          error: nil
        )
        |> refresh_marks()
-       |> start_page_help(action, mark.quote, blocks, mark.question || "Explain")}
+       |> start_help(action, mark.quote, blocks, mark.question || "Explain", {mark.block_index, nil})}
     else
       {:noreply, socket}
     end
@@ -449,6 +456,8 @@ defmodule LeitorWeb.PageLive do
 
   def handle_event("selection-mode", %{"mode" => mode}, socket) when mode in ~w(actions note ask pot),
     do: {:noreply, assign(socket, selection_mode: mode)}
+
+  def handle_event("selection-mode", _, socket), do: {:noreply, socket}
 
   def handle_event("highlight", %{"color" => color}, socket) when color in ~w(yellow green blue rose) do
     socket = socket |> assign(marker_color: color) |> push_event("reading-preference", %{key: "marker", value: color})
@@ -566,7 +575,8 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
-  def handle_event("help", %{"action" => action} = params, socket) when action in ~w(define explain simplify ask) do
+  def handle_event("help", %{"action" => action} = params, socket)
+      when action in ~w(define explain simplify ask dictionary) do
     question = String.trim(get_in(params, ["question", "question"]) || "")
 
     cond do
@@ -602,7 +612,13 @@ defmodule LeitorWeb.PageLive do
            to: selection.to_offset,
            block: selection.block_index
          })
-         |> start_page_help(action, selection.quote, document.blocks, question)}
+         |> start_help(
+           action,
+           selection.quote,
+           document.blocks,
+           question,
+           {selection.block_index, block_offsets(socket.assigns.selection_anchor)}
+         )}
     end
   end
 
@@ -617,7 +633,7 @@ defmodule LeitorWeb.PageLive do
   def handle_info({:help_fragment, _, _}, socket), do: {:noreply, socket}
 
   def handle_info({:flush_help, id}, %{assigns: %{help_stream: %{id: id} = preview, busy: true}} = socket) do
-    answer = preview.raw |> AnswerStream.preview() |> String.slice(0, 4000)
+    answer = stream_preview(preview)
     socket = assign(socket, help_stream: %{preview | answer: answer, timer: nil})
 
     socket =
@@ -702,7 +718,7 @@ defmodule LeitorWeb.PageLive do
     pending = socket.assigns.pending
 
     attrs = %{
-      kind: if(pending.action == "define", do: "definition", else: "answer"),
+      kind: if(pending.action in ["define", "dictionary"], do: "definition", else: "answer"),
       body: data["answer"],
       meaning: data["meaning"],
       category: data["category"],
@@ -736,6 +752,18 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
+  def handle_async(:help, {:ok, {:error, reason}}, %{assigns: %{pending: pending}} = socket)
+      when pending.action == "dictionary" or
+             (pending.action == "retry" and pending.mark.kind == "definition" and pending.mark.question == "Dictionary") do
+    error =
+      if reason == :invalid_input,
+        do: "Select a word or expression up to 200 characters to look it up.",
+        else: "The dictionary is unavailable right now. Try again in a moment."
+
+    socket = socket |> reset_help_stream(:failed) |> assign(busy: false, pending: nil, error: error)
+    {:noreply, refresh_marks(socket)}
+  end
+
   def handle_async(:help, _, socket),
     do:
       {:noreply,
@@ -747,6 +775,36 @@ defmodule LeitorWeb.PageLive do
          error: "The tutor couldn’t respond. Your page and annotations are safe. Select the passage to try again."
        )
        |> refresh_marks()}
+
+  defp start_help(socket, "dictionary", quote, blocks, _question, {block_index, offsets}) do
+    owner = self()
+    id = make_ref()
+    scope = socket.assigns.current_scope
+    request = Dictionary.request(blocks, block_index, quote, offsets)
+
+    run_help(socket, %{id: id, field: "meaning"}, fn client ->
+      on_fragment = fn fragment -> send(owner, {:help_fragment, id, fragment}) end
+      dictionary_answer(request, AI.execution_options(scope, client), on_fragment)
+    end)
+  end
+
+  defp start_help(socket, action, quote, blocks, question, _location),
+    do: start_page_help(socket, action, quote, blocks, question)
+
+  defp dictionary_answer({:error, _} = error, _options, _on_fragment), do: error
+
+  defp dictionary_answer(request, options, on_fragment) do
+    with {:ok, card} <- Dictionary.lookup(request, options, on_fragment) do
+      {:ok,
+       %{"answer" => Dictionary.markdown(card), "meaning" => card["meaning"], "category" => Dictionary.jar_category(card)}}
+    end
+  end
+
+  # Byte offsets of a selection inside its block, when it starts and ends in the same block.
+  defp block_offsets(%{"start_block" => block, "end_block" => block, "start_offset" => from, "end_offset" => to}),
+    do: {from, to}
+
+  defp block_offsets(_anchor), do: nil
 
   @impl true
   def terminate(_reason, socket) do
@@ -774,16 +832,30 @@ defmodule LeitorWeb.PageLive do
       )
     end
 
+    run_help(socket, %{id: id}, work)
+  end
+
+  defp run_help(socket, stream, work) do
     case AI.prepare(socket.assigns.current_scope, :read) do
       {:ok, client} ->
         socket
-        |> assign(help_lease_id: client.lease_id, help_stream: %{id: id, raw: "", answer: "", timer: nil})
+        |> assign(help_lease_id: client.lease_id, help_stream: Map.merge(%{raw: "", answer: "", timer: nil}, stream))
         |> start_async(:help, fn -> work.(client) end)
 
       {:error, reason} ->
         socket |> assign(busy: false, pending: nil, error: ai_error(reason)) |> refresh_marks()
     end
   end
+
+  # Dictionary cards stream their meaning first; other answers stream their Markdown answer.
+  defp stream_preview(%{field: "meaning", raw: raw}) do
+    case AnswerStream.preview(raw, "meaning") do
+      "" -> ""
+      meaning -> "**" <> String.slice(meaning, 0, 200) <> "**"
+    end
+  end
+
+  defp stream_preview(%{raw: raw}), do: raw |> AnswerStream.preview() |> String.slice(0, 4000)
 
   defp reset_help_stream(socket, outcome \\ :completed) do
     AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id, outcome)
@@ -929,6 +1001,7 @@ defmodule LeitorWeb.PageLive do
   end
 
   defp mark_title(%{kind: "note"}), do: "Note"
+  defp mark_title(%{kind: "definition", question: "Dictionary"}), do: "Dictionary"
   defp mark_title(%{kind: "definition"}), do: "Define"
   defp mark_title(%{question: question}) when question in ["Explain", "Simplify"], do: question
   defp mark_title(_), do: "Ask"

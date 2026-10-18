@@ -87,7 +87,7 @@ msgstr ""
 msgid "A thought in the margin. A word made yours. All together, right here."
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:672
+#: lib/leitor_web/live/page_live.html.heex:680
 #, elixir-autogen, elixir-format
 msgid "A thought, in your own words"
 msgstr ""
@@ -159,8 +159,8 @@ msgstr ""
 msgid "Add a meaning and select a word or expression up to 200 characters."
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:658
-#: lib/leitor_web/live/page_live.html.heex:659
+#: lib/leitor_web/live/page_live.html.heex:666
+#: lib/leitor_web/live/page_live.html.heex:667
 #, elixir-autogen, elixir-format
 msgid "Add a note"
 msgstr ""
@@ -259,7 +259,7 @@ msgid "Application language"
 msgstr ""
 
 #: lib/leitor_web/live/page_live.html.heex:572
-#: lib/leitor_web/live/page_live.html.heex:689
+#: lib/leitor_web/live/page_live.html.heex:697
 #, elixir-autogen, elixir-format
 msgid "Ask"
 msgstr ""
@@ -279,7 +279,7 @@ msgstr ""
 msgid "Ask a question up to 500 characters."
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:685
+#: lib/leitor_web/live/page_live.html.heex:693
 #, elixir-autogen, elixir-format
 msgid "Ask about this passage…"
 msgstr ""
@@ -511,7 +511,7 @@ msgstr ""
 msgid "Copy notebook as Markdown"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:642
+#: lib/leitor_web/live/page_live.html.heex:650
 #, elixir-autogen, elixir-format
 msgid "Copy quote"
 msgstr ""
@@ -555,7 +555,7 @@ msgid "Creating account..."
 msgstr ""
 
 #: lib/leitor_web/live/page_live.html.heex:604
-#: lib/leitor_web/live/page_live.html.heex:631
+#: lib/leitor_web/live/page_live.html.heex:639
 #, elixir-autogen, elixir-format
 msgid "Define"
 msgstr ""
@@ -822,8 +822,8 @@ msgstr ""
 
 #: lib/leitor_web/live/page_live.html.heex:395
 #: lib/leitor_web/live/page_live.html.heex:550
-#: lib/leitor_web/live/page_live.html.heex:647
-#: lib/leitor_web/live/page_live.html.heex:648
+#: lib/leitor_web/live/page_live.html.heex:655
+#: lib/leitor_web/live/page_live.html.heex:656
 #, elixir-autogen, elixir-format
 msgid "Keep in a jar"
 msgstr ""
@@ -838,7 +838,7 @@ msgstr ""
 msgid "Keep me logged in on this device"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:676
+#: lib/leitor_web/live/page_live.html.heex:684
 #, elixir-autogen, elixir-format
 msgid "Keep note"
 msgstr ""
@@ -952,7 +952,7 @@ msgstr ""
 msgid "Margin notes"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:696
+#: lib/leitor_web/live/page_live.html.heex:704
 #, elixir-autogen, elixir-format
 msgid "Meaning"
 msgstr ""
@@ -967,8 +967,8 @@ msgstr ""
 msgid "More"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:607
-#: lib/leitor_web/live/page_live.html.heex:607
+#: lib/leitor_web/live/page_live.html.heex:615
+#: lib/leitor_web/live/page_live.html.heex:615
 #, elixir-autogen, elixir-format
 msgid "More actions"
 msgstr ""
@@ -1257,7 +1257,7 @@ msgstr ""
 msgid "Pronouns"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:684
+#: lib/leitor_web/live/page_live.html.heex:692
 #, elixir-autogen, elixir-format
 msgid "Question about the selection"
 msgstr ""
@@ -1373,7 +1373,7 @@ msgstr ""
 msgid "Save while editing"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:717
+#: lib/leitor_web/live/page_live.html.heex:725
 #, elixir-autogen, elixir-format
 msgid "Save word"
 msgstr ""
@@ -1456,7 +1456,7 @@ msgid "Sign up"
 msgstr ""
 
 #: lib/leitor_web/live/page_live.html.heex:605
-#: lib/leitor_web/live/page_live.html.heex:630
+#: lib/leitor_web/live/page_live.html.heex:638
 #, elixir-autogen, elixir-format
 msgid "Simplify"
 msgstr ""
@@ -1572,12 +1572,12 @@ msgstr ""
 msgid "The things you keep"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:364
+#: lib/leitor_web/i18n.ex:367
 #, elixir-autogen, elixir-format
 msgid "The tutor couldn’t respond. Your page and annotations are safe. Select the passage to try again."
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:365
+#: lib/leitor_web/i18n.ex:368
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Remove the file and try again."
 msgstr ""
@@ -1587,18 +1587,18 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:366
+#: lib/leitor_web/i18n.ex:369
 #, elixir-autogen, elixir-format
 msgid "This page is too long to add more text. Shorten it and try again."
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:367
+#: lib/leitor_web/i18n.ex:370
 #: lib/leitor_web/live/library_live.ex:210
 #, elixir-autogen, elixir-format
 msgid "Title A–Z"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:368
+#: lib/leitor_web/i18n.ex:371
 #, elixir-autogen, elixir-format
 msgid "Travel when the scroll map is focused"
 msgstr ""
@@ -1618,7 +1618,7 @@ msgstr ""
 msgid "Typeface"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:369
+#: lib/leitor_web/i18n.ex:372
 #, elixir-autogen, elixir-format
 msgid "Unsaved"
 msgstr ""
@@ -1628,12 +1628,12 @@ msgstr ""
 msgid "Untitled"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:370
+#: lib/leitor_web/i18n.ex:373
 #, elixir-autogen, elixir-format
 msgid "Use a title up to 180 characters and a page up to 300,000 characters."
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:371
+#: lib/leitor_web/i18n.ex:374
 #, elixir-autogen, elixir-format
 msgid "Verbs"
 msgstr ""
@@ -1658,7 +1658,7 @@ msgstr ""
 msgid "Welcome to Leitor"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:697
+#: lib/leitor_web/live/page_live.html.heex:705
 #, elixir-autogen, elixir-format
 msgid "What does this word mean?"
 msgstr ""
@@ -1668,17 +1668,17 @@ msgstr ""
 msgid "What would you like to write?"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:372
+#: lib/leitor_web/i18n.ex:375
 #, elixir-autogen, elixir-format
 msgid "Wide"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:373
+#: lib/leitor_web/i18n.ex:376
 #, elixir-autogen, elixir-format
 msgid "Width"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:704
+#: lib/leitor_web/live/page_live.html.heex:712
 #, elixir-autogen, elixir-format
 msgid "Word jar"
 msgstr ""
@@ -1694,12 +1694,12 @@ msgstr ""
 msgid "Workspace"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:374
+#: lib/leitor_web/i18n.ex:377
 #, elixir-autogen, elixir-format
 msgid "Write a note between 1 and 4,000 characters."
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:375
+#: lib/leitor_web/i18n.ex:378
 #, elixir-autogen, elixir-format
 msgid "Write anything, paste a text, or type / for blocks…"
 msgstr ""
@@ -1715,17 +1715,17 @@ msgstr ""
 msgid "Writing default"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:376
+#: lib/leitor_web/i18n.ex:379
 #, elixir-autogen, elixir-format
 msgid "Written here"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:377
+#: lib/leitor_web/i18n.ex:380
 #, elixir-autogen, elixir-format
 msgid "You must log in to access this page."
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:378
+#: lib/leitor_web/i18n.ex:381
 #, elixir-autogen, elixir-format
 msgid "You must re-authenticate to access this page."
 msgstr ""
@@ -1761,7 +1761,7 @@ msgstr ""
 msgid "Your note"
 msgstr ""
 
-#: lib/leitor_web/live/page_live.html.heex:671
+#: lib/leitor_web/live/page_live.html.heex:679
 #, elixir-autogen, elixir-format
 msgid "Your note on the selection"
 msgstr ""
@@ -1781,7 +1781,7 @@ msgstr ""
 msgid "Your own reading room"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:379
+#: lib/leitor_web/i18n.ex:382
 #, elixir-autogen, elixir-format
 msgid "Your page text"
 msgstr ""
@@ -2830,4 +2830,20 @@ msgstr ""
 #: lib/leitor_web/live/preferences_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "Waiting"
+msgstr ""
+
+#: lib/leitor_web/i18n.ex:364
+#: lib/leitor_web/live/page_live.html.heex:613
+#, elixir-autogen, elixir-format
+msgid "Dictionary"
+msgstr ""
+
+#: lib/leitor_web/i18n.ex:365
+#, elixir-autogen, elixir-format
+msgid "Select a word or expression up to 200 characters to look it up."
+msgstr ""
+
+#: lib/leitor_web/i18n.ex:366
+#, elixir-autogen, elixir-format
+msgid "The dictionary is unavailable right now. Try again in a moment."
 msgstr ""

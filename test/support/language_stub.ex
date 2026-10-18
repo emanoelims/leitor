@@ -8,7 +8,26 @@ defmodule Leitor.LanguageStub do
     {:ok, %{"markdown" => text}}
   end
 
-  def stream_object(model, prompt, schema, on_fragment, _options \\ []) do
+  def stream_object(model, prompt, schema, on_fragment, options \\ [])
+
+  def stream_object(_model, %ReqLLM.Context{}, _schema, on_fragment, _options) do
+    card = %{
+      "meaning" => "maravilhoso",
+      "headword" => "wonderful",
+      "part_of_speech" => "adjetivo",
+      "ipa" => "ˈwʌndərfəl",
+      "explanation" => "Aqui descreve uma frase muito boa.",
+      "usage_note" => "",
+      "forms" => [],
+      "examples" => [%{"en" => "What a wonderful day.", "pt" => "Que dia maravilhoso."}],
+      "other_senses" => []
+    }
+
+    on_fragment.(Jason.encode!(card))
+    {:ok, card}
+  end
+
+  def stream_object(model, prompt, schema, on_fragment, _options) do
     case generate(model, prompt, schema) do
       {:ok, data} = result ->
         on_fragment.(Jason.encode!(data))

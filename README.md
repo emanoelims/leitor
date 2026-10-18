@@ -188,6 +188,29 @@ Provider failures preserve the learner's text and allow retrying. Structured
 responses are schema validated, and sentence analysis must preserve the original
 words and punctuation. AI suggestions still require the learner's judgment.
 
+### Dictionary
+
+The selection toolbar's Dictionary action answers in a margin card, like Define
+and Explain, and keeps its meaning and part of speech for word jars. Claude
+receives the surrounding page text (up to about 24,000 characters) and the
+paragraph with the selected occurrence marked, so the card explains the meaning
+used there: meaning in Brazilian Portuguese, headword, IPA, explanation, usage
+note, inflected forms, two bilingual examples and up to three other senses.
+
+- The fixed instructions and the page text are prompt-cache breakpoints, so
+  further lookups on the same page reread them at a fraction of the input price.
+- The meaning is the first field and streams into the card before the rest.
+- `Leitor.Dictionary.Pronunciation` turns the IPA into a Brazilian Portuguese
+  pronunciation hint (for example `water` → `UÓ-râr`) with deterministic rules,
+  without another model call.
+- Completed cards are stored in `dictionary_cards`, keyed by model, prompt
+  version, selection and paragraph, so repeating a lookup costs nothing.
+
+Lookups are reading help: each one goes through
+`Leitor.AI.prepare/2` like Define and Explain, so it uses the shared model
+(Haiku) or, with a personal Anthropic key, the reader's chosen reading model,
+and its usage is measured with the reader's other AI activity.
+
 ## Persistence
 
 `Library`, `Learning`, and `Study` follow generated Phoenix context boundaries and

@@ -74,10 +74,20 @@ defmodule Leitor.Language.Provider do
     stream(model, ReqLLM.context(ReqLLM.Context.user(parts)), on_delta, options)
   end
 
-  @doc "Streams provisional JSON fragments and validates the completed object. Only content and tool argument fragments reach the callback; thinking and metadata remain private."
-  @spec stream_object(String.t(), String.t(), map(), Leitor.Language.object_fragment_handler()) ::
+  @doc """
+  Streams provisional JSON fragments and validates the completed object. Only content and tool argument fragments reach
+  the callback; thinking and metadata remain private. The prompt may be a string or a `ReqLLM.Context` (for system
+  instructions and cache breakpoints); `options` are passed to ReqLLM, for example `reasoning_effort: :low`.
+  """
+  @spec stream_object(String.t(), String.t() | ReqLLM.Context.t(), map(), Leitor.Language.object_fragment_handler()) ::
           Leitor.Language.result()
-  @spec stream_object(String.t(), String.t(), map(), Leitor.Language.object_fragment_handler(), keyword()) ::
+  @spec stream_object(
+          String.t(),
+          String.t() | ReqLLM.Context.t(),
+          map(),
+          Leitor.Language.object_fragment_handler(),
+          keyword()
+        ) ::
           Leitor.Language.result()
   def stream_object(model, prompt, schema, on_fragment, options \\ []) do
     {usage_callback, options} = Keyword.pop(options, :usage_callback, fn _usage -> :ok end)

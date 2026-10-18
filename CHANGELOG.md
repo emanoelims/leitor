@@ -4,6 +4,23 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+### Added
+
+- A Dictionary action in the selection toolbar. Its answer opens in the same
+  margin card as Define and Explain. Claude reads the page around the marked
+  occurrence and writes the meaning in that context, the headword, IPA, an
+  explanation, usage notes, forms, bilingual examples and other senses; the
+  meaning streams first. A Brazilian Portuguese pronunciation hint is derived
+  from the IPA by rules, prompts reuse cached instructions and page text, and
+  finished cards are cached. Lookups use the reader's AI authorization, credits
+  and model like other reading help. The card keeps its meaning and part of
+  speech for word jars.
+
+### Migration
+
+One additive migration creates `dictionary_cards`, which stores generated cards
+by model, prompt version and marked selection. No new secrets are required.
+
 ## [0.4.1] - 2026-10-17
 
 ### Fixed

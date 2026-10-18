@@ -3,7 +3,11 @@ defmodule LeitorWeb.PageLive do
   use LeitorWeb, :live_view
 
   alias Leitor.Accounts
+  alias Leitor.AI
   alias Leitor.Dictionary
+  alias Leitor.Figures.Artifacts
+  alias Leitor.Generations
+  alias Leitor.Generations.Request
   alias Leitor.Language
   alias Leitor.Language.AnswerStream
   alias Leitor.Learning
@@ -50,7 +54,13 @@ defmodule LeitorWeb.PageLive do
        pending: nil,
        help_stream: nil,
        generation_id: nil,
-       generation_preview: %{text: "", timer: nil},
+       generation_lease_id: nil,
+       generation_retry: nil,
+       generation_job_id: nil,
+       generation_recovery: Generations.latest(socket.assigns.current_scope, nil),
+       generation_applied: false,
+       help_lease_id: nil,
+       generation_preview: %{text: "", timer: nil, limit: 12_000},
        error: nil,
        form: to_form(%{"title" => "Untitled", "body" => ""}, as: "page"),
        note_form: to_form(%{"body" => ""}, as: "note"),
@@ -70,7 +80,7 @@ defmodule LeitorWeb.PageLive do
     {:noreply,
      socket
      |> stop_page_help()
-     |> cancel_page_generation()
+     |> detach_page_generation()
      |> assign(
        text: text,
        active_mark_id: nil,
@@ -83,37 +93,147 @@ defmodule LeitorWeb.PageLive do
        pending: nil,
        form: to_form(%{"title" => text.title, "body" => text.body}, as: "page"),
        appearance: Map.put(socket.assigns.appearance, "focus", false),
-       document: PageDocument.prepare(text.body)
+       document: PageDocument.prepare(text.body),
+       generation_applied: false
      )
+     |> assign(generation_recovery: Generations.latest(socket.assigns.current_scope, text.id))
      |> refresh_marks(params["mark"])}
   end
 
   def handle_params(_, _, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_event("preview-artwork", %{"source" => source, "language" => language}, socket)
+      when is_binary(source) and byte_size(source) <= 98_304 do
+    html = if language in Leitor.Illustration.languages(), do: Leitor.Illustration.render(source, language), else: ""
+    {:reply, %{html: html}, socket}
+  end
+
+  def handle_event("preview-artwork", _, socket), do: {:reply, %{html: ""}, socket}
+
+  def handle_event("figure-history", %{"artifact_id" => id}, %{assigns: %{editing: true}} = socket) do
+    {:reply, %{versions: Artifacts.history(socket.assigns.current_scope, id)}, socket}
+  end
+
+  def handle_event("figure-history", _, socket), do: {:reply, %{versions: []}, socket}
+
+  def handle_event(
+        "restore-figure",
+        %{"current_id" => current, "target_id" => target},
+        %{assigns: %{editing: true, generation_id: nil}} = socket
+      ) do
+    result =
+      case Artifacts.restore_reference(socket.assigns.current_scope, current, target) do
+        {:ok, reference} -> %{source: Jason.encode!(reference)}
+        {:error, :invalid_revision} -> %{error: "This version is unavailable."}
+      end
+
+    {:reply, result, socket}
+  end
+
+  def handle_event("restore-figure", _, socket), do: {:reply, %{error: "This version is unavailable."}, socket}
+
+  def handle_event("preview-svg", %{"source" => source}, socket) do
+    src =
+      case Leitor.Illustration.image(source) do
+        {:ok, uri} -> uri
+        {:error, :invalid_svg} -> nil
+      end
+
+    {:reply, %{src: src}, socket}
+  end
+
   def handle_event("draft", %{"page" => attrs}, socket),
     do: {:noreply, assign(socket, dirty: true, form: to_form(attrs, as: "page"))}
 
   def handle_event(
         "generate-page-text",
-        %{"request_id" => id, "prompt" => prompt, "context" => context, "title" => title},
+        %{"request_id" => id, "prompt" => prompt, "context" => context, "title" => title} = params,
         %{assigns: %{editing: true, generation_id: nil}} = socket
       )
       when is_binary(id) and byte_size(id) <= 64 and is_binary(prompt) and is_binary(context) and is_binary(title) do
-    request = %{prompt: prompt, context: String.slice(context, 0, 24_000), title: String.slice(title, 0, 180)}
-    owner = self()
-    preferences = Accounts.get_preferences(socket.assigns.current_scope)
+    request = %{
+      prompt: prompt,
+      context: String.slice(context, 0, 24_000),
+      title: String.slice(title, 0, 180),
+      format: Map.get(params, "format", "visual_explainer")
+    }
 
-    {:noreply,
-     socket
-     |> assign(generation_id: id)
-     |> start_async({:generate_page, id}, fn ->
-       on_delta = fn delta -> send(owner, {:page_generation_delta, id, delta}) end
-       Language.generate_page_text(request, on_delta, preferences)
-     end)}
+    attrs = %{
+      client_id: id,
+      request:
+        Map.merge(request, %{
+          draft_body: Map.get(params, "draft_body", context),
+          document: Map.get(params, "document"),
+          insertion: Map.get(params, "insertion", 1),
+          base_revision_id: Map.get(params, "base_revision_id"),
+          replace_from: Map.get(params, "replace_from"),
+          replace_to: Map.get(params, "replace_to")
+        })
+    }
+
+    page_id = if socket.assigns.text, do: socket.assigns.text.id
+
+    case Generations.start(socket.assigns.current_scope, page_id, attrs) do
+      {:ok, generation} ->
+        {:noreply, attach_generation(socket, generation)}
+
+      {:error, %Ecto.Changeset{}} ->
+        {:noreply, push_event(socket, "page-ai-result", %{request_id: id, error: ai_error(:invalid_input)})}
+
+      {:error, reason} ->
+        {:noreply, push_event(socket, "page-ai-result", %{request_id: id, error: ai_error(reason)})}
+    end
   end
 
   def handle_event("generate-page-text", _, socket), do: {:noreply, socket}
+
+  def handle_event("recover-generation", _, socket) do
+    scope = socket.assigns.current_scope
+    page_id = if socket.assigns.text, do: socket.assigns.text.id
+
+    case Generations.latest(scope, page_id) do
+      nil ->
+        {:noreply, assign(socket, generation_recovery: nil)}
+
+      generation ->
+        socket = assign(socket, editing: true, generation_recovery: generation)
+
+        socket =
+          if generation.status in ["running", "queued"] do
+            Generations.subscribe(scope, generation.id)
+            attach_generation(socket, generation)
+          else
+            assign(socket,
+              generation_retry: %{request: Request.instruction(generation.request), revision: generation.revision_id}
+            )
+          end
+
+        payload = %{
+          request_id: generation.client_id,
+          request: Ecto.embedded_dump(generation.request, :json),
+          status: generation.status,
+          stage: generation.stage,
+          markdown: generation.markdown,
+          retryable: is_binary(generation.revision_id)
+        }
+
+        {:noreply, push_event(socket, "page-ai-recover", payload)}
+    end
+  end
+
+  def handle_event("dismiss-generation", _, socket) do
+    if socket.assigns.generation_recovery do
+      Generations.dismiss(socket.assigns.current_scope, socket.assigns.generation_recovery.id)
+    end
+
+    {:noreply, assign(socket, generation_recovery: nil)}
+  end
+
+  def handle_event("generation-applied", %{"request_id" => id}, socket) do
+    applied = socket.assigns.generation_recovery && socket.assigns.generation_recovery.client_id == id
+    {:noreply, assign(socket, generation_applied: applied == true)}
+  end
 
   def handle_event("cancel-page-generation", %{"request_id" => id}, %{assigns: %{generation_id: id}} = socket),
     do: {:noreply, cancel_page_generation(socket)}
@@ -137,6 +257,12 @@ defmodule LeitorWeb.PageLive do
 
     case result do
       {:ok, text} ->
+        job_id =
+          socket.assigns.generation_job_id ||
+            (socket.assigns.generation_recovery && socket.assigns.generation_recovery.id)
+
+        if job_id, do: Generations.dismiss(socket.assigns.current_scope, job_id)
+
         {:noreply,
          socket
          |> cancel_page_generation()
@@ -520,12 +646,43 @@ defmodule LeitorWeb.PageLive do
 
   def handle_info({:flush_help, _}, socket), do: {:noreply, socket}
 
+  def handle_info({:page_generation_stage, id, stage}, %{assigns: %{generation_id: id}} = socket) do
+    {:noreply, push_event(socket, "page-ai-stage", %{request_id: id, stage: stage})}
+  end
+
+  def handle_info({:page_generation_stage, _, _}, socket), do: {:noreply, socket}
+
+  def handle_info({:generation_changed, id}, %{assigns: %{generation_job_id: id}} = socket) do
+    generation = Generations.get!(socket.assigns.current_scope, id)
+
+    {:noreply,
+     assign(socket,
+       generation_recovery: generation,
+       generation_retry: %{socket.assigns.generation_retry | revision: generation.revision_id}
+     )}
+  end
+
+  def handle_info({:generation_changed, _}, socket), do: {:noreply, socket}
+
+  def handle_info({:generation_cancel, id}, %{assigns: %{generation_job_id: id}} = socket) do
+    request_id = socket.assigns.generation_id
+    {:noreply, socket |> detach_page_generation() |> push_event("page-ai-stopped", %{request_id: request_id})}
+  end
+
+  def handle_info({:generation_cancel, _}, socket), do: {:noreply, socket}
+
+  def handle_info({:page_generation_checkpoint, id, revision}, %{assigns: %{generation_id: id}} = socket) do
+    {:noreply, assign(socket, generation_retry: %{socket.assigns.generation_retry | revision: revision})}
+  end
+
+  def handle_info({:page_generation_checkpoint, _, _}, socket), do: {:noreply, socket}
+
   def handle_info({:page_generation_delta, id, delta}, %{assigns: %{generation_id: id, editing: true}} = socket)
       when is_binary(delta) and delta != "" do
     preview = socket.assigns.generation_preview
-    text = String.slice(preview.text <> delta, 0, 12_000)
+    text = String.slice(preview.text <> delta, 0, preview.limit)
     timer = preview.timer || Process.send_after(self(), {:flush_page_generation, id}, 60)
-    {:noreply, assign(socket, generation_preview: %{text: text, timer: timer})}
+    {:noreply, assign(socket, generation_preview: %{preview | text: text, timer: timer})}
   end
 
   def handle_info({:page_generation_delta, _, _}, socket), do: {:noreply, socket}
@@ -543,22 +700,14 @@ defmodule LeitorWeb.PageLive do
 
   @impl true
   def handle_async({:generate_page, id}, result, %{assigns: %{generation_id: id, editing: true}} = socket) do
-    payload =
-      case result do
-        {:ok, {:ok, %{"markdown" => markdown}}} ->
-          %{request_id: id, markdown: markdown}
+    payload = generation_payload(id, result)
 
-        {:ok, {:error, :unavailable}} ->
-          %{request_id: id, error: "AI is unavailable. Configure the Claude API key to generate text."}
+    retryable =
+      Map.has_key?(payload, :error) and is_map(socket.assigns.generation_retry) and
+        is_binary(socket.assigns.generation_retry.revision)
 
-        {:ok, {:error, :invalid_input}} ->
-          %{request_id: id, error: "Describe what to write using 1–2,000 characters."}
-
-        _ ->
-          %{request_id: id, error: "Couldn’t generate the text. Your draft is safe. Try again."}
-      end
-
-    {:noreply, socket |> reset_page_generation() |> push_event("page-ai-result", payload)}
+    socket = if Map.has_key?(payload, :markdown), do: assign(socket, generation_retry: nil), else: socket
+    {:noreply, socket |> reset_page_generation() |> push_event("page-ai-result", Map.put(payload, :retryable, retryable))}
   end
 
   def handle_async({:generate_page, _}, _, socket), do: {:noreply, socket}
@@ -611,14 +760,15 @@ defmodule LeitorWeb.PageLive do
         do: "Select a word or expression up to 200 characters to look it up.",
         else: "The dictionary is unavailable right now. Try again in a moment."
 
-    {:noreply, socket |> reset_help_stream() |> assign(busy: false, pending: nil, error: error) |> refresh_marks()}
+    socket = socket |> reset_help_stream(:failed) |> assign(busy: false, pending: nil, error: error)
+    {:noreply, refresh_marks(socket)}
   end
 
   def handle_async(:help, _, socket),
     do:
       {:noreply,
        socket
-       |> reset_help_stream()
+       |> reset_help_stream(:failed)
        |> assign(
          busy: false,
          pending: nil,
@@ -629,23 +779,22 @@ defmodule LeitorWeb.PageLive do
   defp start_help(socket, "dictionary", quote, blocks, _question, {block_index, offsets}) do
     owner = self()
     id = make_ref()
-    preferences = Accounts.get_preferences(socket.assigns.current_scope)
+    scope = socket.assigns.current_scope
+    request = Dictionary.request(blocks, block_index, quote, offsets)
 
-    socket
-    |> assign(help_stream: %{id: id, raw: "", answer: "", timer: nil, field: "meaning"})
-    |> start_async(:help, fn ->
+    run_help(socket, %{id: id, field: "meaning"}, fn client ->
       on_fragment = fn fragment -> send(owner, {:help_fragment, id, fragment}) end
-      dictionary_answer(Dictionary.request(blocks, block_index, quote, offsets), preferences, on_fragment)
+      dictionary_answer(request, AI.execution_options(scope, client), on_fragment)
     end)
   end
 
   defp start_help(socket, action, quote, blocks, question, _location),
     do: start_page_help(socket, action, quote, blocks, question)
 
-  defp dictionary_answer({:error, _} = error, _preferences, _on_fragment), do: error
+  defp dictionary_answer({:error, _} = error, _options, _on_fragment), do: error
 
-  defp dictionary_answer(request, preferences, on_fragment) do
-    with {:ok, card} <- Dictionary.lookup(request, preferences, on_fragment) do
+  defp dictionary_answer(request, options, on_fragment) do
+    with {:ok, card} <- Dictionary.lookup(request, options, on_fragment) do
       {:ok,
        %{"answer" => Dictionary.markdown(card), "meaning" => card["meaning"], "category" => Dictionary.jar_category(card)}}
     end
@@ -657,14 +806,20 @@ defmodule LeitorWeb.PageLive do
 
   defp block_offsets(_anchor), do: nil
 
+  @impl true
+  def terminate(_reason, socket) do
+    AI.finish(socket.assigns.current_scope, socket.assigns.generation_lease_id)
+    AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id, :cancelled)
+    :ok
+  end
+
   defp start_page_help(socket, action, quote, blocks, question, history \\ []) do
     owner = self()
     id = make_ref()
     preferences = Accounts.get_preferences(socket.assigns.current_scope)
+    scope = socket.assigns.current_scope
 
-    socket
-    |> assign(help_stream: %{id: id, raw: "", answer: "", timer: nil})
-    |> start_async(:help, fn ->
+    work = fn client ->
       Language.page_help(
         action,
         quote,
@@ -672,9 +827,24 @@ defmodule LeitorWeb.PageLive do
         question,
         history,
         fn fragment -> send(owner, {:help_fragment, id, fragment}) end,
-        preferences
+        preferences,
+        AI.execution_options(scope, client)
       )
-    end)
+    end
+
+    run_help(socket, %{id: id}, work)
+  end
+
+  defp run_help(socket, stream, work) do
+    case AI.prepare(socket.assigns.current_scope, :read) do
+      {:ok, client} ->
+        socket
+        |> assign(help_lease_id: client.lease_id, help_stream: Map.merge(%{raw: "", answer: "", timer: nil}, stream))
+        |> start_async(:help, fn -> work.(client) end)
+
+      {:error, reason} ->
+        socket |> assign(busy: false, pending: nil, error: ai_error(reason)) |> refresh_marks()
+    end
   end
 
   # Dictionary cards stream their meaning first; other answers stream their Markdown answer.
@@ -687,27 +857,92 @@ defmodule LeitorWeb.PageLive do
 
   defp stream_preview(%{raw: raw}), do: raw |> AnswerStream.preview() |> String.slice(0, 4000)
 
-  defp reset_help_stream(socket) do
+  defp reset_help_stream(socket, outcome \\ :completed) do
+    AI.finish(socket.assigns.current_scope, socket.assigns.help_lease_id, outcome)
+
     if socket.assigns.help_stream && socket.assigns.help_stream.timer,
       do: Process.cancel_timer(socket.assigns.help_stream.timer)
 
-    assign(socket, help_stream: nil)
+    assign(socket, help_stream: nil, help_lease_id: nil)
   end
 
   defp stop_page_help(socket) do
-    socket |> cancel_async(:help) |> reset_help_stream() |> assign(busy: false, pending: nil)
+    socket |> cancel_async(:help) |> reset_help_stream(:cancelled) |> assign(busy: false, pending: nil)
   end
 
   defp cancel_page_generation(%{assigns: %{generation_id: nil}} = socket), do: socket
 
   defp cancel_page_generation(socket) do
+    socket =
+      if socket.assigns.generation_job_id do
+        id = socket.assigns.generation_job_id
+        Generations.cancel(socket.assigns.current_scope, id)
+        assign(socket, generation_recovery: Generations.get!(socket.assigns.current_scope, id))
+      else
+        socket
+      end
+
     socket |> cancel_async({:generate_page, socket.assigns.generation_id}) |> reset_page_generation()
   end
 
-  defp reset_page_generation(socket) do
-    if socket.assigns.generation_preview.timer, do: Process.cancel_timer(socket.assigns.generation_preview.timer)
-    assign(socket, generation_id: nil, generation_preview: %{text: "", timer: nil})
+  defp detach_page_generation(socket) do
+    if socket.assigns.generation_id,
+      do: socket |> cancel_async({:generate_page, socket.assigns.generation_id}) |> reset_page_generation(),
+      else: socket
   end
+
+  defp attach_generation(socket, generation) do
+    scope = socket.assigns.current_scope
+
+    socket
+    |> assign(
+      generation_id: generation.client_id,
+      generation_job_id: generation.id,
+      generation_recovery: generation,
+      generation_applied: false,
+      generation_retry: %{request: Request.instruction(generation.request), revision: generation.revision_id},
+      generation_preview: %{text: "", timer: nil, limit: 12_000}
+    )
+    |> start_async({:generate_page, generation.client_id}, fn -> Generations.await(scope, generation.id) end)
+    |> push_event("page-ai-stage", %{request_id: generation.client_id, stage: generation.stage})
+  end
+
+  defp reset_page_generation(socket) do
+    if socket.assigns.generation_job_id, do: Generations.unsubscribe(socket.assigns.generation_job_id)
+    AI.finish(socket.assigns.current_scope, socket.assigns.generation_lease_id)
+    if socket.assigns.generation_preview.timer, do: Process.cancel_timer(socket.assigns.generation_preview.timer)
+
+    assign(socket,
+      generation_id: nil,
+      generation_job_id: nil,
+      generation_lease_id: nil,
+      generation_preview: %{text: "", timer: nil, limit: 12_000}
+    )
+  end
+
+  defp generation_payload(id, {:ok, {:ok, %{"markdown" => markdown}}}), do: %{request_id: id, markdown: markdown}
+  defp generation_payload(id, {:ok, {:error, reason}}), do: %{request_id: id, error: generation_error(reason)}
+  defp generation_payload(id, _result), do: %{request_id: id, error: generation_error(:unexpected)}
+
+  defp generation_error(:unavailable), do: "AI is unavailable. Configure the Claude API key to generate text."
+  defp generation_error(:invalid_input), do: "Describe what to write using 1–2,000 characters."
+  defp generation_error(reason) when reason in [:quota_exceeded, :busy, :credential_unavailable], do: ai_error(reason)
+  defp generation_error(:figure_review_failed), do: "The figure did not pass the quality review. Your page is unchanged."
+
+  defp generation_error(:figure_budget_exceeded),
+    do: "Figure generation reached its time or token limit. Your page is unchanged."
+
+  defp generation_error(reason) when reason in [:runner_unavailable, :runner_timeout],
+    do: "The isolated figure checker is unavailable or timed out. Your page is safe."
+
+  defp generation_error(_reason), do: "Couldn’t generate the text. Your draft is safe. Try again."
+
+  defp ai_error(:quota_exceeded),
+    do: "The daily AI allowance has been reached. Try after the UTC reset or add your own key in Preferences."
+
+  defp ai_error(:busy), do: "Another AI request is running. Wait a moment and try again."
+  defp ai_error(:credential_unavailable), do: "Your saved API key could not be read. Replace it in Preferences."
+  defp ai_error(:invalid_input), do: "Describe what to write using 1–2,000 characters."
 
   defp jar_category("aux"), do: "verb"
   defp jar_category("proper"), do: "noun"

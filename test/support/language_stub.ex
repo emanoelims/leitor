@@ -2,11 +2,13 @@ defmodule Leitor.LanguageStub do
   @moduledoc false
   alias Leitor.Library.Reading
 
-  def stream(_model, _prompt, on_delta) do
+  def stream(_model, _prompt, on_delta, _options \\ []) do
     text = "## A fresh page\n\nA quiet moment to read."
     on_delta.(text)
     {:ok, %{"markdown" => text}}
   end
+
+  def stream_object(model, prompt, schema, on_fragment, options \\ [])
 
   def stream_object(_model, %ReqLLM.Context{}, _schema, on_fragment, _options) do
     card = %{
@@ -25,9 +27,7 @@ defmodule Leitor.LanguageStub do
     {:ok, card}
   end
 
-  def stream_object(model, prompt, schema, on_fragment, _options), do: stream_object(model, prompt, schema, on_fragment)
-
-  def stream_object(model, prompt, schema, on_fragment) do
+  def stream_object(model, prompt, schema, on_fragment, _options) do
     case generate(model, prompt, schema) do
       {:ok, data} = result ->
         on_fragment.(Jason.encode!(data))
@@ -38,7 +38,11 @@ defmodule Leitor.LanguageStub do
     end
   end
 
-  def generate(_model, prompt, _schema) do
+  def generate(model, prompt, schema, options \\ [])
+
+  def generate(_model, _prompt, %{properties: %{figure: _}}, _options), do: {:ok, Leitor.FigureFixtures.figure_response()}
+
+  def generate(_model, prompt, _schema, _options) do
     cond do
       String.contains?(prompt, "Suggest one fresh writing title") ->
         {:ok, %{"title" => "A place I would love to visit"}}

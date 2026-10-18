@@ -108,12 +108,12 @@ msgstr ""
 msgid "must be equal to %{number}"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:26
+#: lib/leitor_web/i18n.ex:216
 #, elixir-autogen, elixir-format
 msgid "did not change"
 msgstr ""
 
-#: lib/leitor_web/i18n.ex:25
+#: lib/leitor_web/i18n.ex:215
 #, elixir-autogen, elixir-format
 msgid "must have the @ sign and no spaces"
 msgstr ""

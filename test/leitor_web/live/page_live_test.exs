@@ -2,6 +2,7 @@ defmodule LeitorWeb.PageLiveTest do
   use LeitorWeb.ConnCase
 
   import Leitor.AccountsFixtures
+  import Leitor.FigureFixtures
   import Phoenix.LiveViewTest
 
   alias Leitor.Learning
@@ -21,7 +22,76 @@ defmodule LeitorWeb.PageLiveTest do
     %{conn: log_in_user(conn, scope.user), scope: scope}
   end
 
+  test "closing the editor preserves its running generation and reopening recovers without charging again", %{
+    conn: conn,
+    scope: scope
+  } do
+    Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+    on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)
+    {:ok, first, _} = live(conn, ~p"/pages/new")
+
+    render_hook(first, "generate-page-text", %{
+      "request_id" => "survives",
+      "prompt" => "A mechanism",
+      "title" => "Saved title",
+      "context" => "My existing text."
+    })
+
+    assert_receive {:language_started, task}
+    usage = Leitor.AI.usage(scope)
+    GenServer.stop(first.pid, :normal)
+    {:ok, recovered, _} = live(conn, ~p"/pages/new")
+    assert has_element?(recovered, "#page-generation-recover")
+    render_click(recovered, "recover-generation")
+
+    assert_push_event(recovered, "page-ai-recover", %{
+      status: "running",
+      request_id: "survives",
+      request: %{title: "Saved title"}
+    })
+
+    send(task, {:complete, {:ok, figure_response("Recovered.")}})
+    render_async(recovered)
+    assert_push_event(recovered, "page-ai-result", %{request_id: "survives", markdown: markdown})
+    assert markdown =~ "Recovered."
+    assert Leitor.AI.usage(scope) == usage
+    refute_receive {:language_started, _}
+  end
+
+  test "a ready result can be recovered after reopening without starting another task", %{conn: conn, scope: scope} do
+    Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+    on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)
+    {:ok, first, _} = live(conn, ~p"/pages/new")
+
+    render_hook(first, "generate-page-text", %{
+      "request_id" => "ready",
+      "prompt" => "A mechanism",
+      "title" => "Ready",
+      "context" => ""
+    })
+
+    assert_receive {:language_started, task}
+    send(task, {:complete, {:ok, figure_response("Ready result.")}})
+    render_async(first)
+    GenServer.stop(first.pid, :normal)
+    usage = Leitor.AI.usage(scope)
+    {:ok, recovered, _} = live(conn, ~p"/pages/new")
+    render_click(recovered, "recover-generation")
+    assert_push_event(recovered, "page-ai-recover", %{status: "ready", markdown: markdown})
+    assert markdown =~ "Ready result."
+    assert Leitor.AI.usage(scope) == usage
+    render_hook(recovered, "generation-applied", %{"request_id" => "another-attempt"})
+    assert has_element?(recovered, "#page-generation-recover")
+    render_hook(recovered, "generation-applied", %{"request_id" => "ready"})
+    refute has_element?(recovered, "#page-generation-recover")
+    assert Leitor.Generations.latest(scope, nil).status == "ready"
+    refute_receive {:language_started, _}
+  end
+
   test "already-open editors and readers use the account's latest AI preferences", %{conn: conn, scope: scope} do
+    {:ok, _} = Leitor.AI.put_credential(scope, %{provider: "anthropic", api_key: "test-account-claude-key"})
     Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
     Application.put_env(:leitor, :language_test_owner, self())
     on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)
@@ -55,15 +125,83 @@ defmodule LeitorWeb.PageLiveTest do
     assert_receive {:language_settings, "anthropic:claude-sonnet-5-5", prompt}
     assert prompt =~ "Preferred response language: Brazilian Portuguese"
     assert_receive {:language_started, writing_task}
-    send(writing_task, {:complete, {:ok, %{"markdown" => "Uma ideia."}}})
+    send(writing_task, {:complete, {:ok, figure_response("Uma ideia.")}})
     render_async(editor)
-    assert_push_event(editor, "page-ai-result", %{request_id: "preferences", markdown: "Uma ideia."})
+    assert_push_event(editor, "page-ai-result", %{request_id: "preferences", markdown: markdown})
+    assert markdown =~ "Uma ideia."
+    assert markdown =~ "leitor-figure"
+  end
+
+  test "generation pins shared models and rejects spent or malformed requests before provider work", %{
+    conn: conn,
+    scope: scope
+  } do
+    Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+    old = Application.get_env(:leitor, :ai_limits)
+    Application.put_env(:leitor, :ai_limits, %{daily_limit: 4, cooldown_seconds: 0})
+
+    on_exit(fn ->
+      Application.delete_env(:leitor, :language_test_owner)
+      Application.put_env(:leitor, :ai_limits, old)
+    end)
+
+    {:ok, _} = Leitor.Accounts.update_preferences(scope, %{writing_model: "anthropic:claude-opus-5-5"})
+    {:ok, view, _} = live(conn, ~p"/pages/new")
+
+    request = %{
+      "request_id" => "illustration",
+      "prompt" => "A scene",
+      "title" => "",
+      "context" => "",
+      "format" => "visual_explainer",
+      "model" => "anthropic:claude-opus-5-5"
+    }
+
+    render_hook(view, "generate-page-text", request)
+    assert_receive {:language_settings, "anthropic:claude-haiku-5-5", prompt}
+    assert prompt =~ "Anatomy"
+    assert_receive {:language_started, task}
+    send(task, {:complete, {:ok, figure_response()}})
+    render_async(view)
+    render_hook(view, "generate-page-text", %{request | "request_id" => "spent"})
+    assert_push_event(view, "page-ai-result", %{request_id: "spent", error: error})
+    assert error =~ "daily AI allowance"
+    refute_receive {:language_started, _}
+    assert Leitor.AI.usage(scope).used == 4
+    render_hook(view, "generate-page-text", %{request | "request_id" => "invalid", "format" => "injected instruction"})
+    assert_push_event(view, "page-ai-result", %{request_id: "invalid", error: invalid})
+    assert invalid =~ "1–2,000"
+    assert Leitor.AI.usage(scope).used == 4
+  end
+
+  test "SVG previews reject active content without consuming AI credits", %{conn: conn, scope: scope} do
+    {:ok, view, _} = live(conn, ~p"/pages/new")
+
+    html =
+      render_hook(view, "preview-svg", %{"source" => ~s|<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="5"/></svg>|})
+
+    assert html =~ "page-form"
+    render_hook(view, "preview-svg", %{"source" => ~s|<svg onload="alert(1)"></svg>|})
+    assert Leitor.AI.usage(scope).used == 0
   end
 
   test "every product entry requires login" do
     for path <- [~p"/", ~p"/pages", ~p"/pages/new", ~p"/notebook"] do
       assert {:error, {:redirect, %{to: "/users/log-in"}}} = live(build_conn(), path)
     end
+  end
+
+  test "validated blueprints preview in the reader without consuming the SVG path budget", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/pages/new")
+    source = File.read!("test/fixtures/figures/workbench.json")
+    render_hook(view, "preview-artwork", %{"source" => source, "language" => "leitor-figure"})
+    assert has_element?(view, "#writing-block-figure")
+    assert has_element?(view, "#page-ai-format option[disabled][value='manga']")
+    markdown = figure_markdown()
+    render_submit(view, "save", %{"page" => %{"title" => "Workshop", "body" => markdown}})
+    assert has_element?(view, ".leitor-figure[data-figure]")
+    assert has_element?(view, "figcaption", "Modelo ilustrativo")
   end
 
   test "editor generation returns Markdown, supports cancellation and ignores late results", %{conn: conn, scope: scope} do
@@ -76,15 +214,17 @@ defmodule LeitorWeb.PageLiveTest do
     request = %{"request_id" => "first", "prompt" => "Write a story", "context" => "A draft", "title" => "A title"}
     render_hook(view, "generate-page-text", request)
     assert_receive {:language_started, task}
-    send(task, {:delta, "## A story\n\n<script>alert('unsafe')</script>"})
+    send(view.pid, {:page_generation_delta, "first", "## A story\n\n<script>alert('unsafe')</script>"})
     assert_push_event(view, "page-ai-chunk", %{request_id: "first", html: html}, 500)
     assert html =~ "<h2>A story</h2>"
     refute html =~ "<script>"
     render_hook(view, "generate-page-text", %{request | "request_id" => "duplicate"})
     refute_receive {:language_started, _}
-    send(task, {:complete, {:ok, %{"markdown" => "## A story\n\nA new beginning."}}})
+    send(task, {:complete, {:ok, figure_response("A new beginning.")}})
     render_async(view)
-    assert_push_event(view, "page-ai-result", %{request_id: "first", markdown: "## A story\n\nA new beginning."})
+    assert_push_event(view, "page-ai-result", %{request_id: "first", markdown: markdown})
+    assert markdown =~ "A new beginning."
+    assert markdown =~ "leitor-figure"
     assert Leitor.Library.list_texts(scope) == []
 
     render_hook(view, "generate-page-text", %{request | "request_id" => "cancelled"})
@@ -127,6 +267,78 @@ defmodule LeitorWeb.PageLiveTest do
     render_async(view)
     assert_push_event(view, "page-ai-result", %{request_id: "edit-again", error: error})
     assert error =~ "1–2,000"
+  end
+
+  test "figure failures report their actual stage instead of a generic provider error", %{conn: conn} do
+    Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+    on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)
+    {:ok, view, _} = live(conn, ~p"/pages/new")
+    request = %{"request_id" => "failure", "prompt" => "A mill", "context" => "", "title" => "Mill"}
+
+    for {reason, expected} <- [
+          figure_review_failed: "quality review",
+          figure_budget_exceeded: "time or token limit",
+          runner_timeout: "isolated figure checker"
+        ] do
+      id = Atom.to_string(reason)
+      render_hook(view, "generate-page-text", %{request | "request_id" => id})
+      assert_receive {:language_started, rejected}
+      send(rejected, {:complete, {:error, reason}})
+      render_async(view)
+      assert_push_event(view, "page-ai-result", %{request_id: ^id, error: message, retryable: false})
+      assert message =~ expected
+    end
+  end
+
+  test "rejected figures resume only for unchanged requests and remain private until accepted", %{conn: conn} do
+    previous_runner = Application.get_env(:leitor, :figure_runner)
+    previous_adapter = Application.get_env(:leitor, :figure_runner_adapter)
+    Application.put_env(:leitor, :figure_runner, enabled: true)
+    Application.put_env(:leitor, :figure_runner_adapter, Leitor.FigureProgramStub)
+    Application.put_env(:leitor, :language_adapter, Leitor.FigureContinuationGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+
+    on_exit(fn ->
+      if previous_runner,
+        do: Application.put_env(:leitor, :figure_runner, previous_runner),
+        else: Application.delete_env(:leitor, :figure_runner)
+
+      if previous_adapter,
+        do: Application.put_env(:leitor, :figure_runner_adapter, previous_adapter),
+        else: Application.delete_env(:leitor, :figure_runner_adapter)
+
+      Application.delete_env(:leitor, :language_test_owner)
+    end)
+
+    {:ok, view, _} = live(conn, ~p"/pages/new")
+    request = %{"request_id" => "draft", "prompt" => "A mill", "context" => "", "title" => "Mill"}
+    render_hook(view, "generate-page-text", request)
+    assert_receive {:figure_authored, first}
+    assert_receive {:figure_review, ^first}
+    send(first, {:complete, false})
+    render_async(view)
+    assert_push_event(view, "page-ai-result", %{request_id: "draft", retryable: true, error: error})
+    assert error =~ "quality review"
+    assert Enum.all?(Leitor.Repo.all(Leitor.Figures.Artifact), &is_nil(&1.bundle))
+
+    changed = %{request | "request_id" => "changed", "context" => "New page context"}
+    render_hook(view, "generate-page-text", changed)
+    assert_receive {:figure_authored, second}
+    assert_receive {:figure_review, ^second}
+    send(second, {:complete, false})
+    render_async(view)
+    assert_push_event(view, "page-ai-result", %{request_id: "changed", retryable: true})
+
+    send(view.pid, {:page_generation_checkpoint, "draft", Ecto.UUID.generate()})
+    render_hook(view, "generate-page-text", %{changed | "request_id" => "resume"})
+    assert_receive {:figure_repaired, resumed}
+    assert_receive {:figure_review, ^resumed}
+    refute_receive {:figure_authored, _}
+    send(resumed, {:complete, true})
+    render_async(view)
+    assert_push_event(view, "page-ai-result", %{request_id: "resume", markdown: markdown, retryable: false})
+    assert markdown =~ "leitor-figure"
   end
 
   test "primary screens share navigation while account controls stay outside the menu slot", %{conn: conn} do
@@ -449,6 +661,7 @@ defmodule LeitorWeb.PageLiveTest do
   end
 
   test "the dictionary streams the meaning first and uses the reader's model", %{conn: conn, scope: scope} do
+    {:ok, _} = Leitor.AI.put_credential(scope, %{provider: "anthropic", api_key: "test-account-claude-key"})
     Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
     Application.put_env(:leitor, :language_test_owner, self())
     on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)

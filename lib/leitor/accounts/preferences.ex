@@ -10,6 +10,9 @@ defmodule Leitor.Accounts.Preferences do
     field :ai_locale, :string, default: "auto"
     field :reading_model, :string, default: "default"
     field :writing_model, :string, default: "default"
+    field :image_model, :string, default: "svg"
+    field :speech_model, :string, default: "none"
+    field :speech_voice, :string, default: "alloy"
   end
 
   @typedoc "Independent language and model choices, owned by one account."
@@ -32,9 +35,27 @@ defmodule Leitor.Accounts.Preferences do
   @spec response_languages() :: [{String.t(), String.t()}]
   def response_languages, do: [{"Follow the request", "auto"} | languages()]
 
-  @doc "Returns the supported Claude model choices; default preserves the server's model configuration."
+  @doc "Returns the supported Claude model choices; default uses Haiku on account-authorized requests."
   @spec models() :: [{String.t(), String.t()}]
   def models, do: @models
+
+  @doc "Returns the active SVG mode and provider image models reserved for future image generation."
+  @spec image_models() :: [{String.t(), String.t()}]
+  def image_models,
+    do: [
+      {"SVG illustrations (active)", "svg"},
+      {"OpenAI GPT Image", "openai:gpt-image-1.5"},
+      {"Google Gemini Image", "google:gemini-2.5-flash-image"}
+    ]
+
+  @doc "Returns future narration model choices supported by ReqLLM. Narration is not enabled yet."
+  @spec speech_models() :: [{String.t(), String.t()}]
+  def speech_models,
+    do: [
+      {"Not configured", "none"},
+      {"OpenAI Mini TTS", "openai:gpt-4o-mini-tts"},
+      {"ElevenLabs Multilingual", "elevenlabs:eleven_multilingual_v2"}
+    ]
 
   @doc "Constructs preferences through the same validation used by persisted account settings."
   @spec new(attrs()) :: {:ok, t()} | {:error, Ecto.Changeset.t(t())}
@@ -43,12 +64,26 @@ defmodule Leitor.Accounts.Preferences do
   @doc "Casts and validates language and model choices, preserving omitted existing values."
   @spec changeset(t(), attrs()) :: Ecto.Changeset.t(t())
   def changeset(preferences, attrs) do
+    defaults = %__MODULE__{}
+
+    preferences =
+      Enum.reduce([:image_model, :speech_model, :speech_voice], preferences, fn field, value ->
+        if is_nil(Map.fetch!(value, field)), do: Map.put(value, field, Map.fetch!(defaults, field)), else: value
+      end)
+
     preferences
-    |> cast(attrs, [:locale, :ai_locale, :reading_model, :writing_model], empty_values: [])
+    |> cast(attrs, [:locale, :ai_locale, :reading_model, :writing_model, :image_model, :speech_model, :speech_voice],
+      empty_values: []
+    )
     |> validate_required([:locale, :ai_locale, :reading_model, :writing_model])
     |> validate_inclusion(:locale, ~w(en pt_BR))
     |> validate_inclusion(:ai_locale, ~w(auto en pt_BR))
     |> validate_inclusion(:reading_model, Enum.map(@models, &elem(&1, 1)))
     |> validate_inclusion(:writing_model, Enum.map(@models, &elem(&1, 1)))
+    |> validate_inclusion(:image_model, Enum.map(image_models(), &elem(&1, 1)))
+    |> validate_inclusion(:speech_model, Enum.map(speech_models(), &elem(&1, 1)))
+    |> validate_required([:image_model, :speech_model, :speech_voice])
+    |> validate_length(:speech_voice, max: 120)
+    |> validate_format(:speech_voice, ~r/^[a-zA-Z0-9_.-]+$/)
   end
 end

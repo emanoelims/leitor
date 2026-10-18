@@ -16,7 +16,7 @@ defmodule Leitor.Dictionary do
   `dictionary_cards`, so repeating a lookup costs nothing.
   """
 
-  alias Leitor.Accounts.Preferences
+  alias Leitor.AI
   alias Leitor.Dictionary.Card
   alias Leitor.Dictionary.Pronunciation
   alias Leitor.Repo
@@ -108,15 +108,6 @@ defmodule Leitor.Dictionary do
   """
 
   @doc """
-  Returns the model for dictionary cards: the reader's chosen reading model,
-  else `LEITOR_DICTIONARY_MODEL`, else Claude Sonnet 5.5, which wrote the most
-  useful cards in our comparisons.
-  """
-  @spec model(Preferences.t() | nil) :: String.t()
-  def model(%Preferences{reading_model: model}) when is_binary(model) and model != "default", do: model
-  def model(_preferences), do: System.get_env("LEITOR_DICTIONARY_MODEL") || "anthropic:claude-sonnet-5-5"
-
-  @doc """
   Builds a request from page blocks (maps with `:text`), the index of the block
   that holds the selection, and the selection. With byte offsets inside that
   block, the exact occurrence is marked; otherwise its first occurrence. The
@@ -182,8 +173,13 @@ defmodule Leitor.Dictionary do
   @doc """
   Looks up a request, streaming provisional JSON fragments to `on_fragment`
   (`meaning` comes first). Returns a cached card when the same lookup was made
-  before. Blank or overlong selections and paragraphs without a marked
-  occurrence return `{:error, :invalid_input}` without a model call.
+  before with the same model. Blank or overlong selections and paragraphs
+  without a marked occurrence return `{:error, :invalid_input}` without a model
+  call.
+
+  `execution_options` are the authorized provider options from
+  `Leitor.AI.execution_options/2`; their `:model` chooses the model (the shared
+  model when absent). Cards are written at low reasoning effort.
 
   ## Examples
 
@@ -192,22 +188,27 @@ defmodule Leitor.Dictionary do
 
   """
   @spec lookup(request()) :: {:ok, card()} | {:error, error()}
-  @spec lookup(request(), Preferences.t() | nil) :: {:ok, card()} | {:error, error()}
-  @spec lookup(request(), Preferences.t() | nil, Leitor.Language.object_fragment_handler() | nil) ::
+  @spec lookup(request(), keyword()) :: {:ok, card()} | {:error, error()}
+  @spec lookup(request(), keyword(), Leitor.Language.object_fragment_handler() | nil) ::
           {:ok, card()} | {:error, error()}
-  def lookup(%{selection: selection, paragraph: paragraph, text: text} = request, preferences \\ nil, on_fragment \\ nil)
-      when is_binary(selection) and is_binary(paragraph) and is_binary(text) do
+  def lookup(
+        %{selection: selection, paragraph: paragraph, text: text} = request,
+        execution_options \\ [],
+        on_fragment \\ nil
+      )
+      when is_binary(selection) and is_binary(paragraph) and is_binary(text) and is_list(execution_options) do
     if valid?(request),
-      do: cached_or_generate(model(preferences), request, on_fragment || fn _fragment -> :ok end),
+      do: cached_or_generate(request, execution_options, on_fragment || fn _fragment -> :ok end),
       else: {:error, :invalid_input}
   end
 
-  defp cached_or_generate(model, request, on_fragment) do
+  defp cached_or_generate(request, execution_options, on_fragment) do
+    {model, provider_options} = Keyword.pop(execution_options, :model, AI.shared_model())
     key = key(model, request)
 
     case Repo.get_by(Card, key: key) do
       %Card{card: card} -> {:ok, card}
-      nil -> generate(model, key, request, on_fragment)
+      nil -> generate(model, key, request, Keyword.merge([reasoning_effort: :low], provider_options), on_fragment)
     end
   end
 
@@ -222,10 +223,10 @@ defmodule Leitor.Dictionary do
     |> Base.encode16(case: :lower)
   end
 
-  defp generate(model, key, request, on_fragment) do
+  defp generate(model, key, request, options, on_fragment) do
     adapter = Application.get_env(:leitor, :language_adapter, Leitor.Language.Provider)
 
-    case adapter.stream_object(model, context(request), @schema, on_fragment, reasoning_effort: :low) do
+    case adapter.stream_object(model, context(request), @schema, on_fragment, options) do
       {:ok, data} ->
         with {:ok, card} <- normalize(data) do
           Repo.insert(%Card{key: key, model: model, card: card}, on_conflict: :nothing, conflict_target: :key)

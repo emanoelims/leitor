@@ -8,7 +8,10 @@ import TaskItem from "@tiptap/extension-task-item"
 import Placeholder from "@tiptap/extension-placeholder"
 import {MarkdownLinks, WritingParagraph} from "./writing_markdown"
 import {computePosition, flip, offset, shift} from "@floating-ui/dom"
+import {IllustrationCode, starterIllustration, starterScene} from "./illustration"
+import {starterFigure} from './figures/index'
 import {PageAI} from "./page_ai"
+import {FigureHistory} from "./figure_history"
 import {UnsavedChanges} from "./unsaved_changes"
 import {PageDraft} from "./page_draft"
 
@@ -24,7 +27,7 @@ export const PageEditor = {
     })
     this.editor = new Editor({
       element: this.el.querySelector('#page-editor-surface'),
-      extensions: [StarterKit.configure({paragraph: false, heading: {levels: [1, 2, 3]}, underline: false, link: {openOnClick: false}}), Markdown, MarkdownLinks, WritingParagraph, TaskList, TaskItem.configure({nested: true}), Placeholder.configure({placeholder: t('Write anything, paste a text, or type / for blocks…')}), aiPreview],
+      extensions: [StarterKit.configure({codeBlock: false, paragraph: false, heading: {levels: [1, 2, 3]}, underline: false, link: {openOnClick: false}}), IllustrationCode(this), Markdown, MarkdownLinks, WritingParagraph, TaskList, TaskItem.configure({nested: true}), Placeholder.configure({placeholder: t('Write anything, paste a text, or type / for blocks…')}), aiPreview],
       content: this.input.value, contentType: 'markdown',
       editorProps: {
         attributes: {class: 'page-prose page-rich-editor', role: 'textbox', 'aria-label': t('Your page text'), 'aria-multiline': 'true', spellcheck: 'false'},
@@ -43,6 +46,7 @@ export const PageEditor = {
       onSelectionUpdate: () => this.updateMenu(), onBlur: () => this.closeMenu()
     })
     this.ai = new PageAI(this)
+    this.figureHistory = new FigureHistory(this)
     const title = this.input.form.querySelector('#page-title')
     const originalTitle = title.value, originalBody = this.editor.isEmpty ? '' : this.editor.getMarkdown()
     const snapshot = () => ({title:title.value, body:this.editor.isEmpty ? '' : this.editor.getMarkdown()})
@@ -112,12 +116,23 @@ export const PageEditor = {
   closeMenu() {this.menu.hidden = true},
   execute(command) {
     if (command === 'ai') {this.closeMenu(); this.ai.open(this.range); return}
+    if (command === 'figure') {
+      this.editor.chain().focus().deleteRange(this.range).insertContent([{type:'codeBlock',attrs:{language:'leitor-figure'},content:[{type:'text',text:starterFigure()}]},{type:'paragraph'}]).run()
+      this.closeMenu(); return
+    }
+    if (['svg','animated-svg'].includes(command)) {
+      const language = command === 'svg' ? 'leitor-svg' : 'leitor-scene'
+      const source = command === 'svg' ? starterIllustration : starterScene()
+      this.editor.chain().focus().deleteRange(this.range).insertContent([{type:'codeBlock',attrs:{language},content:[{type:'text',text:source}]},{type:'paragraph'}]).run()
+      this.closeMenu(); return
+    }
     let chain = this.editor.chain().focus().deleteRange(this.range)
     if (/^h[123]$/.test(command)) chain = chain.setHeading({level:Number(command[1])})
     else chain = chain[{paragraph:'setParagraph',bullet:'toggleBulletList',ordered:'toggleOrderedList',task:'toggleTaskList',quote:'toggleBlockquote',code:'toggleCodeBlock',divider:'setHorizontalRule'}[command]]()
     chain.run(); this.closeMenu()
   },
   destroyed() {
+    this.figureHistory.destroy()
     this.draft.destroy()
     this.unsavedChanges.destroy()
     this.ai.destroy()

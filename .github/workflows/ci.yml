@@ -76,6 +76,8 @@ jobs:
       - run: mix deps.get --check-locked
       - run: npm ci --prefix assets --ignore-scripts
       - run: npm audit --prefix assets
+      - run: npm audit --prefix figure_runner
+      - run: node --test assets/js/figures/*.test.mjs assets/js/figures/kit/*.test.mjs figure_service/service.test.mjs
       - run: mix assets.build
       - run: mix hex.audit
       - run: mix format --check-formatted
@@ -86,3 +88,7 @@ jobs:
       - run: mix docs --warnings-as-errors
       - run: mix dialyzer --format github
       - run: mix test --cover --warnings-as-errors
+      - name: Build the networkless figure checker
+        run: docker build --file figure_runner/Dockerfile --tag leitor-figure-runner:1 .
+      - name: Check real isolated programs
+        run: LEITOR_RUN_SANDBOX_TESTS=1 mix test test/leitor/figure_runner_test.exs

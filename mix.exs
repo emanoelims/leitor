@@ -4,7 +4,7 @@ defmodule Leitor.MixProject do
   def project do
     [
       app: :leitor,
-      version: "0.2.1",
+      version: "0.4.1",
       name: "Leitor",
       source_url: "https://github.com/emanoelims/leitor",
       docs: docs(),
@@ -19,7 +19,7 @@ defmodule Leitor.MixProject do
       dialyzer: [
         plt_local_path: "_build/plts",
         plt_core_path: "_build/plts",
-        plt_add_apps: [:ex_unit]
+        plt_add_apps: [:ex_unit, :mix]
       ],
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
@@ -66,7 +66,7 @@ defmodule Leitor.MixProject do
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.2.0"},
-      {:lazy_html, ">= 0.1.0", only: :test},
+      {:lazy_html, "~> 0.1.13"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.5", runtime: Mix.env() == :dev},
@@ -103,7 +103,11 @@ defmodule Leitor.MixProject do
         "CHANGELOG.md",
         "SECURITY.md",
         "guides/authentication-contracts.md",
-        "guides/deployment.md"
+        "guides/deployment.md",
+        "guides/figures.md",
+        "guides/figure-quality-report.md",
+        "guides/ai-usage.md",
+        {"LICENSE", [title: "License"]}
       ],
       groups_for_modules: [
         Accounts: [Leitor.Accounts, Leitor.Accounts.User, Leitor.Accounts.Scope],
@@ -137,6 +141,7 @@ defmodule Leitor.MixProject do
         "phx.digest"
       ],
       precommit: [
+        "cmd node --test assets/js/figures/*.test.mjs assets/js/figures/kit/*.test.mjs figure_service/service.test.mjs",
         "compile --warnings-as-errors",
         "deps.unlock --unused",
         "format",

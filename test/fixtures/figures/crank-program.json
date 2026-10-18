@@ -1,0 +1,121 @@
+{
+  "title": "O giro vira percurso",
+  "caption": "Uma biela-manivela original de bancada: geometria rígida, cursor guiado e 48 mm de curso.",
+  "before": "Um movimento circular pode produzir um percurso de ida e volta sem esticar nenhuma peça. Nesta bancada, um volante de latão aciona uma biela de aço que empurra e puxa o cursor entre duas guias. Explore devagar para ver o que acontece perto dos extremos.",
+  "after": "### O que permanece constante\n\nOs pinos A e B continuam separados por **80 mm**. O raio da manivela é **24 mm**, portanto o curso total é **48 mm**. Aos 90° o cursor já passou da metade do curso: a biela inclinada torna o deslocamento diferente de uma senoide pura.\n\nEste é um estudo cinemático ideal, sem forças, folgas ou inércia. A geometria original foi construída por Codex para exercitar o kit do Leitor; ela não é um modelo de fabricação nem uma geração aprovada automaticamente pelo Opus.\n\nReferência conceitual: [análise de posição de mecanismos — METU](https://ocw.metu.edu.tr/pluginfile.php/6885/mod_resource/content/1/ch3/3-6.htm).",
+  "model": "export const D=Object.freeze({r:24,L:80,z:28,wheelZ:19,wheelT:5,railY:13,sliderZ:10,rodT:3,stroke:48});\nexport const initial=()=>({angle:55,playing:false,direction:1,inspect:false,plan:false,zoom:false});\nexport const wrap=a=>((a%360)+360)%360;\nexport function pose(state){\n const t=wrap(state.angle)*Math.PI/180,ax=D.r*Math.cos(t),ay=D.r*Math.sin(t),bx=ax+Math.sqrt(D.L*D.L-ay*ay);\n return {a:[ax,ay,D.z],b:[bx,0,D.z],x:bx,travel:D.L+D.r-bx,rodAngle:Math.atan2(-ay,bx-ax),theta:t,dead:Math.abs(Math.sin(t))<1e-8};\n}\nexport function step(state,action,value){\n if(action==='angle')return{...state,angle:Math.max(0,Math.min(360,Number(value)||0)),playing:false};\n if(action==='play')return{...state,playing:!state.playing};\n if(action==='reverse')return{...state,direction:-state.direction};\n if(action==='inspect'||action==='plan'||action==='zoom')return{...state,[action]:!state[action]};\n if(action==='reset')return initial();\n return state;\n}\nexport const advance=(state,seconds)=>state.playing?{...state,angle:wrap(state.angle+state.direction*36*Math.max(0,Math.min(seconds,.05)))}:state;\n",
+  "geometry": "import * as k from '/kit/iso-kit.mjs';\nimport {orderSurfaces} from '/leitor/occlusion.mjs';\nimport {D,pose} from './model.mjs';\nconst TAU=Math.PI*2,xy=(x,y,z)=>[x,y,z];\nconst circle=(x,y,r,n=48)=>Array.from({length:n},(_,i)=>[x+r*Math.cos(i*TAU/n),y+r*Math.sin(i*TAU/n)]);\nconst rect=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];\nconst palettes={steel:['#ebe9e2','#d5d2c8','#b3b0a7','#8b8b85'],gold:['#dcc58a','#c8a55a','#a58342','#826535'],base:['#deded8','#c9cbc5','#a7aba5','#858e88'],dark:['#a4aaa7','#818b86','#626f69','#44534d'],pin:['#e8e5d9','#cbc8b9','#a29e8d','#807e73']};\nconst darkPalettes={steel:['#c1c3bb','#a8aea6','#858e85','#606e64'],gold:['#ddbc72','#bd984b','#97743a','#72582d'],base:['#777e73','#646e62','#4e5d50','#3c4d40'],dark:['#707c72','#56685a','#405446','#2b3d31'],pin:['#c7c7b9','#a7ad9b','#87917e','#677761']};\nfunction mesh(){const faces=[];const add=(points,material,normal,segment=false)=>faces.push({points,material,normal,segment});\n function prism(ring,z0,z1,mat){\n  // Input rings are convex. Top and bottom are flat, side walls have real depth.\n  add(ring.map(p=>[...p,z0]),mat,[0,0,-1]);add(ring.map(p=>[...p,z1]),mat,[0,0,1]);\n  for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length],l=Math.hypot(b[0]-a[0],b[1]-a[1]);add([[...a,z0],[...b,z0],[...b,z1],[...a,z1]],mat,[(b[1]-a[1])/l,(a[0]-b[0])/l,0]);}\n }\n function annulus(x,y,ri,ro,z0,z1,mat,n=64){\n  for(let i=0;i<n;i++){const a=i*TAU/n,b=(i+1)*TAU/n,at=(r,t,z)=>[x+r*Math.cos(t),y+r*Math.sin(t),z],mid=(a+b)/2;\n   add([at(ri,a,z1),at(ro,a,z1),at(ro,b,z1),at(ri,b,z1)],mat,[0,0,1]);\n   add([at(ri,b,z0),at(ro,b,z0),at(ro,a,z0),at(ri,a,z0)],mat,[0,0,-1]);\n   add([at(ro,a,z0),at(ro,b,z0),at(ro,b,z1),at(ro,a,z1)],mat,[Math.cos(mid),Math.sin(mid),0]);\n   add([at(ri,b,z0),at(ri,a,z0),at(ri,a,z1),at(ri,b,z1)],mat,[-Math.cos(mid),-Math.sin(mid),0]);\n  }\n  for(const r of [ri,ro]){const c=circle(x,y,r,n);for(let i=0;i<n;i++)add([[...c[i],z1+.015],[...c[(i+1)%n],z1+.015]],mat,[0,0,1],true);}\n }\n const cyl=(x,y,r,z0,z1,mat)=>prism(circle(x,y,r),z0,z1,mat);\n const line=(a,b,mat='dark')=>add([a,b],mat,[0,0,1],true);\n const beam=(a,b,width,z0,z1,mat)=>{const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy),u=-dy*width/(2*l),v=dx*width/(2*l);prism([[a[0]+u,a[1]+v],[a[0]-u,a[1]-v],[b[0]-u,b[1]-v],[b[0]+u,b[1]+v]],z0,z1,mat)};\n const screw=(x,y,z)=>{cyl(x,y,1.65,z,z+.65,'pin');line([x-1,y,z+.68],[x+1,y,z+.68]);};\n return {faces,prism,cyl,annulus,beam,screw,line};\n}\nexport function draw(state,theme='light'){\n const p=pose(state),m=mesh();\n m.prism(k.roundedPlan({x:-43,y:-39,w:164,d:78,r:5}),0,4,'base');\n // Machine feet and mounting bolts.\n for(const x of [-36,114])for(const y of [-32,32]){m.cyl(x,y,3.7,-2,0,'dark');m.screw(x,y,4);}\n // A complete fixed vertical bearing supports the revolving flywheel shaft.\n m.prism(rect(-10,-10,20,20),4,7,'dark');m.cyl(0,0,7.5,7,15,'steel');m.cyl(0,0,5.5,15,19,'pin');\n const a=p.theta;\n m.annulus(0,0,27,34,D.wheelZ,D.wheelZ+D.wheelT,'gold',80);\n for(let i=0;i<6;i++){const t=a+i*TAU/6;m.beam([7*Math.cos(t),7*Math.sin(t)],[29*Math.cos(t),29*Math.sin(t)],5,D.wheelZ+1,D.wheelZ+4,'gold');}\n m.cyl(0,0,9,18,25,'gold');m.cyl(0,0,4,25,26,'steel');m.line([-2*Math.cos(a),-2*Math.sin(a),26.04],[2*Math.cos(a),2*Math.sin(a),26.04]);\n // The eccentric pin is integral with a crank arm attached to the wheel hub.\n m.beam([0,0],p.a,7,23,25,'gold');m.cyl(...p.a.slice(0,2),3,24,D.z+D.rodT+1,'pin');\n // Two fixed guide rails retain the travelling cursor at every crank angle.\n for(const y of [-D.railY,D.railY]){m.prism(rect(45,y-3,73,6),4,8,'dark');m.prism(rect(45,y-1.5,73,3),8,11,'steel');for(const x of [48,115])m.screw(x,y,11);}\n m.prism(k.roundedPlan({x:p.x-10,y:-10,w:20,d:20,r:2}),9,19,'steel');\n for(const y of [-16,10])m.prism(rect(p.x-10,y,20,6),11,15,'dark');\n m.cyl(p.x,0,4,19,D.z,'gold');m.cyl(p.x,0,2.8,D.z,D.z+D.rodT+1,'pin');\n // A rigid machined link with two ring bearings and a recessed central web.\n const rod=[Math.cos(p.rodAngle),Math.sin(p.rodAngle)],left=[p.a[0]+rod[0]*6,p.a[1]+rod[1]*6],right=[p.b[0]-rod[0]*6,p.b[1]-rod[1]*6];\n m.beam(left,right,6,D.z,D.z+D.rodT,'steel');m.beam([left[0]+rod[0]*4,left[1]+rod[1]*4],[right[0]-rod[0]*4,right[1]-rod[1]*4],2,D.z+D.rodT,D.z+D.rodT+.25,'dark');\n for(const q of [p.a,p.b]){m.annulus(q[0],q[1],3.1,6.5,D.z,D.z+D.rodT,'steel',40);m.annulus(q[0],q[1],2.9,4,D.z+D.rodT,D.z+D.rodT+.5,'gold',32);m.cyl(q[0],q[1],2.1,D.z+D.rodT+.5,D.z+D.rodT+1.2,'pin');m.line([q[0]-.9,q[1],D.z+D.rodT+1.23],[q[0]+.9,q[1],D.z+D.rodT+1.23]);}\n // Engraved stroke scale on the base is independent of moving-part readouts.\n for(let i=0;i<=48;i+=2){const x=56+i;m.line([x,-29,4.03],[x,i%8===0?-25:-27,4.03],'dark');}\n const P=k.fitProjection([...k.boxCorners({x:-43,y:-39,w:164,d:78},-2,4),...circle(0,0,34).flatMap(p=>[[...p,19],[...p,26]]),...k.boxCorners({x:45,y:-16,w:73,d:32},4,33)],900,480,{pad:state.zoom?5:38,azimuth:state.plan?90:48,elevation:state.plan?89.9:37});\n const ar=P.azimuth*Math.PI/180,er=P.elevation*Math.PI/180,view=[Math.cos(ar)*Math.cos(er),Math.sin(ar)*Math.cos(er),Math.sin(er)];\n const planes=[4,8,11,19,23,25,28,31].map(z=>({normal:[0,0,1],offset:z}));\n const palette=theme==='dark'?darkPalettes:palettes;\n const pieces=orderSurfaces(m.faces.filter(f=>f.segment||f.normal.reduce((v,n,i)=>v+n*view[i],0)>1e-7),{planes,view}).map(f=>{\n  const path=k.pathOf(f.points.map(q=>k.iso(q,P)),!f.segment),c=palette[f.material];\n  if(f.segment)return `<path d=\"${path}\" fill=\"none\" stroke=\"${c[3]}\" stroke-width=\".65\" stroke-linecap=\"round\"/>`;\n  const score=f.normal[0]*-.35+f.normal[1]*-.45+f.normal[2]*.8,band=score>.6?0:score>.1?1:score>-.3?2:3,fill=c[band];\n  return `<path d=\"${path}\" fill=\"${fill}\" stroke=\"${fill}\" stroke-width=\".45\" stroke-linejoin=\"round\"/>`;\n }).join('');\n let overlay='';\n if(state.inspect){const q=[k.iso([0,0,D.z+4],P),k.iso([p.a[0],p.a[1],D.z+4],P),k.iso([p.b[0],p.b[1],D.z+4],P)];overlay=`<path d=\"${k.pathOf(q)}\" fill=\"none\" stroke=\"var(--cr-accent)\" stroke-width=\"1.8\" stroke-dasharray=\"5 5\"/>`+q.map(([x,y],i)=>`<circle cx=\"${x}\" cy=\"${y}\" r=\"5\" fill=\"var(--cr-paper)\" stroke=\"var(--cr-accent)\" stroke-width=\"2\"/><text x=\"${x+9}\" y=\"${y-8}\" class=\"cr-mark\">${['O','A','B'][i]}</text>`).join('');}\n return `<svg viewBox=\"${state.zoom?'90 40 720 384':'0 0 900 480'}\" role=\"img\" aria-label=\"Biela-manivela de bancada em ${state.plan?'vista superior':'vista isométrica'}, com juntas e cursor mecanicamente ligados\">${pieces}${overlay}</svg>`;\n}\n",
+  "figure": "import {initial,pose,step,advance,D} from './model.mjs';\nimport {draw} from './geometry.mjs';\nexport function mount(root,env){\n let state=initial(),theme=env.theme,reduce=env.reducedMotion,visible=true,disposed=false,frame=0,last=0;\n root.classList.add('cr-study');\n root.innerHTML=`<div class=\"cr-eyebrow\"><span>ESTUDO 02</span><span>BIELA · MANIVELA · CURSOR</span></div><div id=\"cr-art\" class=\"cr-art\"></div><div class=\"cr-readouts\"><div><span>MANIVELA</span><output id=\"cr-angle\"></output></div><div><span>PERCURSO DO CURSOR</span><output id=\"cr-travel\"></output></div><div><span>OBLIQUIDADE DA BIELA</span><output id=\"cr-rod\"></output></div></div><div class=\"cr-control\"><label for=\"cr-range\">Gire a manivela <span>0—360°</span></label><input id=\"cr-range\" type=\"range\" min=\"0\" max=\"360\" step=\"1\" value=\"55\"/><div class=\"cr-positions\">${[0,90,180,270].map(a=>`<button id=\"cr-p${a}\" data-angle=\"${a}\">${a}°</button>`).join('')}</div></div><div class=\"cr-buttons\"><button id=\"cr-play\" data-action=\"play\" aria-pressed=\"false\">Reproduzir</button><button id=\"cr-reverse\" data-action=\"reverse\">Inverter sentido</button><button id=\"cr-reset\" data-action=\"reset\">Reiniciar</button><span class=\"cr-divider\"></span><button id=\"cr-inspect\" data-action=\"inspect\" aria-pressed=\"false\">Ver vínculos</button><button id=\"cr-plan\" data-action=\"plan\" aria-pressed=\"false\">Vista superior</button><button id=\"cr-zoom\" data-action=\"zoom\" aria-pressed=\"false\">Ampliar</button></div><p id=\"cr-status\" class=\"cr-status\" role=\"status\"></p><div class=\"cr-note\"><span class=\"cr-dot\"></span><p><strong>Um giro. Dois percursos.</strong> O volante gira continuamente; a biela mantém 80 mm entre os pinos e o cursor percorre 48 mm. Nos pontos mortos, ele muda de sentido — a manivela continua girando.</p></div>`;\n const q=id=>root.querySelector('#cr-'+id),art=q('art');\n function render(){const p=pose(state);art.innerHTML=draw(state,theme);q('angle').textContent=state.angle.toFixed(0)+'°';q('travel').textContent=p.travel.toFixed(1)+' / 48 mm';q('rod').textContent=(Math.abs(p.rodAngle)<1e-8?0:p.rodAngle*180/Math.PI).toFixed(1)+'°';q('range').value=state.angle;\n for(const id of ['play','inspect','plan','zoom'])q(id).setAttribute('aria-pressed',String(state[id==='play'?'playing':id]));\n q('play').textContent=reduce?'Avançar 15°':state.playing?'Pausar':'Reproduzir';q('play').title=reduce?'Movimento reduzido: explore pelo controle de ângulo':'';\n for(const a of [0,90,180,270])q('p'+a).classList.toggle('selected',Math.abs(state.angle-a)<.5);\n q('status').textContent=(p.dead?'Ponto morto · inversão do cursor':state.playing?'Ciclo em movimento':'Ciclo pausado')+' · '+(state.direction===1?'Sentido direto':'Sentido inverso')+(state.inspect?' · Vínculos O–A–B visíveis':'')+(reduce?' · Movimento reduzido':'');}\n function cancel(){cancelAnimationFrame(frame);frame=0;last=0;}\n function schedule(){if(!frame&&!disposed&&visible&&!reduce&&state.playing)frame=requestAnimationFrame(tick);}\n function tick(t){frame=0;if(disposed||!visible||reduce||!state.playing){last=0;return;}const dt=last?(t-last)/1000:0;last=t;state=advance(state,dt);render();schedule();}\n const click=e=>{const button=e.target.closest('button');if(!button||!root.contains(button))return;if(button.dataset.angle!==undefined)state=step(state,'angle',button.dataset.angle);else if(button.dataset.action==='play'&&reduce)state=step(state,'angle',(state.angle+15)%360);else if(button.dataset.action)state=step(state,button.dataset.action);cancel();render();schedule();};\n const input=e=>{state=step(state,'angle',e.target.value);cancel();render();};\n const environment=e=>{theme=e.detail.theme;reduce=e.detail.reducedMotion;visible=e.detail.visible;if(reduce)state={...state,playing:false};cancel();render();schedule();};\n root.addEventListener('click',click);q('range').addEventListener('input',input);root.addEventListener('figure:environment',environment);render();\n return()=>{disposed=true;cancel();root.removeEventListener('click',click);q('range').removeEventListener('input',input);root.removeEventListener('figure:environment',environment);root.replaceChildren();};\n}\n",
+  "css": ".cr-study{--cr-ink:#343b36;--cr-muted:#777d74;--cr-line:#dcded5;--cr-paper:#faf9f6;--cr-accent:#a17b37;color:var(--cr-ink);padding:22px 12px;font-family:Arial,sans-serif}.cr-eyebrow{display:flex;justify-content:space-between;gap:12px;color:var(--cr-muted);font-size:10px;letter-spacing:1.8px;padding:0 14px}.cr-art{margin:8px 0 10px;min-height:150px}.cr-art svg{display:block;width:100%;height:auto}.cr-mark{font:600 14px Arial,sans-serif;fill:var(--cr-accent)}.cr-readouts{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--cr-line);border-bottom:1px solid var(--cr-line);padding:20px 0;margin:0 14px}.cr-readouts>div{display:flex;flex-direction:column;gap:9px;padding:0 18px;border-right:1px solid var(--cr-line)}.cr-readouts>div:first-child{padding-left:0}.cr-readouts>div:last-child{border:0}.cr-readouts span{font-size:9px;letter-spacing:1.4px;color:var(--cr-muted)}.cr-readouts output{font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.7px;white-space:nowrap}.cr-control{margin:24px 14px 16px}.cr-control label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:10px}.cr-control label span{color:var(--cr-muted);font-size:10px}.cr-control input{width:100%;accent-color:var(--cr-accent);cursor:ew-resize}.cr-positions{display:flex;justify-content:space-between;margin-top:7px}.cr-study button{border:1px solid var(--cr-line);background:transparent;color:var(--cr-ink);border-radius:7px;padding:9px 12px;font-size:11px;cursor:pointer;transition:background .15s,border-color .15s}.cr-study button:hover{background:color-mix(in srgb,var(--cr-accent) 9%,transparent);border-color:var(--cr-muted)}.cr-study button:focus-visible,.cr-study input:focus-visible{outline:2px solid var(--cr-accent);outline-offset:3px}.cr-study button[aria-pressed=true],.cr-study button.selected{border-color:var(--cr-accent);background:color-mix(in srgb,var(--cr-accent) 12%,transparent)}.cr-study button:disabled{opacity:.5;cursor:default}.cr-positions button{padding:6px 14px}.cr-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:16px 14px}.cr-buttons #cr-play{background:var(--cr-ink);color:var(--cr-paper);border-color:var(--cr-ink)}.cr-divider{height:18px;border-left:1px solid var(--cr-line);margin:0 4px}.cr-status{font-size:11px;color:var(--cr-muted);margin:16px 14px;min-height:17px}.cr-note{display:flex;gap:12px;margin:20px 14px 0;border-top:1px solid var(--cr-line);padding-top:18px}.cr-note p{margin:0;font-size:12px;line-height:1.7;color:var(--cr-muted)}.cr-note strong{color:var(--cr-ink);font-weight:500}.cr-dot{flex:none;width:6px;height:6px;background:var(--cr-accent);border-radius:50%;margin-top:7px}html[data-theme=dark] .cr-study{--cr-ink:#deded2;--cr-muted:#979d90;--cr-line:#394039;--cr-paper:#171a16;--cr-accent:#c7a15c}@media(max-width:500px){.cr-study{padding:16px 0}.cr-eyebrow{font-size:8px;letter-spacing:1px;padding:0 4px}.cr-art{margin:18px 0}.cr-readouts{margin:0 4px;padding:15px 0}.cr-readouts>div{padding:0 9px}.cr-readouts span{font-size:7px;letter-spacing:.5px;min-height:18px}.cr-readouts output{font-size:16px;letter-spacing:-.3px}.cr-control,.cr-buttons,.cr-status{margin-left:4px;margin-right:4px}.cr-buttons{gap:5px}.cr-study button{padding:9px;font-size:10px}.cr-divider{display:none}.cr-note{margin:18px 4px 0}.cr-note p{font-size:11px}}@media(prefers-reduced-motion:reduce){.cr-study *{transition:none!important}}",
+  "experiments": [
+    {
+      "name": "Ponto morto estendido",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#cr-p0",
+          "value": ""
+        }
+      ],
+      "selector": "#cr-travel",
+      "contains": "0.0 / 48"
+    },
+    {
+      "name": "Ponto morto recolhido",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#cr-p180",
+          "value": ""
+        }
+      ],
+      "selector": "#cr-travel",
+      "contains": "48.0 / 48"
+    },
+    {
+      "name": "Posição intermediária não senoidal",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#cr-p90",
+          "value": ""
+        }
+      ],
+      "selector": "#cr-travel",
+      "contains": "27.7 / 48"
+    },
+    {
+      "name": "Ângulo contínuo e inversão",
+      "steps": [
+        {
+          "action": "range",
+          "selector": "#cr-range",
+          "value": "270"
+        },
+        {
+          "action": "click",
+          "selector": "#cr-reverse",
+          "value": ""
+        }
+      ],
+      "selector": "#cr-status",
+      "contains": "Sentido inverso"
+    },
+    {
+      "name": "Inspeção, vista e zoom",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#cr-inspect",
+          "value": ""
+        },
+        {
+          "action": "click",
+          "selector": "#cr-plan",
+          "value": ""
+        },
+        {
+          "action": "click",
+          "selector": "#cr-zoom",
+          "value": ""
+        }
+      ],
+      "selector": "#cr-status",
+      "contains": "Vínculos O–A–B"
+    },
+    {
+      "name": "Reprodução e reset",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "#cr-play",
+          "value": ""
+        },
+        {
+          "action": "click",
+          "selector": "#cr-reset",
+          "value": ""
+        }
+      ],
+      "selector": "#cr-angle",
+      "contains": "55°"
+    }
+  ],
+  "capture_steps": [
+    {
+      "action": "click",
+      "selector": "#cr-inspect",
+      "value": ""
+    },
+    {
+      "action": "range",
+      "selector": "#cr-range",
+      "value": "125"
+    },
+    {
+      "action": "click",
+      "selector": "#cr-reset",
+      "value": ""
+    }
+  ]
+}

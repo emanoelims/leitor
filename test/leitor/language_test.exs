@@ -1,6 +1,10 @@
 defmodule Leitor.LanguageTest do
   use ExUnit.Case, async: false
 
+  import Leitor.FigureFixtures
+
+  alias Leitor.Accounts.Preferences
+  alias Leitor.Figures.Scene
   alias Leitor.Language
   alias Leitor.Library.Reading
 
@@ -17,9 +21,64 @@ defmodule Leitor.LanguageTest do
     :ok
   end
 
-  test "account preferences select independent models and AI languages" do
-    alias Leitor.Accounts.Preferences
+  test "trusted request credentials and budgets reach both provider paths without entering prompts" do
+    {:ok, preferences} =
+      Preferences.new(%{
+        reading_model: "anthropic:claude-opus-5-5",
+        writing_model: "anthropic:claude-opus-5-5"
+      })
 
+    options = [model: "anthropic:claude-haiku-5-5", api_key: "request-local-test-key", max_tokens: 2500]
+    Process.put(:language_result, {:ok, figure_response()})
+
+    assert {:ok, _} =
+             Language.generate_page_text(
+               %{prompt: "Explain a workflow", title: "", context: "", format: "visual_explainer"},
+               fn _ -> :ok end,
+               preferences,
+               options
+             )
+
+    assert_receive {:language_request, "anthropic:claude-haiku-5-5", writing_prompt, _schema}
+    assert_receive {:language_options, passed}
+    assert passed[:api_key] == "request-local-test-key"
+    assert passed[:max_tokens] == 2500
+    refute writing_prompt =~ "request-local-test-key"
+    Process.put(:language_result, {:ok, %{"answer" => "A definition.", "meaning" => "sense", "category" => "word"}})
+
+    assert {:ok, _} =
+             Language.page_help("define", "word", [%{text: "A word."}], "", [], fn _ -> :ok end, preferences, options)
+
+    assert_receive {:language_request, "anthropic:claude-haiku-5-5", reading_prompt, _}
+    assert_receive {:language_options, passed}
+    assert passed[:api_key] == "request-local-test-key"
+    refute reading_prompt =~ "request-local-test-key"
+  end
+
+  test "planned creative formats are rejected before any provider call" do
+    for {_label, format} <- Leitor.WritingFormat.planned() do
+      assert {:error, :invalid_input} =
+               Language.generate_page_text(%{prompt: "A brief", title: "", context: "", format: format})
+
+      refute_receive {:language_request, _, _, _}
+    end
+  end
+
+  test "scientific and explanatory profiles carry distinct guidance without bypassing visual validation" do
+    for {format, expected} <- [{"scientific_diagram", "equations, units"}, {"explanatory_illustration", "visual story"}] do
+      Process.put(:language_result, {:ok, figure_response()})
+      assert Leitor.WritingFormat.visual?(format)
+
+      assert {:ok, %{"markdown" => markdown}} =
+               Language.generate_page_text(%{prompt: "Explain a phenomenon", title: "", context: "", format: format})
+
+      assert markdown =~ "leitor-figure"
+      assert_receive {:language_request, _, prompt, _}
+      assert prompt =~ expected
+    end
+  end
+
+  test "account preferences select independent models and AI languages" do
     {:ok, preferences} =
       Preferences.new(%{
         locale: "en",
@@ -33,10 +92,10 @@ defmodule Leitor.LanguageTest do
     assert_receive {:language_request, "anthropic:claude-opus-5-5", prompt, _}
     assert prompt =~ "Brazilian Portuguese"
     assert prompt =~ "replaces"
-    Process.put(:language_result, {:ok, %{"markdown" => "## Texto\n\nUma ideia."}})
+    Process.put(:language_result, {:ok, figure_response("Uma ideia.")})
     request = %{prompt: "A short passage", title: "", context: ""}
     assert {:ok, _} = Language.generate_page_text(request, fn _ -> :ok end, preferences)
-    assert_receive {:language_request, "anthropic:claude-sonnet-5-5", prompt, :text_stream}
+    assert_receive {:language_request, "anthropic:claude-sonnet-5-5", prompt, _schema}
     assert prompt =~ "Preferred response language: Brazilian Portuguese"
     assert prompt =~ "unless the instruction explicitly requests a different language"
     english = %{preferences | ai_locale: "en"}
@@ -103,15 +162,17 @@ defmodule Leitor.LanguageTest do
       context: String.duplicate("x", 25_000)
     }
 
-    Process.put(:language_result, {:ok, %{"markdown" => "  ## Um encontro\n\nUm conto.  "}})
-    assert {:ok, %{"markdown" => "## Um encontro\n\nUm conto."}} = Language.generate_page_text(request)
+    Process.put(:language_result, {:ok, figure_response("Uma oficina.")})
+    assert {:ok, %{"markdown" => markdown}} = Language.generate_page_text(request)
+    assert markdown =~ "Uma oficina."
+    assert markdown =~ "leitor-figure"
     assert_receive {:language_request, model, prompt, schema}
     assert model == Language.model(:feedback)
     assert prompt =~ "Um conto em português"
     assert prompt =~ String.duplicate("x", 24_000)
     refute prompt =~ String.duplicate("x", 24_001)
     refute prompt =~ String.duplicate("T", 181)
-    assert schema == :text_stream
+    assert schema.properties.figure == Scene.schema()
 
     for response <- [%{}, %{"markdown" => " "}, %{"markdown" => 12}, %{"markdown" => String.duplicate("x", 12_001)}] do
       Process.put(:language_result, {:ok, response})
@@ -129,16 +190,17 @@ defmodule Leitor.LanguageTest do
     end
   end
 
-  test "page text emits provisional deltas before the final validated response" do
-    Process.put(:language_deltas, ["## Um", " encontro\n\n", "Um conto."])
-    Process.put(:language_result, {:ok, %{"markdown" => "## Um encontro\n\nUm conto."}})
+  test "a complete validated figure is emitted atomically, with its selected model and language" do
+    Process.put(:language_result, {:ok, figure_response()})
     owner = self()
-    request = %{prompt: "Um conto", title: "", context: ""}
-    assert {:ok, _} = Language.generate_page_text(request, &send(owner, {:delta, &1}))
-    assert_receive {:delta, "## Um"}
-    assert_receive {:delta, " encontro\n\n"}
-    assert_receive {:delta, "Um conto."}
-    assert_receive {:language_request, _, _, :text_stream}
+    request = %{prompt: "Explain queues", title: "", context: ""}
+    assert {:ok, %{"markdown" => markdown}} = Language.generate_page_text(request, &send(owner, {:delta, &1}))
+    assert_receive {:delta, ^markdown}
+    assert_receive {:language_request, _, prompt, _schema}
+    assert prompt =~ "Explain queues"
+    assert prompt =~ "Anatomy"
+    assert {:error, :invalid_input} = Language.generate_page_text(Map.put(request, :format, "unsupported"))
+    refute_receive {:language_request, _, _, _}
   end
 
   test "reading streams retain structured meaning and category validation" do

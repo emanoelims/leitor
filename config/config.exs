@@ -64,6 +64,8 @@ config :logger, :default_formatter,
 # Compile the MDEx native artifact with its optional Lumis highlighter.
 config :mdex_native, syntax_highlighter: :lumis
 
+config :phoenix, :filter_parameters, ["password", "token", "api_key", "encrypted_key"]
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

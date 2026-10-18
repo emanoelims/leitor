@@ -28,6 +28,7 @@ defmodule LeitorWeb.WritingComponents do
         {"quote", "Quote", ">", "hero-chat-bubble-left"},
         {"code", "Code block", "```", "hero-code-bracket"},
         {"divider", "Divider", "---", "hero-minus"},
+        {"figure", "Example figure", "", "lucide-box"},
         {"ai", "Generate with AI", "", "lucide-feather"}
       ])
 
@@ -66,7 +67,9 @@ defmodule LeitorWeb.WritingComponents do
       hidden
     >
       <header>
-        <span><.icon name="lucide-feather" class="size-4" />{gettext("Generate with AI")}</span>
+        <span><.icon name="lucide-feather" class="size-4" /><span data-ai-title>{gettext(
+          "Generate with AI"
+        )}</span></span>
         <button
           id="page-ai-close"
           type="button"
@@ -76,6 +79,24 @@ defmodule LeitorWeb.WritingComponents do
           <.icon name="lucide-x" class="size-4" />
         </button>
       </header>
+      <div class="page-ai-format">
+        <.input
+          id="page-ai-format"
+          name="ai_format"
+          type="select"
+          value="visual_explainer"
+          label={gettext("Writing format")}
+          options={
+            Enum.map(Leitor.WritingFormat.options(), fn {label, id} -> {t(label), id} end) ++
+              Enum.map(Leitor.WritingFormat.planned(), fn {label, id} ->
+                [key: t(label) <> " · " <> gettext("Coming soon"), value: id, disabled: true]
+              end)
+          }
+        />
+      </div>
+      <p class="figure-coming-soon">
+        {gettext("Coming soon: stories, poems, manga and other creative formats.")}
+      </p>
       <div id="page-ai-input">
         <.input
           id="page-ai-prompt"

@@ -21,9 +21,9 @@ COPY config/config.exs config/prod.exs config/
 RUN mix deps.compile
 RUN mix tailwind.install --if-missing && mix esbuild.install --if-missing
 COPY priv priv
+COPY assets assets
 COPY lib lib
 RUN mix compile
-COPY assets assets
 COPY --from=assets /assets/node_modules assets/node_modules
 RUN mix assets.deploy
 COPY config/runtime.exs config/

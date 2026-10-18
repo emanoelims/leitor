@@ -161,3 +161,13 @@
 .preferences-defaults { display:flex; flex-wrap:wrap; gap:8px 24px; margin-top:8px; color:var(--muted); font-size:11px; }
 .preferences-defaults>div { display:flex; gap:7px; }.preferences-defaults dd { color:var(--ink); }
 @media(max-width:640px) { .preferences-fields { grid-template-columns:1fr; gap:20px; }.preferences-heading h1 { font-size:38px; }.preferences-section-heading p { max-width:260px; } }
+.ai-usage-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:12px; margin:18px 0; }
+.ai-usage-summary>div { padding:14px; border:1px solid var(--line); border-radius:10px; }
+.ai-usage-summary dt { font-size:11px; color:var(--muted); margin-bottom:7px; }
+.ai-usage-summary dd { font-size:15px; margin:0; font-variant-numeric:tabular-nums; }
+.ai-activity-scroll { overflow-x:auto; margin-top:20px; }
+.ai-activity-table { width:100%; border-collapse:collapse; text-align:left; font-size:11px; font-variant-numeric:tabular-nums; }
+.ai-activity-table caption { text-align:left; padding:0 0 12px; font-size:13px; }
+.ai-activity-table th { font-weight:400; color:var(--muted); }
+.ai-activity-table th,.ai-activity-table td { border-bottom:1px solid var(--line); padding:12px 8px; vertical-align:top; white-space:nowrap; }
+.ai-activity-table small { display:block; color:var(--muted); font-size:10px; margin-top:3px; }

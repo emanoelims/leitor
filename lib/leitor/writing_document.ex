@@ -63,22 +63,48 @@ defmodule Leitor.WritingDocument do
   @doc "Renders sanitized Markdown with syntax-highlighted code; raw HTML and remote images remain disabled."
   @spec render(String.t()) :: String.t()
   def render(text) do
-    MDEx.to_html!(text,
-      extension: [tasklist: true, strikethrough: true],
-      syntax_highlight: @syntax_highlight,
-      render: [unsafe: false, escape: true, tasklist_classes: true],
-      sanitize: [
-        rm_tags: ["img"],
-        add_tags: ["input"],
-        add_tag_attributes: %{
-          "input" => ["type", "checked", "disabled", "aria-label"],
-          "ul" => ["class"],
-          "li" => ["class"]
-        },
-        set_tag_attribute_values: %{"input" => %{"aria-label" => "Task completed"}}
-      ]
-    )
+    document = MDEx.parse_document!(text, extension: [tasklist: true, strikethrough: true])
+    {document, illustrations} = extract_illustrations(document, [])
+
+    html =
+      MDEx.to_html!(document,
+        extension: [tasklist: true, strikethrough: true],
+        syntax_highlight: @syntax_highlight,
+        render: [unsafe: false, escape: true, tasklist_classes: true],
+        sanitize: [
+          rm_tags: ["img"],
+          add_tags: ["input"],
+          add_tag_attributes: %{
+            "input" => ["type", "checked", "disabled", "aria-label"],
+            "ul" => ["class"],
+            "li" => ["class"]
+          },
+          set_tag_attribute_values: %{"input" => %{"aria-label" => "Task completed"}}
+        ]
+      )
+
+    Enum.reduce(illustrations, html, fn {placeholder, figure}, rendered ->
+      String.replace(rendered, "<p>#{placeholder}</p>", figure)
+    end)
   end
+
+  defp extract_illustrations(%MDEx.CodeBlock{info: info, literal: literal} = node, figures) do
+    if info in Leitor.Illustration.languages() do
+      placeholder = "LEITORILLUSTRATION" <> Base.encode16(:crypto.strong_rand_bytes(16))
+
+      {%MDEx.Paragraph{nodes: [%MDEx.Text{literal: placeholder}]},
+       [{placeholder, Leitor.Illustration.render(literal, info, node.closed)} | figures]}
+    else
+      {node, figures}
+    end
+  end
+
+  defp extract_illustrations(%{nodes: nodes} = node, figures) do
+    {nodes, figures} = Enum.map_reduce(nodes, figures, &extract_illustrations/2)
+    {%{node | nodes: nodes}, figures}
+  end
+
+  defp extract_illustrations(node, figures), do: {node, figures}
 
   defp prose(%MDEx.CodeBlock{}), do: ""
   defp prose(%MDEx.HtmlBlock{}), do: ""

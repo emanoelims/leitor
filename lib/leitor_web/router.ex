@@ -3,8 +3,7 @@ defmodule LeitorWeb.Router do
 
   import LeitorWeb.UserAuth
 
-  pipeline :browser do
-    plug :accepts, ["html"]
+  pipeline :browser_session do
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {LeitorWeb.Layouts, :root}
@@ -12,6 +11,16 @@ defmodule LeitorWeb.Router do
     plug :put_secure_browser_headers
     plug :fetch_current_scope_for_user
     plug LeitorWeb.Locale
+  end
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :browser_session
+  end
+
+  pipeline :artifact do
+    plug :accepts, ["json"]
+    plug :browser_session
   end
 
   pipeline :api do
@@ -39,6 +48,11 @@ defmodule LeitorWeb.Router do
       live_dashboard "/dashboard", metrics: LeitorWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  scope "/", LeitorWeb do
+    pipe_through [:artifact, :require_authenticated_user]
+    get "/figures/:id", FigureController, :show
   end
 
   ## Authentication routes

@@ -5,14 +5,26 @@ defmodule LeitorWeb.PreferencesLive do
   alias Leitor.Accounts
   alias Leitor.Accounts.Preferences
   alias Leitor.Accounts.Scope
-  alias Leitor.Language
+  alias Leitor.AI
+  alias Leitor.AI.Credential
 
   @impl true
   def mount(_, _, socket) do
+    credentials = AI.credentials(socket.assigns.current_scope)
+    if connected?(socket), do: Process.send_after(self(), :refresh_usage, 15_000)
+
     {:ok,
-     assign(socket,
+     socket
+     |> stream(:credentials, credentials)
+     |> stream(:ai_attempts, AI.recent_attempts(socket.assigns.current_scope))
+     |> assign(
        page_title: gettext("Preferences"),
-       form: to_form(Accounts.change_preferences(socket.assigns.current_scope))
+       form: to_form(Accounts.change_preferences(socket.assigns.current_scope)),
+       credentials: credentials,
+       usage: AI.usage(socket.assigns.current_scope),
+       activity: AI.activity(socket.assigns.current_scope),
+       queued: Leitor.Generations.queued_count(socket.assigns.current_scope),
+       credential_form: blank_credential_form()
      )}
   end
 
@@ -89,7 +101,7 @@ defmodule LeitorWeb.PreferencesLive do
                   field={preferences[:reading_model]}
                   type="select"
                   label={gettext("Reading and explanations")}
-                  options={LeitorWeb.I18n.options(Preferences.models())}
+                  options={LeitorWeb.I18n.options(available_models(@credentials))}
                 /><p class="preferences-help">
                   {gettext("Definitions, explanations, questions and follow-ups.")}
                 </p>
@@ -100,32 +112,307 @@ defmodule LeitorWeb.PreferencesLive do
                   field={preferences[:writing_model]}
                   type="select"
                   label={gettext("Writing and generation")}
-                  options={LeitorWeb.I18n.options(Preferences.models())}
+                  options={LeitorWeb.I18n.options(available_models(@credentials))}
                 /><p class="preferences-help">{gettext("Text generated from the / menu.")}</p>
               </div>
             </div>
             <p class="preferences-connection">
-              {gettext("Uses the Claude connection already configured for this application.")}
+              {gettext(
+                "The application key uses Haiku only. Add your own Anthropic key to unlock other Claude models."
+              )}
             </p>
             <dl class="preferences-defaults">
               <div>
                 <dt>{gettext("Reading default")}</dt><dd>
-                  {String.replace_prefix(Language.model(:analysis), "anthropic:", "")}
+                  {String.replace_prefix(AI.shared_model(), "anthropic:", "")}
                 </dd>
               </div><div>
                 <dt>{gettext("Writing default")}</dt><dd>
-                  {String.replace_prefix(Language.model(:feedback), "anthropic:", "")}
+                  {String.replace_prefix(AI.shared_model(), "anthropic:", "")}
                 </dd>
               </div>
             </dl>
           </section>
+          <section class="preferences-section">
+            <div class="preferences-section-heading">
+              <.icon name="lucide-image" class="size-5" /><div>
+                <h2>{gettext("Images and voice")}</h2>
+                <p>
+                  {gettext(
+                    "SVG is active now. Provider images and narration will be enabled separately; these choices are saved for then."
+                  )}
+                </p>
+              </div>
+            </div>
+            <div class="preferences-fields">
+              <.input
+                id="preferences-image-model"
+                field={preferences[:image_model]}
+                type="select"
+                label={gettext("Illustration model")}
+                options={LeitorWeb.I18n.options(Preferences.image_models())}
+              />
+              <.input
+                id="preferences-speech-model"
+                field={preferences[:speech_model]}
+                type="select"
+                label={gettext("Narration model")}
+                options={LeitorWeb.I18n.options(Preferences.speech_models())}
+              />
+              <.input
+                id="preferences-speech-voice"
+                field={preferences[:speech_voice]}
+                label={gettext("Voice identifier")}
+                maxlength="120"
+              />
+            </div>
+          </section>
         </.inputs_for>
       </.form>
+      <section class="preferences-section" id="ai-account-allowance">
+        <div class="preferences-section-heading">
+          <.icon name="lucide-gauge" class="size-5" /><div>
+            <h2>{gettext("Your AI allowance")}</h2><p>
+              {gettext(
+                "Daily credits reset at 00:00 UTC. Explanations cost 1, text generation 2, and illustrated generation 4 credits. Failed or canceled attempts count."
+              )}
+            </p>
+          </div>
+        </div>
+        <p class="preferences-help" id="ai-shared-usage">
+          {gettext("Application key")}: {@usage.used} / {@usage.limit}
+        </p>
+        <p class="preferences-help" id="ai-personal-usage">
+          {gettext("Personal key")}: {@usage.personal_used} / {@usage.personal_limit}
+        </p>
+        <p class="preferences-help">
+          {gettext(
+            "Personal keys bypass the shared allowance, but still have a resource limit. Requests run one at a time per account."
+          )}
+        </p>
+      </section>
+      <section class="preferences-section" id="ai-activity">
+        <div class="preferences-section-heading">
+          <.icon name="lucide-chart-no-axes-column" class="size-5" />
+          <div>
+            <h2>{gettext("AI activity")}</h2><p>{gettext("Today's usage · resets at 00:00 UTC")}</p>
+          </div>
+        </div>
+        <dl class="ai-usage-summary">
+          <div>
+            <dt>{gettext("Attempts")}</dt><dd>{@activity.attempts}</dd>
+          </div>
+          <div>
+            <dt>{gettext("Waiting")}</dt><dd>{@queued}</dd>
+          </div>
+          <div>
+            <dt>{gettext("Running")}</dt><dd>{@activity.active}</dd>
+          </div>
+          <div>
+            <dt>{gettext("Input / output tokens")}</dt><dd>
+              {@activity.input_tokens} / {@activity.output_tokens}
+            </dd>
+          </div>
+          <div>
+            <dt>{gettext("Estimated API cost")}</dt><dd>
+              {cost_label(
+                @activity.cost,
+                @activity.measured_calls,
+                @activity.unmeasured_calls + @activity.incomplete_attempts
+              )}
+            </dd>
+          </div>
+        </dl>
+        <p class="preferences-help">
+          {gettext(
+            "API estimates are separate from Leitor credits. Missing or interrupted measurements may understate usage; your provider's invoice is authoritative."
+          )}
+        </p>
+        <div class="ai-activity-scroll">
+          <table class="ai-activity-table">
+            <caption>{gettext("Your last 20 attempts")}</caption>
+            <thead>
+              <tr>
+                <th>{gettext("Started")}</th><th>{gettext("Operation / model")}</th><th>
+                  {gettext("Status")}
+                </th><th>{gettext("Tokens")}</th><th>{gettext("Duration")}</th><th>
+                  {gettext("Estimate")}
+                </th>
+              </tr>
+            </thead>
+            <tbody id="ai-attempts" phx-update="stream">
+              <tr :for={{id, attempt} <- @streams.ai_attempts} id={id}>
+                <td>
+                  <time datetime={DateTime.to_iso8601(attempt.inserted_at)}>{Calendar.strftime(
+                    attempt.inserted_at,
+                    "%d/%m %H:%M UTC"
+                  )}</time>
+                </td>
+                <td>
+                  <span>{operation_label(attempt.operation)}</span><small>{model_label(attempt.model)}</small>
+                </td>
+                <td>{outcome_label(attempt.outcome)}</td>
+                <td>
+                  {if attempt.measured_calls + attempt.unmeasured_calls == 0,
+                    do: "—",
+                    else: "#{attempt.input_tokens} / #{attempt.output_tokens}"}
+                </td>
+                <td>{duration_label(attempt)}</td>
+                <td>
+                  {cost_label(
+                    attempt.estimated_cost_micros,
+                    attempt.measured_calls,
+                    attempt.unmeasured_calls + if(attempt.outcome == "completed", do: 0, else: 1)
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="preferences-section" id="ai-provider-keys">
+        <div class="preferences-section-heading">
+          <.icon name="lucide-key-round" class="size-5" /><div>
+            <h2>{gettext("Your provider keys")}</h2><p>
+              {gettext(
+                "Keys are encrypted on the server and used only for your account. Saved keys are never displayed again."
+              )}
+            </p>
+          </div>
+        </div>
+        <ul class="credential-list" id="ai-credential-list" phx-update="stream">
+          <li :for={{id, credential} <- @streams.credentials} id={id}>
+            <span>{credential.provider} <small>•••• {credential.hint}</small></span>
+            <button
+              type="button"
+              class="action"
+              disabled={not Accounts.sudo_mode?(@current_scope.user)}
+              phx-click="delete-key"
+              phx-value-id={credential.id}
+              data-confirm={gettext("Remove this saved provider key?")}
+            >{gettext("Remove")}</button>
+          </li>
+        </ul>
+        <p :if={not Accounts.sudo_mode?(@current_scope.user)} class="preferences-help">
+          {gettext("Log in again before changing provider keys.")}
+          <.link href={~p"/users/log-in"} class="text-link">{gettext("Log in")}</.link>
+        </p>
+        <.form
+          :if={Accounts.sudo_mode?(@current_scope.user)}
+          for={@credential_form}
+          id="ai-credential-form"
+          phx-submit="save-key"
+        >
+          <div class="preferences-fields">
+            <.input
+              id="ai-key-provider"
+              field={@credential_form[:provider]}
+              type="select"
+              label={gettext("Provider")}
+              options={Credential.providers()}
+            />
+            <.input
+              id="ai-key-value"
+              field={@credential_form[:api_key]}
+              type="password"
+              label={gettext("API key")}
+              value=""
+              autocomplete="off"
+              maxlength="500"
+              required
+            />
+          </div>
+          <button type="submit" class="action" phx-disable-with={gettext("Saving…")}>{gettext(
+            "Save provider key"
+          )}</button>
+        </.form>
+      </section>
     </Layouts.app>
     """
   end
 
   @impl true
+  def handle_info(:refresh_usage, socket) do
+    Process.send_after(self(), :refresh_usage, 15_000)
+    scope = socket.assigns.current_scope
+
+    {:noreply,
+     socket
+     |> assign(usage: AI.usage(scope), activity: AI.activity(scope), queued: Leitor.Generations.queued_count(scope))
+     |> stream(:ai_attempts, AI.recent_attempts(scope), reset: true)}
+  end
+
+  defp operation_label("read"), do: gettext("Explanation")
+  defp operation_label("illustration"), do: gettext("Figure")
+  defp operation_label(_), do: gettext("Writing")
+  defp outcome_label("running"), do: gettext("Running")
+  defp outcome_label("completed"), do: gettext("Finished")
+  defp outcome_label("failed"), do: gettext("Failed")
+  defp outcome_label("cancelled"), do: gettext("Canceled")
+  defp outcome_label("expired"), do: gettext("Time limit")
+  defp outcome_label(_), do: gettext("Not measured")
+  defp cost_label(_cost, 0, _missing), do: gettext("Not measured")
+
+  defp cost_label(cost, _measured, missing) do
+    precision = if cost >= 10_000, do: 2, else: 6
+
+    amount =
+      "US$ " <>
+        Decimal.to_string(Decimal.round(Decimal.div(Decimal.new(cost), Decimal.new(1_000_000)), precision), :normal)
+
+    if missing > 0, do: amount <> " · " <> gettext("partial"), else: amount
+  end
+
+  defp model_label(nil), do: gettext("Not measured")
+
+  defp model_label(model),
+    do: Enum.find_value(Preferences.models(), model, fn {label, id} -> if id == model, do: label end)
+
+  defp duration_label(%{finished_at: nil, outcome: "expired"}), do: "—"
+  defp duration_label(%{finished_at: nil}), do: gettext("In progress")
+  defp duration_label(attempt), do: "#{max(0, DateTime.diff(attempt.finished_at, attempt.inserted_at))} s"
+
+  @impl true
+  def handle_event("save-key", %{"credential" => attrs}, socket) do
+    if Accounts.sudo_mode?(socket.assigns.current_scope.user) do
+      case AI.put_credential(socket.assigns.current_scope, attrs) do
+        {:ok, _metadata} ->
+          {:noreply,
+           socket
+           |> refresh_credentials()
+           |> reset_credential_form()
+           |> put_flash(:info, gettext("Provider key saved."))}
+
+        {:error, _changeset} ->
+          {:noreply,
+           socket
+           |> reset_credential_form()
+           |> put_flash(:error, gettext("Choose a provider and a valid key between 12 and 500 characters."))}
+      end
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Log in again before changing provider keys."))
+       |> redirect(to: ~p"/users/log-in")}
+    end
+  end
+
+  def handle_event("delete-key", %{"id" => id}, socket) do
+    if Accounts.sudo_mode?(socket.assigns.current_scope.user) do
+      {:ok, _} = AI.delete_credential(socket.assigns.current_scope, id)
+
+      {:noreply,
+       socket
+       |> refresh_credentials()
+       |> put_flash(:info, gettext("Provider key removed."))}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Log in again before changing provider keys."))
+       |> redirect(to: ~p"/users/log-in")}
+    end
+  end
+
   def handle_event("validate", %{"user" => %{"preferences" => attrs}}, socket) do
     form = socket.assigns.current_scope |> Accounts.change_preferences(attrs) |> to_form(action: :validate)
     {:noreply, assign(socket, form: form)}
@@ -145,5 +432,22 @@ defmodule LeitorWeb.PreferencesLive do
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, action: :update))}
     end
+  end
+
+  defp refresh_credentials(socket) do
+    credentials = AI.credentials(socket.assigns.current_scope)
+    socket |> assign(credentials: credentials) |> stream(:credentials, credentials, reset: true)
+  end
+
+  defp reset_credential_form(socket) do
+    socket |> assign(credential_form: blank_credential_form()) |> push_event("clear-provider-key", %{})
+  end
+
+  defp blank_credential_form, do: to_form(%{"provider" => "anthropic", "api_key" => ""}, as: "credential")
+
+  defp available_models(credentials) do
+    if Enum.any?(credentials, &(&1.provider == "anthropic")),
+      do: Preferences.models(),
+      else: Enum.filter(Preferences.models(), fn {_label, model} -> model in ["default", AI.shared_model()] end)
   end
 end

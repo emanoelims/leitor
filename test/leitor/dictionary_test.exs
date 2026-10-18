@@ -1,7 +1,6 @@
 defmodule Leitor.DictionaryTest do
   use Leitor.DataCase, async: false
 
-  alias Leitor.Accounts.Preferences
   alias Leitor.Dictionary
   alias Leitor.Dictionary.Card
   alias ReqLLM.Message.ContentPart
@@ -71,11 +70,11 @@ defmodule Leitor.DictionaryTest do
     Process.put(:language_fragments, [~s({"meaning": "condu)])
     test = self()
 
-    assert {:ok, card} = Dictionary.lookup(request, nil, &send(test, {:fragment, &1}))
+    assert {:ok, card} = Dictionary.lookup(request, [], &send(test, {:fragment, &1}))
 
     assert_received {:fragment, ~s({"meaning": "condu)}
     assert_received {:language_options, [reasoning_effort: :low]}
-    assert_received {:language_request, "anthropic:claude-sonnet-5-5", %ReqLLM.Context{messages: [system, user]}, schema}
+    assert_received {:language_request, "anthropic:claude-haiku-5-5", %ReqLLM.Context{messages: [system, user]}, schema}
     assert hd(schema.required) == "meaning"
 
     assert [%ContentPart{text: instructions, metadata: %{cache_control: %{type: "ephemeral"}}}] = system.content
@@ -92,6 +91,15 @@ defmodule Leitor.DictionaryTest do
     assert [_, %{"translations" => ["funcionar"]}, _] = card["other_senses"]
   end
 
+  test "uses the authorized model and provider options, keeping low effort unless overridden", %{request: request} do
+    Process.put(:language_result, {:ok, @card})
+    options = [model: "anthropic:claude-opus-5-5", max_tokens: 2500, api_key: "personal-key"]
+
+    assert {:ok, _card} = Dictionary.lookup(request, options)
+    assert_received {:language_request, "anthropic:claude-opus-5-5", %ReqLLM.Context{}, _schema}
+    assert_received {:language_options, [reasoning_effort: :low, max_tokens: 2500, api_key: "personal-key"]}
+  end
+
   test "reuses cached cards and keys them by model", %{request: request} do
     Process.put(:language_result, {:ok, @card})
     assert {:ok, card} = Dictionary.lookup(request)
@@ -100,10 +108,9 @@ defmodule Leitor.DictionaryTest do
     Process.put(:language_result, {:error, :provider_error})
     assert Dictionary.lookup(request) == {:ok, card}
     refute_received {:language_request, _, _, _}
-    assert [%Card{model: "anthropic:claude-sonnet-5-5"}] = Repo.all(Card)
+    assert [%Card{model: "anthropic:claude-haiku-5-5"}] = Repo.all(Card)
 
-    opus = %Preferences{reading_model: "anthropic:claude-opus-5-5"}
-    assert Dictionary.lookup(request, opus) == {:error, :provider_error}
+    assert Dictionary.lookup(request, model: "anthropic:claude-opus-5-5") == {:error, :provider_error}
     assert_received {:language_request, "anthropic:claude-opus-5-5", _, _}
   end
 
@@ -117,14 +124,6 @@ defmodule Leitor.DictionaryTest do
     Process.put(:language_result, {:ok, %{"answer" => "not a card"}})
     assert Dictionary.lookup(request) == {:error, :invalid_response}
     assert Repo.all(Card) == []
-  end
-
-  test "uses the reader's model, the configured model, or Sonnet" do
-    assert Dictionary.model(%Preferences{reading_model: "anthropic:claude-haiku-5-5"}) == "anthropic:claude-haiku-5-5"
-    assert Dictionary.model(%Preferences{reading_model: "default"}) == "anthropic:claude-sonnet-5-5"
-    System.put_env("LEITOR_DICTIONARY_MODEL", "anthropic:claude-opus-5-5")
-    on_exit(fn -> System.delete_env("LEITOR_DICTIONARY_MODEL") end)
-    assert Dictionary.model(nil) == "anthropic:claude-opus-5-5"
   end
 
   test "renders escaped Markdown with a pronunciation hint, within the annotation limit" do

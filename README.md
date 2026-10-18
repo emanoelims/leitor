@@ -109,6 +109,8 @@ viewport outline, with clicking, dragging and keyboard travel. Notes and
 highlights persist per account. The selection toolbar's highlighter applies the last chosen color on click.
 Hover or keyboard focus reveals yellow, green, blue and rose swatches inline,
 using Gloss's width transition; touch devices keep the swatches visible.
+The marker sweep and saved highlight share Gloss’s translucent ink, with 46%
+opacity on light themes and 24% on dark themes, and preserve the surrounding text color.
 Click an existing highlight to recolor it or erase it from the toolbar. Highlights
 appear in the notebooks and minimap and can also be removed from the notebook.
 Unique quotations are reanchored after edits; removed

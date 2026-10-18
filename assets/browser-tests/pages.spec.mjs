@@ -1303,3 +1303,50 @@ test('color highlights use the Gloss inline palette, persist, recolor and erase'
     await touchContext.close()
   }
 })
+
+test('highlight ink and text stay consistent after the sweep and reload in every theme', async ({page},testInfo) => {
+  test.setTimeout(90000)
+  await signIn(page)
+  await page.goto('/pages/new')
+  await page.getByRole('textbox',{name:'Page title'}).fill('Highlight ink consistency')
+  await pastePage(page,'A **wonderful** discovery starts with a little attention. Café is a good place to read.')
+  await page.locator('#page-save').click()
+  await expect(page.locator('#page-reading')).toBeVisible()
+  const entries=[['yellow','wonderful discovery'],['green','Café'],['blue','little attention'],['rose','read']]
+  const paint=locator=>locator.evaluateAll(nodes=>nodes.map(node=>{
+    const style=getComputedStyle(node)
+    return {background:style.backgroundColor,image:style.backgroundImage,text:style.color,parentText:getComputedStyle(node.parentElement).color}
+  }))
+  for(const theme of ['ink','light','dark','sepia','snow']) {
+    await page.locator('#reading-font').click()
+    await page.locator(`#reading-theme-${theme}`).click()
+    await page.locator('#reading-font').click()
+    const fresh=new Map()
+    for(const [color,quote] of entries) {
+      await select(page,0,quote)
+      await page.locator('#selection-highlight').hover()
+      await page.locator(`#selection-highlight-${color}`).click()
+      const marks=page.locator(`#page-reading mark.highlight-${color}`)
+      await expect(marks.first()).toHaveClass(/is-new/)
+      await marks.evaluateAll(nodes=>Promise.all(nodes.flatMap(node=>node.getAnimations()).map(animation=>animation.finished)))
+      fresh.set(color,await paint(marks))
+    }
+    await page.reload()
+    await expect(page.locator('#page-reading')).toBeVisible()
+    for(const [color] of entries) {
+      const restored=await paint(page.locator(`#page-reading mark.highlight-${color}`))
+      expect(restored.length).toBe(fresh.get(color).length)
+      for(const [index,state] of restored.entries()) {
+        const original=fresh.get(color)[index]
+        expect(original.image,`${theme} ${color}: sweep and saved ink must match`).toBe(`linear-gradient(${state.background}, ${state.background})`)
+        expect(original.text,`${theme} ${color}: fresh highlight preserves text color`).toBe(original.parentText)
+        expect(state.text,`${theme} ${color}: restored highlight preserves text color`).toBe(state.parentText)
+        expect(state.text).toBe(original.text)
+      }
+    }
+    if(theme==='ink') await page.screenshot({path:testInfo.outputPath('highlights-ink-reloaded.png')})
+    await page.locator('#page-notebook').click()
+    for(let i=0;i<entries.length;i++) await page.locator('#page-notebook-marks button[phx-click="remove-mark"]').first().click()
+    await page.locator('#close-page-notebook').click()
+  }
+})

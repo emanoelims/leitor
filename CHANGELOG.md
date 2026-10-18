@@ -4,7 +4,10 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
-## [0.5.1] - 2026-10-18
+## [0.5.2] - 2026-10-18
+
+Release 0.5.1 was tagged before its version bump, so its deployment stopped at
+the tag check and nothing was deployed. Its fixes ship in 0.5.2.
 
 ### Fixed
 

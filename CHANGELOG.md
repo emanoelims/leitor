@@ -4,6 +4,8 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-18
+
 ### Fixed
 
 - Dictionary lookups no longer force a reasoning effort. With the shared Haiku

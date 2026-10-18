@@ -414,16 +414,8 @@ defmodule LeitorWeb.PageLiveTest do
   end
 
   test "the dictionary answers in a margin card that can be kept in a jar and retried", %{conn: conn, scope: scope} do
-    Leitor.DictionaryFixtures.dictionary_fixture()
     {:ok, page} = Pages.create_page(scope, %{"title" => "Thoughts", "body" => "A wonderful sentence."})
     {:ok, view, _} = live(conn, ~p"/pages/#{page.id}")
-    Req.Test.allow(Leitor.Dictionary, self(), view.pid)
-
-    Req.Test.stub(Leitor.Dictionary, fn conn ->
-      {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert %{"text" => ["wonderful"], "context" => "A wonderful sentence."} = Jason.decode!(body)
-      Req.Test.json(conn, %{"translations" => [%{"text" => "maravilhoso"}]})
-    end)
 
     render_hook(view, "select", %{"start_block" => 0, "end_block" => 0, "start_offset" => 2, "end_offset" => 11})
     view |> element("#selection-dictionary") |> render_click()
@@ -434,33 +426,51 @@ defmodule LeitorWeb.PageLiveTest do
 
     card = "#margin_marks-#{mark.id}"
     assert has_element?(view, "#{card} .page-answer strong", "maravilhoso")
-    assert has_element?(view, "#{card} .page-answer", "In this passage")
-    assert has_element?(view, "#{card} .page-answer em", "excellent")
-    assert has_element?(view, "#{card} footer", "DeepL · Wiktionary")
+    assert has_element?(view, "#{card} .page-answer", "/ˈwʌndərfəl/")
+    assert has_element?(view, "#{card} .page-answer", "UÂN-dâr-fâl")
+    assert has_element?(view, "#{card} .page-answer li", "What a wonderful day.")
+    assert has_element?(view, "#{card} footer", "Claude")
 
     view |> element("#{card} .page-collect-word") |> render_click()
     assert has_element?(view, "#selection-pot-form input[name='pot[meaning]'][value='maravilhoso']")
     render_submit(view, "save-pot", %{"pot" => %{"meaning" => "maravilhoso", "category" => "adj"}})
     assert [%{term: "wonderful", meaning: "maravilhoso", category: "adj"}] = Learning.list_entries(scope)
 
-    Leitor.Repo.delete_all(Leitor.Dictionary.Entry)
-    Req.Test.stub(Leitor.Dictionary, &Plug.Conn.send_resp(&1, 503, ""))
+    Leitor.Repo.delete_all(Leitor.Dictionary.Card)
+    Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+    on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)
     render_click(view, "retry-mark", %{"id" => mark.id})
+    assert_receive {:language_started, task}
+    send(task, {:complete, {:error, :unavailable}})
     render_async(view)
     assert has_element?(view, "#page-help-error", "dictionary is unavailable")
     assert [%{meaning: "maravilhoso"}] = Pages.list_marks(scope, page.id)
   end
 
-  test "the dictionary explains when nothing is found", %{conn: conn, scope: scope} do
-    {:ok, page} = Pages.create_page(scope, %{"title" => "Thoughts", "body" => "A wonderful sentence."})
+  test "the dictionary streams the meaning first and uses the reader's model", %{conn: conn, scope: scope} do
+    Application.put_env(:leitor, :language_adapter, Leitor.LanguageGate)
+    Application.put_env(:leitor, :language_test_owner, self())
+    on_exit(fn -> Application.delete_env(:leitor, :language_test_owner) end)
+    {:ok, _} = Leitor.Accounts.update_preferences(scope, %{reading_model: "anthropic:claude-opus-5-5"})
+    {:ok, page} = Pages.create_page(scope, %{"title" => "Thoughts", "body" => "She ran the firm and ran the board."})
     {:ok, view, _} = live(conn, ~p"/pages/#{page.id}")
-    Req.Test.allow(Leitor.Dictionary, self(), view.pid)
-    Req.Test.stub(Leitor.Dictionary, &Req.Test.json(&1, %{"translations" => [%{"text" => "wonderful"}]}))
 
-    render_hook(view, "select", %{"start_block" => 0, "end_block" => 0, "start_offset" => 2, "end_offset" => 11})
+    render_hook(view, "select", %{"start_block" => 0, "end_block" => 0, "start_offset" => 21, "end_offset" => 24})
     view |> element("#selection-dictionary") |> render_click()
+    assert_receive {:language_settings, "anthropic:claude-opus-5-5", %ReqLLM.Context{} = context}
+
+    assert context.messages |> List.last() |> Map.fetch!(:content) |> List.last() |> Map.fetch!(:text) =~
+             "She ran the firm and ⟦ran⟧ the board."
+
+    assert_receive {:language_started, task}
+
+    reading_fragment(view, task, ~s({"meaning": "conduzia", "headw))
+    assert has_element?(view, "#page-pending-card .page-answer strong", "conduzia")
+
+    send(task, {:complete, {:error, :invalid_response}})
     render_async(view)
-    assert has_element?(view, "#page-help-error", "No dictionary entry")
+    assert has_element?(view, "#page-help-error", "dictionary is unavailable")
     assert Pages.list_marks(scope, page.id) == []
   end
 

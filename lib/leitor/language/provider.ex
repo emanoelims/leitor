@@ -22,25 +22,34 @@ defmodule Leitor.Language.Provider do
     end
   end
 
-  @doc "Streams provisional JSON fragments and validates the completed object. Only content and tool argument fragments reach the callback; thinking and metadata remain private."
-  @spec stream_object(String.t(), String.t(), map(), Leitor.Language.object_fragment_handler()) ::
+  @doc """
+  Streams provisional JSON fragments and validates the completed object. Only content and tool argument fragments reach
+  the callback; thinking and metadata remain private. The prompt may be a string or a `ReqLLM.Context` (for system
+  instructions and cache breakpoints); `options` are passed to ReqLLM, for example `reasoning_effort: :low`.
+  """
+  @spec stream_object(String.t(), String.t() | ReqLLM.Context.t(), map(), Leitor.Language.object_fragment_handler()) ::
           Leitor.Language.result()
-  def stream_object(model, prompt, schema, on_fragment) do
+  @spec stream_object(
+          String.t(),
+          String.t() | ReqLLM.Context.t(),
+          map(),
+          Leitor.Language.object_fragment_handler(),
+          keyword()
+        ) ::
+          Leitor.Language.result()
+  def stream_object(model, prompt, schema, on_fragment, options \\ []) do
     with {:ok, resolved} <- resolve_model(model),
-         {:ok, response} <- start_object_stream(resolved, prompt, schema) do
+         {:ok, response} <- start_object_stream(resolved, prompt, schema, options) do
       response
       |> ReqLLM.StreamResponse.process_stream(on_chunk: &object_fragment(&1, on_fragment))
       |> extract_stream_object()
     end
   end
 
-  defp start_object_stream(model, prompt, schema) do
-    case ReqLLM.stream_object(model, prompt, schema,
-           max_tokens: 6000,
-           receive_timeout: 60_000,
-           total_timeout: 90_000,
-           stream_idle_timeout: 30_000
-         ) do
+  defp start_object_stream(model, prompt, schema, options) do
+    defaults = [max_tokens: 6000, receive_timeout: 60_000, total_timeout: 90_000, stream_idle_timeout: 30_000]
+
+    case ReqLLM.stream_object(model, prompt, schema, Keyword.merge(defaults, options)) do
       {:ok, _} = result -> result
       {:error, _} -> {:error, :provider_error}
     end

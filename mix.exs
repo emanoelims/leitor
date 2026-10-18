@@ -19,7 +19,7 @@ defmodule Leitor.MixProject do
       dialyzer: [
         plt_local_path: "_build/plts",
         plt_core_path: "_build/plts",
-        plt_add_apps: [:ex_unit, :mix]
+        plt_add_apps: [:ex_unit]
       ],
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),

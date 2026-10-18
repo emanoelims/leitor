@@ -188,41 +188,27 @@ Provider failures preserve the learner's text and allow retrying. Structured
 responses are schema validated, and sentence analysis must preserve the original
 words and punctuation. AI suggestions still require the learner's judgment.
 
-### Dictionary configuration
+### Dictionary
 
 The selection toolbar's Dictionary action answers in a margin card, like Define
-and Explain, and keeps the translation and part of speech for word jars. It
-combines three sources:
+and Explain, and keeps its meaning and part of speech for word jars. Claude
+receives the surrounding page text (up to about 24,000 characters) and the
+paragraph with the selected occurrence marked, so the card explains the meaning
+used there: meaning in Brazilian Portuguese, headword, IPA, explanation, usage
+note, inflected forms, two bilingual examples and up to three other senses.
 
-- **Local dictionary.** An import of English Wiktionary from
-  [kaikki.org](https://kaikki.org/dictionary/English/) (Wiktextract) supplies IPA,
-  inflected forms, Brazilian Portuguese translations grouped by sense, and
-  English senses. Inflections such as *ran* resolve to their lemma. Content is
-  CC BY-SA by Wiktionary contributors.
-- **DeepL** translates the term using its paragraph (up to 1,000 characters) as
-  context. When that translation appears in a dictionary sense, the card shows
-  it first as the meaning *in this passage*.
-- **Azure Translator** (optional) adds up to two bilingual example sentences for
-  that translation.
+- The fixed instructions and the page text are prompt-cache breakpoints, so
+  further lookups on the same page reread them at a fraction of the input price.
+- The meaning is the first field and streams into the card before the rest.
+- `Leitor.Dictionary.Pronunciation` turns the IPA into a Brazilian Portuguese
+  pronunciation hint (for example `water` → `UÓ-râr`) with deterministic rules,
+  without another model call.
+- Completed cards are stored in `dictionary_cards`, keyed by model, prompt
+  version, selection and paragraph, so repeating a lookup costs nothing.
 
-Import the dictionary once per database. It replaces existing entries, takes a
-few minutes, and stores about 1.3 million entries (about 400 MB):
-
-```sh
-mise exec -- mix leitor.dictionary.import https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz
-```
-
-Set the optional credentials in the environment or the ignored
-`mise.local.toml`; never commit them. Free DeepL keys end in `:fx` and use
-DeepL's free API host automatically. Regional Azure resources also need their
-region. Without these keys, the card uses the local dictionary only.
-
-```toml
-[env]
-DEEPL_API_KEY = "your-deepl-key:fx"
-AZURE_TRANSLATOR_KEY = "your-azure-translator-key"
-AZURE_TRANSLATOR_REGION = "brazilsouth"
-```
+The card uses the reader's chosen reading model; with the default preference it
+uses `LEITOR_DICTIONARY_MODEL`, or Claude Sonnet 5.5 when unset. It needs the
+same `ANTHROPIC_API_KEY` as the other Claude features.
 
 ## Persistence
 

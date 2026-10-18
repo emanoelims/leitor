@@ -11,6 +11,11 @@ defmodule Leitor.LanguageCapture do
     generate(model, prompt, :text_stream)
   end
 
+  def stream_object(model, prompt, schema, on_fragment, options) do
+    send(self(), {:language_options, options})
+    stream_object(model, prompt, schema, on_fragment)
+  end
+
   def stream_object(model, prompt, schema, on_fragment) do
     Enum.each(Process.get(:language_fragments, []), on_fragment)
     generate(model, prompt, schema)

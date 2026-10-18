@@ -3,8 +3,6 @@ defmodule Leitor.Release do
   Used for executing DB release tasks when run in production without Mix
   installed.
   """
-  alias Leitor.Dictionary.Import
-
   @app :leitor
 
   @doc "Applies all pending migrations, raising if the repository cannot start or a migration fails."
@@ -23,18 +21,6 @@ defmodule Leitor.Release do
     load_app()
     {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))
     :ok
-  end
-
-  @doc """
-  Replaces the dictionary with a kaikki.org English dump from an HTTPS URL or
-  a local `.jsonl`/`.jsonl.gz` path. See `Leitor.Dictionary.Import.import/1`.
-  """
-  @spec import_dictionary(String.t()) :: {:ok, non_neg_integer()} | {:error, term()}
-  def import_dictionary(source) do
-    load_app()
-    {:ok, _started} = Application.ensure_all_started(:req)
-    {:ok, result, _started} = Ecto.Migrator.with_repo(Leitor.Repo, fn _repo -> Import.import(source) end)
-    result
   end
 
   defp repos do

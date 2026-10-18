@@ -167,7 +167,7 @@ defmodule LeitorWeb.I18n do
     gettext_noop("Text"),
     gettext_noop("Text alignment"),
     gettext_noop("Dictionary"),
-    gettext_noop("No dictionary entry for this selection. Try a single word."),
+    gettext_noop("Select a word or expression up to 200 characters to look it up."),
     gettext_noop("The dictionary is unavailable right now. Try again in a moment."),
     gettext_noop("The tutor couldn’t respond. Your page and annotations are safe. Select the passage to try again."),
     gettext_noop("The upload failed. Remove the file and try again."),

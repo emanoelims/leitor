@@ -7,14 +7,13 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 ### Added
 
 - A Dictionary action in the selection toolbar. Its answer opens in the same
-  margin card as Define and Explain: IPA, inflected forms, and Brazilian
-  Portuguese translations grouped by sense from a local import of English
-  Wiktionary (kaikki.org), with the meaning in the current passage chosen by a
-  contextual DeepL translation and optional bilingual examples from Azure
-  Translator. The card keeps its meaning and part of speech for word jars.
-- `mix leitor.dictionary.import` and `Leitor.Release.import_dictionary/1` load
-  the dictionary. Configure `DEEPL_API_KEY`, `AZURE_TRANSLATOR_KEY`, and
-  `AZURE_TRANSLATOR_REGION` to enable the optional services.
+  margin card as Define and Explain. Claude reads the page around the marked
+  occurrence and writes the meaning in that context, the headword, IPA, an
+  explanation, usage notes, forms, bilingual examples and other senses; the
+  meaning streams first. A Brazilian Portuguese pronunciation hint is derived
+  from the IPA by rules, prompts reuse cached instructions and page text, and
+  finished cards are cached. The card keeps its meaning and part of speech for
+  word jars.
 
 ## [0.2.1] - 2026-10-16
 

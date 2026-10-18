@@ -275,11 +275,7 @@
                   (!@help_stream || @help_stream.answer == "")
               } />
               <footer>
-                <span>{cond do
-                  mark.kind == "note" -> gettext("Your note")
-                  mark_title(mark) == "Dictionary" -> "DeepL · Wiktionary"
-                  true -> gettext("Claude")
-                end}</span>
+                <span>{if mark.kind == "note", do: gettext("Your note"), else: gettext("Claude")}</span>
                 <button
                   :if={@busy && @pending && @pending.mark_id == mark.id}
                   type="button"

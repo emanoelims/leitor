@@ -16,6 +16,7 @@ defmodule Leitor.LanguageGate do
   end
 
   def stream_object(model, prompt, _schema, on_fragment), do: stream(model, prompt, on_fragment)
+  def stream_object(model, prompt, _schema, on_fragment, _options), do: stream(model, prompt, on_fragment)
 
   defp stream_reply(on_delta) do
     receive do

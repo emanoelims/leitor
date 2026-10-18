@@ -4,6 +4,14 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+### Fixed
+
+- Dictionary lookups no longer force a reasoning effort. With the shared Haiku
+  model the provider rejected the translated `thinking.type.enabled` setting
+  (HTTP 400), so every lookup failed; each model now uses its default thinking.
+- Update `llm_db` to 2026.10.5, which catalogues Claude Haiku 5.5 with adaptive
+  thinking, so reasoning options for the shared model use the supported format.
+
 ## [0.5.0] - 2026-10-18
 
 ### Added

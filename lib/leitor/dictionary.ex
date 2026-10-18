@@ -179,7 +179,9 @@ defmodule Leitor.Dictionary do
 
   `execution_options` are the authorized provider options from
   `Leitor.AI.execution_options/2`; their `:model` chooses the model (the shared
-  model when absent). Cards are written at low reasoning effort.
+  model when absent). No reasoning effort is forced: the provider does not
+  accept the same thinking settings on every model, so each model uses its
+  default.
 
   ## Examples
 
@@ -208,7 +210,7 @@ defmodule Leitor.Dictionary do
 
     case Repo.get_by(Card, key: key) do
       %Card{card: card} -> {:ok, card}
-      nil -> generate(model, key, request, Keyword.merge([reasoning_effort: :low], provider_options), on_fragment)
+      nil -> generate(model, key, request, provider_options, on_fragment)
     end
   end
 

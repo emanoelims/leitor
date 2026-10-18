@@ -53,6 +53,15 @@ defmodule Leitor.AITest do
     end
   end
 
+  # ReqLLM derives thinking options from LLMDB; an uncatalogued model receives
+  # budgeted thinking, which Claude 5.5 models reject with HTTP 400.
+  test "offered Claude models are catalogued with adaptive thinking" do
+    for model <- [AI.shared_model(), "anthropic:claude-sonnet-5-5", "anthropic:claude-opus-5-5"] do
+      assert {:ok, metadata} = ReqLLM.model(model)
+      assert ReqLLM.ModelHelpers.adaptive_thinking_required?(metadata), model
+    end
+  end
+
   test "shared key is always Haiku despite saved premium choices", %{scope: scope} do
     {:ok, _} =
       Accounts.update_preferences(scope, %{

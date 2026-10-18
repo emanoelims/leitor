@@ -65,7 +65,7 @@ defmodule Leitor.DictionaryTest do
     refute window =~ "Block 1 "
   end
 
-  test "asks Claude with cached instructions and page text, at low effort, and streams fragments", %{request: request} do
+  test "sends cached instructions and page text without forced effort and streams fragments", %{request: request} do
     Process.put(:language_result, {:ok, @card})
     Process.put(:language_fragments, [~s({"meaning": "condu)])
     test = self()
@@ -73,7 +73,7 @@ defmodule Leitor.DictionaryTest do
     assert {:ok, card} = Dictionary.lookup(request, [], &send(test, {:fragment, &1}))
 
     assert_received {:fragment, ~s({"meaning": "condu)}
-    assert_received {:language_options, [reasoning_effort: :low]}
+    assert_received {:language_options, []}
     assert_received {:language_request, "anthropic:claude-haiku-5-5", %ReqLLM.Context{messages: [system, user]}, schema}
     assert hd(schema.required) == "meaning"
 
@@ -91,13 +91,13 @@ defmodule Leitor.DictionaryTest do
     assert [_, %{"translations" => ["funcionar"]}, _] = card["other_senses"]
   end
 
-  test "uses the authorized model and provider options, keeping low effort unless overridden", %{request: request} do
+  test "uses the authorized model and provider options, without adding reasoning effort", %{request: request} do
     Process.put(:language_result, {:ok, @card})
     options = [model: "anthropic:claude-opus-5-5", max_tokens: 2500, api_key: "personal-key"]
 
     assert {:ok, _card} = Dictionary.lookup(request, options)
     assert_received {:language_request, "anthropic:claude-opus-5-5", %ReqLLM.Context{}, _schema}
-    assert_received {:language_options, [reasoning_effort: :low, max_tokens: 2500, api_key: "personal-key"]}
+    assert_received {:language_options, [max_tokens: 2500, api_key: "personal-key"]}
   end
 
   test "reuses cached cards and keys them by model", %{request: request} do

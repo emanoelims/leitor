@@ -23,6 +23,8 @@ defmodule LeitorWeb.Telemetry do
 
   def metrics do
     [
+      summary("leitor.ai.attempt.stop.duration_ms", tags: [:operation, :mode, :outcome], unit: :millisecond),
+      sum("leitor.ai.attempt.stop.count", tags: [:operation, :mode, :outcome]),
       # Phoenix Metrics
       summary("phoenix.endpoint.start.system_time",
         unit: {:native, :millisecond}

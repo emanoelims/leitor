@@ -188,6 +188,29 @@ Provider failures preserve the learner's text and allow retrying. Structured
 responses are schema validated, and sentence analysis must preserve the original
 words and punctuation. AI suggestions still require the learner's judgment.
 
+### Dictionary
+
+The selection toolbar's Dictionary action answers in a margin card, like Define
+and Explain, and keeps its meaning and part of speech for word jars. Claude
+receives the surrounding page text (up to about 24,000 characters) and the
+paragraph with the selected occurrence marked, so the card explains the meaning
+used there: meaning in Brazilian Portuguese, headword, IPA, explanation, usage
+note, inflected forms, two bilingual examples and up to three other senses.
+
+- The fixed instructions and the page text are prompt-cache breakpoints, so
+  further lookups on the same page reread them at a fraction of the input price.
+- The meaning is the first field and streams into the card before the rest.
+- `Leitor.Dictionary.Pronunciation` turns the IPA into a Brazilian Portuguese
+  pronunciation hint (for example `water` → `UÓ-râr`) with deterministic rules,
+  without another model call.
+- Completed cards are stored in `dictionary_cards`, keyed by model, prompt
+  version, selection and paragraph, so repeating a lookup costs nothing.
+
+Lookups are reading help: each one goes through
+`Leitor.AI.prepare/2` like Define and Explain, so it uses the shared model
+(Haiku) or, with a personal Anthropic key, the reader's chosen reading model,
+and its usage is measured with the reader's other AI activity.
+
 ## Persistence
 
 `Library`, `Learning`, and `Study` follow generated Phoenix context boundaries and
@@ -352,9 +375,9 @@ Reset text settings to apply the current defaults.
 
 ## Creative pages and personal AI keys
 
-The `/` menu generates interactive explanatory figures. Other creative formats
-are shown as **Coming soon**. An isolated program author runs locally and through
-a separate private Fly checker in production:
+The `/` menu generates interactive mechanisms, scientific diagrams and explanatory
+illustrations. Other creative formats are shown as **Coming soon**. An isolated
+program author runs locally and through a separate private Fly checker in production:
 Claude writes original geometry, simulation and controls, the container compiles
 and browser-tests them, and a screenshot review may request a rewrite. Accepted
 `anatomy-program@1` references load private immutable artifacts in sandboxed
@@ -363,6 +386,12 @@ Build the separate runner image before using it; see [the figure guide](guides/f
 Generation survives browser disconnection. Recover a running or completed attempt
 from the page, and use **Adjust with AI** on an existing figure to refine it while
 preserving its passing mechanical tests and surrounding text.
+**Versions** previews and restores related accepted versions without another AI
+charge. Save the page to keep a restoration. Busy requests can wait in a bounded,
+uncharged queue; account preferences show actual tokens, estimated API costs,
+duration and outcomes. See [AI usage](guides/ai-usage.md) and the
+[six-case quality report](guides/figure-quality-report.md) for measurement limits
+and observed generation results.
 
 Without the program runner, generations use `anatomy-scene@1`: the model
 specifies an original object's solids, positions, orientations, dimensions,

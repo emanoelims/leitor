@@ -2,6 +2,7 @@ import {readFile,writeFile} from 'node:fs/promises'
 import {build} from 'esbuild'
 import {chromium} from 'playwright-core'
 import {inspectSources} from './policy.mjs'
+import {composeFigureStyle} from './leitor/environment.mjs'
 
 const output='/output'
 let browser,page
@@ -27,6 +28,20 @@ async function ready(page){
   const failure=await page.locator('html').getAttribute('data-error')
   if(failure)throw Error(failure)
 }
+async function mobileFraming(page) {
+  return page.locator('#figure-root svg').evaluateAll(nodes=>{
+    const visible=nodes.filter(svg=>!svg.ownerSVGElement&&svg.getBoundingClientRect().width&&svg.getBoundingClientRect().height)
+    visible.sort((a,b)=>{const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();return y.width*y.height-x.width*x.height})
+    const svg=visible[0]
+    if(!svg)return {clipped:false}
+    const v=svg.viewBox.baseVal,b=svg.getBBox()
+    if(!v.width||!v.height||!b.width||!b.height)return {clipped:false}
+    const outside={left:Math.max(0,v.x-b.x),right:Math.max(0,b.x+b.width-v.x-v.width),top:Math.max(0,v.y-b.y),bottom:Math.max(0,b.y+b.height-v.y-v.height)}
+    const clipped=outside.left>Math.max(4,v.width*.05)||outside.right>Math.max(4,v.width*.05)||outside.top>Math.max(4,v.height*.05)||outside.bottom>Math.max(4,v.height*.05)
+    const rounded=object=>Object.fromEntries(Object.entries(object).map(([k,n])=>[k,Math.round(n*10)/10]))
+    return {clipped,viewBox:{x:v.x,y:v.y,width:v.width,height:v.height},drawing:rounded({x:b.x,y:b.y,width:b.width,height:b.height}),outside:rounded(outside)}
+  })
+}
 try {
   const request=JSON.parse(await readFile('/input/request.json','utf8'))
   const files={}
@@ -38,7 +53,7 @@ try {
   if(Buffer.byteLength(bundle)>1_000_000)throw Error('Bundle exceeds one megabyte')
   await writeFile(`${output}/bundle.js`,bundle)
   const kit=await readFile('/runner/kit/iso.css','utf8')
-  const style=`${kit}\nhtml,body{margin:0;background:transparent;font-family:Arial,sans-serif}*{box-sizing:border-box}svg{max-width:100%;height:auto}button,input{font:inherit}#figure-root{width:100%;overflow:hidden}\n${request.css}`
+  const style=composeFigureStyle(kit,request.css)
   // Generated code never runs in Node. It is only parsed and bundled there.
   const html=`<!doctype html><html data-theme="light"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'"><style>${style.replace(/<\/style/gi,'')} html[data-theme=light] body{background:#faf9f6}html[data-theme=dark] body{background:#141310}</style></head><body><main id="figure-root"></main><script>${bundle.replace(/<\/script/gi,'<\\/script')}</script></body></html>`
   browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--js-flags=--max-old-space-size=128']})
@@ -93,11 +108,20 @@ try {
     await page.screenshot({path:`${output}/interaction.png`,type:'png',fullPage:true});report.images.push('interaction.png')
     await page.evaluate(()=>{document.documentElement.dataset.theme='dark';document.getElementById('figure-root').dataset.theme='dark';document.getElementById('figure-root').dispatchEvent(new CustomEvent('figure:environment',{detail:{theme:'dark',visible:true,reducedMotion:true}}))})
     await page.screenshot({path:`${output}/dark.png`,type:'png',fullPage:true});report.images.push('dark.png')
-    await page.setViewportSize({width:390,height:844})
-    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)
+    const mobile=await context.newPage();mobile.setDefaultTimeout(5000)
+    mobile.on('pageerror',error=>report.errors.push(error.message.slice(0,400)))
+    await mobile.setViewportSize({width:390,height:844})
+    await mobile.setContent(html,{waitUntil:'load',timeout:15000})
+    await ready(mobile)
+    const overflow=await mobile.evaluate(()=>document.documentElement.scrollWidth>innerWidth)
     if(overflow)throw Error('The figure overflows a 390px viewport')
-    if(await page.locator('#figure-root').evaluate(node=>node.getBoundingClientRect().height)>1400)throw Error('Mobile controls exceed the reader frame height')
-    await page.screenshot({path:`${output}/mobile.png`,type:'png',fullPage:true});report.images.push('mobile.png')
+    if(await mobile.locator('#figure-root').evaluate(node=>node.getBoundingClientRect().height)>1400)throw Error('Mobile controls exceed the reader frame height')
+    await mobile.screenshot({path:`${output}/mobile.png`,type:'png',fullPage:true});report.images.push('mobile.png')
+    if(await mobile.locator('#figure-root svg').count()) {
+      report.mobile_framing=await mobileFraming(mobile)
+      if(report.mobile_framing.clipped)throw Error('The mobile drawing is clipped by its SVG viewBox. Fit the whole assembly and its travel into the default 390px view; a hidden overflow or automatic detail crop does not fix framing. Keep inspection detail in a separately labeled optional view.')
+    }
+    await mobile.close()
     await context.close()
     const motionContext=await browser.newContext({viewport:{width:900,height:800},reducedMotion:'no-preference'})
     await motionContext.route('**/*',route=>{report.network.push(route.request().url().slice(0,200));return route.abort()})

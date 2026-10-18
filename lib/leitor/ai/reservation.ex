@@ -8,6 +8,15 @@ defmodule Leitor.AI.Reservation do
     field :operation, :string
     field :mode, :string
     field :credits, :integer
+    field :model, :string
+    field :outcome, :string
+    field :input_tokens, :integer, default: 0
+    field :output_tokens, :integer, default: 0
+    field :cache_read_tokens, :integer, default: 0
+    field :cache_write_tokens, :integer, default: 0
+    field :estimated_cost_micros, :integer, default: 0
+    field :measured_calls, :integer, default: 0
+    field :unmeasured_calls, :integer, default: 0
     field :expires_at, :utc_datetime
     field :finished_at, :utc_datetime
     belongs_to :user, Leitor.Accounts.User

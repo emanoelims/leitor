@@ -40,7 +40,7 @@ defmodule Leitor.Figures do
           model,
           prompt,
           on_delta,
-          Keyword.drop(options, [:figure_progress, :figure_checkpoint, :figure_revision, :figure_edit])
+          Keyword.drop(options, [:figure_progress, :figure_checkpoint, :figure_revision, :figure_edit, :figure_profile])
         )
     end
   end

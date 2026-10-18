@@ -5,7 +5,7 @@ defmodule Leitor.Figures.Runner do
   @doc "Compiles and browser-tests source in a bounded container, returning evidence and images or a recoverable runner error."
   @spec check(map()) :: {:ok, map()} | {:error, :runner_unavailable | :runner_timeout | :invalid_response}
   def check(program) do
-    config = Application.get_env(:leitor, :figure_runner, [])
+    config = Application.get_env(:leitor, :figure_runner) || []
 
     cond do
       not Keyword.get(config, :enabled, false) -> {:error, :runner_unavailable}

@@ -3,9 +3,11 @@ defmodule Leitor.WritingFormatTest do
 
   alias Leitor.WritingFormat
 
-  test "only interactive figures are enabled and planned formats cannot bypass the catalog" do
-    assert WritingFormat.options() == [{"Interactive figure", "visual_explainer"}]
-    assert WritingFormat.instruction("visual_explainer") =~ "Anatomy"
+  test "three reviewed figure profiles are enabled and planned formats cannot bypass the catalog" do
+    assert Enum.map(WritingFormat.options(), &elem(&1, 1)) ==
+             ~w(visual_explainer scientific_diagram explanatory_illustration)
+
+    assert WritingFormat.instruction("visual_explainer") =~ "mechanism"
 
     for {_label, id} <- WritingFormat.planned() do
       assert WritingFormat.instruction(id) == nil

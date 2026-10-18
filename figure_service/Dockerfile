@@ -17,4 +17,5 @@ COPY --from=pack /runner-rootfs.tar.gz /opt/runner-rootfs.tar.gz
 COPY figure_service/service.mjs /service/service.mjs
 COPY --chmod=755 figure_service/start.sh /service/start.sh
 ENV PORT=8081
+VOLUME ["/data"]
 ENTRYPOINT ["/service/start.sh"]

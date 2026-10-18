@@ -9,9 +9,12 @@ defmodule Leitor.Language.Provider do
   @spec generate(String.t(), String.t(), map()) :: Leitor.Language.result()
   @spec generate(String.t(), String.t(), map(), keyword()) :: Leitor.Language.result()
   def generate(model, prompt, schema, options \\ []) do
+    {usage_callback, options} = Keyword.pop(options, :usage_callback, fn _usage -> :ok end)
+
     with {:ok, resolved} <- resolve_model(model, options) do
       resolved
       |> ReqLLM.generate_object(prompt, schema, Keyword.merge([max_tokens: 6000, receive_timeout: 60_000], options))
+      |> notify_usage(usage_callback)
       |> extract_object()
     end
   end
@@ -19,12 +22,14 @@ defmodule Leitor.Language.Provider do
   @doc "Reviews isolated figure screenshots with bounded source and test evidence. Images contain only the generated figure."
   @spec review(String.t(), String.t(), [binary()], map(), keyword()) :: Leitor.Language.result()
   def review(model, prompt, images, schema, options) do
+    {usage_callback, options} = Keyword.pop(options, :usage_callback, fn _usage -> :ok end)
     parts = [ContentPart.text(prompt) | Enum.map(images, &ContentPart.image/1)]
     context = ReqLLM.context(ReqLLM.Context.user(parts))
 
     with {:ok, resolved} <- resolve_model(model, options) do
       resolved
       |> ReqLLM.generate_object(context, schema, options)
+      |> notify_usage(usage_callback)
       |> extract_object()
     end
   end
@@ -33,8 +38,12 @@ defmodule Leitor.Language.Provider do
   @spec code_step(String.t(), ReqLLM.Context.t(), [ReqLLM.Tool.t()], keyword()) ::
           {:ok, ReqLLM.Response.t()} | {:error, :unavailable | :provider_error}
   def code_step(model, context, tools, options) do
+    {usage_callback, options} = Keyword.pop(options, :usage_callback, fn _usage -> :ok end)
+
     with {:ok, resolved} <- resolve_model(model, options) do
-      case ReqLLM.generate_text(resolved, context, Keyword.put(options, :tools, tools)) do
+      case resolved
+           |> ReqLLM.generate_text(context, Keyword.put(options, :tools, tools))
+           |> notify_usage(usage_callback) do
         {:ok, _response} = result -> result
         {:error, error} -> provider_error(error)
       end
@@ -65,10 +74,20 @@ defmodule Leitor.Language.Provider do
     stream(model, ReqLLM.context(ReqLLM.Context.user(parts)), on_delta, options)
   end
 
-  @doc "Streams provisional JSON fragments and validates the completed object. Only content and tool argument fragments reach the callback; thinking and metadata remain private."
-  @spec stream_object(String.t(), String.t(), map(), Leitor.Language.object_fragment_handler()) ::
+  @doc """
+  Streams provisional JSON fragments and validates the completed object. Only content and tool argument fragments reach
+  the callback; thinking and metadata remain private. The prompt may be a string or a `ReqLLM.Context` (for system
+  instructions and cache breakpoints); `options` are passed to ReqLLM, for example `reasoning_effort: :low`.
+  """
+  @spec stream_object(String.t(), String.t() | ReqLLM.Context.t(), map(), Leitor.Language.object_fragment_handler()) ::
           Leitor.Language.result()
-  @spec stream_object(String.t(), String.t(), map(), Leitor.Language.object_fragment_handler(), keyword()) ::
+  @spec stream_object(
+          String.t(),
+          String.t() | ReqLLM.Context.t(),
+          map(),
+          Leitor.Language.object_fragment_handler(),
+          keyword()
+        ) ::
           Leitor.Language.result()
   def stream_object(model, prompt, schema, on_fragment, options \\ []) do
     {usage_callback, options} = Keyword.pop(options, :usage_callback, fn _usage -> :ok end)
@@ -83,12 +102,14 @@ defmodule Leitor.Language.Provider do
   end
 
   defp notify_usage({:ok, response} = result, callback) do
-    usage = Map.take(response.usage || %{}, [:input_tokens, :output_tokens, :reasoning_tokens, :cached_tokens])
-    callback.(usage)
+    callback.(response.usage || %{})
     result
   end
 
-  defp notify_usage(result, _callback), do: result
+  defp notify_usage(result, callback) do
+    callback.(%{})
+    result
+  end
 
   defp start_object_stream(model, prompt, schema, options) do
     case ReqLLM.stream_object(

@@ -11,6 +11,7 @@ defmodule Leitor.Figures.Program do
     field :title, :string
     field :caption, :string
     field :artifact_id, Ecto.UUID
+    field :profile, :string, default: "visual_explainer"
   end
 
   @typedoc "A versioned reference whose ownership is checked when its program is loaded."
@@ -20,7 +21,8 @@ defmodule Leitor.Figures.Program do
   @spec new(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t(t())}
   def new(attrs) do
     %__MODULE__{}
-    |> cast(attrs, [:engine, :version, :title, :caption, :artifact_id])
+    |> cast(attrs, [:engine, :version, :title, :caption, :artifact_id, :profile])
+    |> validate_inclusion(:profile, ~w(visual_explainer scientific_diagram explanatory_illustration))
     |> validate_required([:engine, :version, :title, :caption, :artifact_id])
     |> validate_inclusion(:engine, ["anatomy-program"])
     |> validate_inclusion(:version, [1])

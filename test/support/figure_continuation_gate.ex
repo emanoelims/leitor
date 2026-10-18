@@ -11,7 +11,14 @@ defmodule Leitor.FigureContinuationGate do
     send(Application.fetch_env!(:leitor, :language_test_owner), {:figure_review, self()})
 
     receive do
-      {:complete, accept} -> {:ok, %{"accept" => accept, "critique" => "The joint must remain attached."}}
+      {:complete, accept} ->
+        {:ok,
+         %{
+           "accept" => accept,
+           "critique" => "The joint must remain attached.",
+           "explanation_consistent" => true,
+           "explanation_evidence" => "The explanation matches the model."
+         }}
     end
   end
 end

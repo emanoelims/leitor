@@ -7,6 +7,9 @@ defmodule Leitor.Application do
 
   @impl true
   def start(_type, _args) do
+    queue_enabled =
+      Phoenix.Endpoint.server?(:leitor, LeitorWeb.Endpoint) and Application.get_env(:leitor, :generation_queue, true)
+
     children = [
       LeitorWeb.Telemetry,
       Leitor.Repo,
@@ -14,6 +17,7 @@ defmodule Leitor.Application do
       {Phoenix.PubSub, name: Leitor.PubSub},
       {Task.Supervisor, name: Leitor.GenerationTasks},
       {DynamicSupervisor, name: Leitor.GenerationSupervisor, strategy: :one_for_one},
+      {Leitor.Generations.Queue, enabled: queue_enabled},
       LeitorWeb.Presence,
       # Start a worker by calling: Leitor.Worker.start_link(arg)
       # {Leitor.Worker, arg},

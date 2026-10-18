@@ -11,15 +11,19 @@ defmodule LeitorWeb.PreferencesLive do
   @impl true
   def mount(_, _, socket) do
     credentials = AI.credentials(socket.assigns.current_scope)
+    if connected?(socket), do: Process.send_after(self(), :refresh_usage, 15_000)
 
     {:ok,
      socket
      |> stream(:credentials, credentials)
+     |> stream(:ai_attempts, AI.recent_attempts(socket.assigns.current_scope))
      |> assign(
        page_title: gettext("Preferences"),
        form: to_form(Accounts.change_preferences(socket.assigns.current_scope)),
        credentials: credentials,
        usage: AI.usage(socket.assigns.current_scope),
+       activity: AI.activity(socket.assigns.current_scope),
+       queued: Leitor.Generations.queued_count(socket.assigns.current_scope),
        credential_form: blank_credential_form()
      )}
   end
@@ -187,6 +191,85 @@ defmodule LeitorWeb.PreferencesLive do
           )}
         </p>
       </section>
+      <section class="preferences-section" id="ai-activity">
+        <div class="preferences-section-heading">
+          <.icon name="lucide-chart-no-axes-column" class="size-5" />
+          <div>
+            <h2>{gettext("AI activity")}</h2><p>{gettext("Today's usage · resets at 00:00 UTC")}</p>
+          </div>
+        </div>
+        <dl class="ai-usage-summary">
+          <div>
+            <dt>{gettext("Attempts")}</dt><dd>{@activity.attempts}</dd>
+          </div>
+          <div>
+            <dt>{gettext("Waiting")}</dt><dd>{@queued}</dd>
+          </div>
+          <div>
+            <dt>{gettext("Running")}</dt><dd>{@activity.active}</dd>
+          </div>
+          <div>
+            <dt>{gettext("Input / output tokens")}</dt><dd>
+              {@activity.input_tokens} / {@activity.output_tokens}
+            </dd>
+          </div>
+          <div>
+            <dt>{gettext("Estimated API cost")}</dt><dd>
+              {cost_label(
+                @activity.cost,
+                @activity.measured_calls,
+                @activity.unmeasured_calls + @activity.incomplete_attempts
+              )}
+            </dd>
+          </div>
+        </dl>
+        <p class="preferences-help">
+          {gettext(
+            "API estimates are separate from Leitor credits. Missing or interrupted measurements may understate usage; your provider's invoice is authoritative."
+          )}
+        </p>
+        <div class="ai-activity-scroll">
+          <table class="ai-activity-table">
+            <caption>{gettext("Your last 20 attempts")}</caption>
+            <thead>
+              <tr>
+                <th>{gettext("Started")}</th><th>{gettext("Operation / model")}</th><th>
+                  {gettext("Status")}
+                </th><th>{gettext("Tokens")}</th><th>{gettext("Duration")}</th><th>
+                  {gettext("Estimate")}
+                </th>
+              </tr>
+            </thead>
+            <tbody id="ai-attempts" phx-update="stream">
+              <tr :for={{id, attempt} <- @streams.ai_attempts} id={id}>
+                <td>
+                  <time datetime={DateTime.to_iso8601(attempt.inserted_at)}>{Calendar.strftime(
+                    attempt.inserted_at,
+                    "%d/%m %H:%M UTC"
+                  )}</time>
+                </td>
+                <td>
+                  <span>{operation_label(attempt.operation)}</span><small>{model_label(attempt.model)}</small>
+                </td>
+                <td>{outcome_label(attempt.outcome)}</td>
+                <td>
+                  {if attempt.measured_calls + attempt.unmeasured_calls == 0,
+                    do: "—",
+                    else: "#{attempt.input_tokens} / #{attempt.output_tokens}"}
+                </td>
+                <td>{duration_label(attempt)}</td>
+                <td>
+                  {cost_label(
+                    attempt.estimated_cost_micros,
+                    attempt.measured_calls,
+                    attempt.unmeasured_calls + if(attempt.outcome == "completed", do: 0, else: 1)
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section class="preferences-section" id="ai-provider-keys">
         <div class="preferences-section-heading">
           <.icon name="lucide-key-round" class="size-5" /><div>
@@ -247,6 +330,47 @@ defmodule LeitorWeb.PreferencesLive do
     </Layouts.app>
     """
   end
+
+  @impl true
+  def handle_info(:refresh_usage, socket) do
+    Process.send_after(self(), :refresh_usage, 15_000)
+    scope = socket.assigns.current_scope
+
+    {:noreply,
+     socket
+     |> assign(usage: AI.usage(scope), activity: AI.activity(scope), queued: Leitor.Generations.queued_count(scope))
+     |> stream(:ai_attempts, AI.recent_attempts(scope), reset: true)}
+  end
+
+  defp operation_label("read"), do: gettext("Explanation")
+  defp operation_label("illustration"), do: gettext("Figure")
+  defp operation_label(_), do: gettext("Writing")
+  defp outcome_label("running"), do: gettext("Running")
+  defp outcome_label("completed"), do: gettext("Finished")
+  defp outcome_label("failed"), do: gettext("Failed")
+  defp outcome_label("cancelled"), do: gettext("Canceled")
+  defp outcome_label("expired"), do: gettext("Time limit")
+  defp outcome_label(_), do: gettext("Not measured")
+  defp cost_label(_cost, 0, _missing), do: gettext("Not measured")
+
+  defp cost_label(cost, _measured, missing) do
+    precision = if cost >= 10_000, do: 2, else: 6
+
+    amount =
+      "US$ " <>
+        Decimal.to_string(Decimal.round(Decimal.div(Decimal.new(cost), Decimal.new(1_000_000)), precision), :normal)
+
+    if missing > 0, do: amount <> " · " <> gettext("partial"), else: amount
+  end
+
+  defp model_label(nil), do: gettext("Not measured")
+
+  defp model_label(model),
+    do: Enum.find_value(Preferences.models(), model, fn {label, id} -> if id == model, do: label end)
+
+  defp duration_label(%{finished_at: nil, outcome: "expired"}), do: "—"
+  defp duration_label(%{finished_at: nil}), do: gettext("In progress")
+  defp duration_label(attempt), do: "#{max(0, DateTime.diff(attempt.finished_at, attempt.inserted_at))} s"
 
   @impl true
   def handle_event("save-key", %{"credential" => attrs}, socket) do

@@ -34,6 +34,27 @@ defmodule Leitor.FigureProgramTest do
     assert {:error, _} = Program.new(%{attrs | artifact_id: "bad"})
   end
 
+  test "a visual acceptance cannot publish an explanation contradicted by the model", %{scope: scope} do
+    Process.put(:consistent_explanation, false)
+
+    assert {:error, :figure_review_failed} =
+             Agent.generate(
+               Leitor.FigureProgramStub,
+               "model",
+               "A figure",
+               scope,
+               fn _ -> flunk("Contradiction published") end,
+               max_tokens: 6000,
+               total_timeout: 90_000
+             )
+
+    artifact = Repo.one!(Artifact)
+    assert artifact.status == "draft"
+    assert artifact.report["visual"]["accept"] == false
+    assert artifact.report["visual"]["critique"] =~ "Explanation conflict"
+    assert artifact.bundle == nil
+  end
+
   test "personal budgets create original files through native tools before independent review", %{scope: scope} do
     source = Leitor.FigureProgramStub.proposal()
 
@@ -64,6 +85,69 @@ defmodule Leitor.FigureProgramTest do
     assert Enum.all?(ready.report["usage"], &(&1["phase"] == "code_tools"))
     assert_receive :isolated_figure_checked
     refute_receive :isolated_figure_checked
+  end
+
+  test "a late first passing render hands off to independent review before more coding", %{scope: scope} do
+    source = Leitor.FigureProgramStub.proposal()
+
+    state =
+      scope
+      |> editor_state(source)
+      |> Map.merge(%{options: [max_tokens: 65_536], evidence: [], remaining: 33_536})
+
+    Process.put(:figure_editor_script, [
+      {"render", %{}},
+      {"write_file", %{path: "geometry.mjs", content: "unrequested rewrite"}}
+    ])
+
+    Process.put(:figure_editor_output_tokens, %{0 => 5000})
+    assert {:ok, attrs} = Editor.write(state, "Complete the original construction", max_tokens: 17_536)
+    assert attrs["geometry"] == source["geometry"]
+    assert attrs["__figure_output_tokens"] == 5000
+    assert attrs["__figure_verified"].result.report["ok"]
+    assert Process.get(:figure_editor_stage) == 1
+    refute Repo.exists?(from a in Artifact, where: a.status == "ready")
+  end
+
+  test "measured review output leaves the unused allocation available for repair", %{scope: scope} do
+    Process.put(:accept_figure, [false, true])
+    Process.put(:figure_review_usage, [%{output_tokens: 400}, %{output_tokens: 600}])
+
+    assert {:ok, _} =
+             Agent.generate(Leitor.FigureProgramStub, "model", "Repair the mechanism", scope, fn _ -> :ok end,
+               max_tokens: 32_768,
+               usage_callback: fn usage -> send(self(), {:measured_review, usage}) end
+             )
+
+    for allocation <- [16_000, 1500, 14_868, 1500], do: assert_receive({:allocation, ^allocation})
+    assert_receive {:measured_review, %{output_tokens: 400}}
+    assert_receive {:measured_review, %{output_tokens: 600}}
+    ready = Repo.one!(from a in Artifact, where: a.status == "ready")
+
+    assert ready.report["review_usage"] == [
+             %{"output_tokens" => 400, "measured" => true},
+             %{"output_tokens" => 600, "measured" => true}
+           ]
+
+    assert 16_000 + 400 + 14_868 + 600 <= 32_768
+  end
+
+  test "missing or invalid review measurements charge the full allocation", %{scope: scope} do
+    for usage <- [
+          %{},
+          %{output_tokens: 0},
+          %{output_tokens: -1},
+          %{output_tokens: 1501},
+          %{output_tokens: 20, billing_usage_complete: false}
+        ] do
+      Process.put(:figure_review_usage, usage)
+
+      assert {:ok, _} = Agent.generate(Leitor.FigureProgramStub, "model", "A mechanism", scope, fn _ -> :ok end, [])
+    end
+
+    for artifact <- Repo.all(Artifact) do
+      assert artifact.report["review_usage"] == [%{"output_tokens" => 1500, "measured" => false}]
+    end
   end
 
   test "original construction continues across stage exhaustion within the same reservation", %{scope: scope} do
@@ -275,6 +359,7 @@ defmodule Leitor.FigureProgramTest do
     assert match?({:ok, _}, result), inspect(Enum.map(Repo.all(Artifact), & &1.report))
     revised = Repo.one!(from a in Artifact, where: a.status == "ready" and a.id != ^original.id)
     assert revised.source["geometry"] == "export const shape=2"
+    assert revised.parent_id == original.id
     assert revised.source["checks"] == source["checks"]
     assert revised.source["experiments"] == source["experiments"]
     assert Artifacts.get_ready(scope, original.id).bundle == "original checked bundle"
@@ -295,6 +380,20 @@ defmodule Leitor.FigureProgramTest do
   end
 
   test "disabled isolation refuses execution rather than falling back to the host" do
+    previous = Application.get_env(:leitor, :figure_runner)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:leitor, :figure_runner, previous),
+        else: Application.delete_env(:leitor, :figure_runner)
+    end)
+
+    for config <- [nil, [], [enabled: false]] do
+      Application.put_env(:leitor, :figure_runner, config)
+      assert {:error, :runner_unavailable} = Runner.check(%{})
+    end
+
+    Application.delete_env(:leitor, :figure_runner)
     assert {:error, :runner_unavailable} = Runner.check(%{})
   end
 

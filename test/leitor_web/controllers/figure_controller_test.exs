@@ -17,7 +17,7 @@ defmodule LeitorWeb.FigureControllerTest do
       title: "Lock",
       caption: "Study",
       model: "test",
-      source: %{},
+      source: %{"css" => ".iso{--anatomy-paper:#456789}"},
       report: %{},
       status: "ready",
       bundle: "code",
@@ -29,6 +29,8 @@ defmodule LeitorWeb.FigureControllerTest do
     {:ok, artifact} = Artifacts.store(Scope.for_user(user), attrs)
     own = conn |> put_req_header("accept", "application/json") |> log_in_user(user) |> get(~p"/figures/#{artifact.id}")
     assert json_response(own, 200)["bundle"] == Base.encode64("code")
+    assert json_response(own, 200)["custom_style"] == attrs.source["css"]
+    assert json_response(own, 200)["style"] == "css"
     assert get_resp_header(own, "cache-control") == ["private, no-store"]
     foreign = conn |> log_in_user(user_fixture()) |> get(~p"/figures/#{artifact.id}")
     assert response(foreign, 404) == "Not found"

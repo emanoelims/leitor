@@ -64,6 +64,20 @@ defmodule Leitor.LanguageTest do
     end
   end
 
+  test "scientific and explanatory profiles carry distinct guidance without bypassing visual validation" do
+    for {format, expected} <- [{"scientific_diagram", "equations, units"}, {"explanatory_illustration", "visual story"}] do
+      Process.put(:language_result, {:ok, figure_response()})
+      assert Leitor.WritingFormat.visual?(format)
+
+      assert {:ok, %{"markdown" => markdown}} =
+               Language.generate_page_text(%{prompt: "Explain a phenomenon", title: "", context: "", format: format})
+
+      assert markdown =~ "leitor-figure"
+      assert_receive {:language_request, _, prompt, _}
+      assert prompt =~ expected
+    end
+  end
+
   test "account preferences select independent models and AI languages" do
     {:ok, preferences} =
       Preferences.new(%{

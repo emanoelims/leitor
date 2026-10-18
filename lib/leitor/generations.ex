@@ -14,16 +14,154 @@ defmodule Leitor.Generations do
   @typedoc "Recoverable request, authorization or worker startup errors."
   @type start_error :: AI.error() | Ecto.Changeset.t() | :worker_unavailable | :invalid_input
 
-  @doc "Validates and reserves one figure attempt, resuming only an unchanged owned request. The worker survives its editor."
+  @doc "Validates a figure attempt and either reserves execution or saves one uncharged queued request when capacity is busy. Queue admission is capped at fifty globally and one waiting job per account; waiting expires after ten minutes. The worker survives its editor."
   @spec start(Scope.t(), Ecto.UUID.t() | nil, map()) :: {:ok, Generation.t()} | {:error, start_error()}
   def start(%Scope{user: %{id: user_id}} = scope, page_id, attrs) do
     if page_id, do: Leitor.Pages.get_page!(scope, page_id)
     changeset = Generation.changeset(%Generation{user_id: user_id, text_id: page_id}, attrs)
 
     with {:ok, validated} <- Ecto.Changeset.apply_action(changeset, :insert),
-         :ok <- authorize_revision(scope, validated.request),
-         {:ok, client} <- AI.prepare(scope, :illustration) do
-      create_attempt(scope, validated, page_id, client)
+         :ok <- authorize_revision(scope, validated.request) do
+      case AI.prepare(scope, :illustration) do
+        {:ok, client} -> create_attempt(scope, validated, page_id, client)
+        {:error, :busy} -> enqueue(scope, validated)
+        {:error, _} = error -> error
+      end
+    end
+  end
+
+  defp enqueue(scope, validated) do
+    revision = retry_revision(latest(scope, validated.text_id), validated.request)
+
+    result =
+      Repo.transact(fn ->
+        # Admission is serialized across nodes; this lock never owns provider work.
+        Repo.query!("SELECT pg_advisory_xact_lock(0, $1)", [16_171_001], log: false)
+        queued = from g in Generation, where: g.status == "queued"
+
+        if Repo.aggregate(queued, :count) >= 50 or Repo.exists?(from g in queued, where: g.user_id == ^scope.user.id) do
+          {:error, :busy}
+        else
+          validated
+          |> Ecto.Changeset.change(
+            status: "queued",
+            stage: "queued",
+            revision_id: revision,
+            expires_at: DateTime.shift(DateTime.utc_now(:second), minute: 10)
+          )
+          |> Repo.insert(log: false)
+        end
+      end)
+
+    case result do
+      {:ok, generation} ->
+        subscribe(scope, generation.id)
+        {:ok, generation}
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  @doc "Counts the caller's waiting, not-yet-charged requests. At most one request per account may wait."
+  @spec queued_count(Scope.t()) :: non_neg_integer()
+  def queued_count(scope),
+    do:
+      Repo.aggregate(from(g in owned(scope), where: g.status == "queued" and g.expires_at > ^DateTime.utc_now()), :count)
+
+  @doc false
+  @spec dispatch_queued() :: :ok
+  def dispatch_queued do
+    now = DateTime.utc_now()
+
+    expired =
+      Repo.all(
+        from(g in Generation,
+          where: g.status == "queued" and g.expires_at <= ^now,
+          limit: 50,
+          select: map(g, [:id, :user_id])
+        ),
+        log: false
+      )
+
+    Enum.each(expired, fn job ->
+      scope = job.user_id |> Accounts.get_user!() |> Scope.for_user()
+      finish(scope, job.id, {:error, :figure_budget_exceeded})
+    end)
+
+    if AI.capacity_available?() do
+      jobs =
+        Repo.all(
+          from(g in Generation, where: g.status == "queued", order_by: g.id, limit: 50, select: map(g, [:id, :user_id])),
+          log: false
+        )
+
+      dispatch_available(jobs)
+    else
+      :ok
+    end
+  end
+
+  defp dispatch_available(jobs) do
+    Enum.reduce_while(jobs, :ok, fn job, :ok ->
+      scope = job.user_id |> Accounts.get_user!() |> Scope.for_user()
+      dispatch(scope, job)
+      if AI.capacity_available?(), do: {:cont, :ok}, else: {:halt, :ok}
+    end)
+  end
+
+  defp dispatch(scope, job) do
+    result =
+      Repo.transact(fn ->
+        current =
+          Repo.one(
+            from(g in owned(scope), where: g.id == ^job.id and g.status == "queued", lock: "FOR UPDATE SKIP LOCKED"),
+            log: false
+          )
+
+        cond do
+          is_nil(current) ->
+            {:ok, :skip}
+
+          DateTime.compare(current.expires_at, DateTime.utc_now()) != :gt ->
+            {:error, :figure_budget_exceeded}
+
+          true ->
+            reserve_queued(scope, current)
+        end
+      end)
+
+    case result do
+      {:ok, {generation, client}} ->
+        launch(scope, generation, client)
+        unsubscribe(generation.id)
+        emit(generation.id, {:generation_changed, generation.id})
+        emit(generation.id, {:page_generation_stage, generation.client_id, "building"})
+
+      {:ok, :skip} ->
+        :ok
+
+      {:error, :busy} ->
+        :ok
+
+      {:error, reason} ->
+        finish(scope, job.id, {:error, reason})
+    end
+  end
+
+  defp reserve_queued(scope, current) do
+    with {:ok, client} <- AI.prepare(scope, :illustration) do
+      generation =
+        current
+        |> Ecto.Changeset.change(
+          status: "running",
+          stage: "building",
+          lease_id: client.lease_id,
+          expires_at: DateTime.shift(DateTime.utc_now(:second), second: div(client.timeout_ms, 1000) + 120)
+        )
+        |> Repo.update!(log: false)
+
+      {:ok, {generation, client}}
     end
   end
 
@@ -44,7 +182,7 @@ defmodule Leitor.Generations do
         launch(scope, generation, client)
 
       {:error, changeset} ->
-        AI.finish(scope, client.lease_id)
+        AI.finish(scope, client.lease_id, :failed)
         {:error, changeset}
     end
   end
@@ -68,9 +206,13 @@ defmodule Leitor.Generations do
       {:ok, _pid} ->
         {:ok, generation}
 
+      :ignore ->
+        AI.finish(scope, client.lease_id, :cancelled)
+        {:ok, get!(scope, generation.id)}
+
       {:error, _reason} ->
         finish(scope, generation.id, {:error, :provider_error})
-        AI.finish(scope, client.lease_id)
+        AI.finish(scope, client.lease_id, :failed)
         {:error, :worker_unavailable}
     end
   end
@@ -115,7 +257,7 @@ defmodule Leitor.Generations do
   def emit(id, event), do: Phoenix.PubSub.broadcast(Leitor.PubSub, topic(id), event)
 
   @doc "Waits for a durable result without owning the worker. Terminating the waiter never cancels generation."
-  @spec await(Scope.t(), Ecto.UUID.t()) :: Leitor.Language.result()
+  @spec await(Scope.t(), Ecto.UUID.t()) :: Leitor.Language.result() | {:error, AI.error()}
   def await(scope, id) do
     subscribe(scope, id)
     wait(scope, id)
@@ -128,7 +270,7 @@ defmodule Leitor.Generations do
       "ready" ->
         {:ok, %{"markdown" => generation.markdown}}
 
-      "running" ->
+      status when status in ["running", "queued"] ->
         receive do
           {:generation_changed, ^id} -> wait(scope, id)
           _event -> wait(scope, id)
@@ -144,10 +286,20 @@ defmodule Leitor.Generations do
   @doc "Requests cancellation of an owned active attempt; private checkpoints remain recoverable."
   @spec cancel(Scope.t(), Ecto.UUID.t()) :: :ok
   def cancel(scope, id) do
-    generation = get!(scope, id)
-    finish(scope, id, {:error, :cancelled})
-    Phoenix.PubSub.broadcast(Leitor.PubSub, topic(id), {:generation_cancel, id})
-    AI.finish(scope, generation.lease_id)
+    {:ok, _} =
+      Repo.transact(fn ->
+        generation = Repo.one!(from g in owned(scope), where: g.id == ^id, lock: "FOR UPDATE")
+
+        if generation.status in ["running", "queued"] do
+          finish(scope, id, {:error, :cancelled})
+          AI.finish(scope, generation.lease_id, :cancelled)
+          emit(id, {:generation_cancel, id})
+        end
+
+        {:ok, :cancelled}
+      end)
+
+    :ok
   end
 
   @doc "Dismisses an owned recovery notice after the user saves or explicitly discards it."
@@ -172,7 +324,7 @@ defmodule Leitor.Generations do
   end
 
   @doc false
-  @spec finish(Scope.t(), Ecto.UUID.t(), Leitor.Language.result() | {:error, :cancelled}) :: :ok
+  @spec finish(Scope.t(), Ecto.UUID.t(), Leitor.Language.result() | {:error, :cancelled | AI.error()}) :: :ok
   def finish(scope, id, result) do
     attrs =
       case result do
@@ -186,7 +338,7 @@ defmodule Leitor.Generations do
           [status: "failed", error: "provider_error"]
       end
 
-    update_running(scope, id, attrs)
+    update_active(scope, id, attrs)
     :ok
   end
 
@@ -200,13 +352,23 @@ defmodule Leitor.Generations do
     Phoenix.PubSub.broadcast(Leitor.PubSub, topic(id), {:generation_changed, id})
   end
 
-  defp expire(scope, %{status: "running"} = generation) do
+  defp update_active(scope, id, attrs) do
+    Repo.update_all(
+      from(g in owned(scope), where: g.id == ^id and g.status in ["running", "queued"]),
+      [set: Keyword.put(attrs, :updated_at, DateTime.utc_now(:second))],
+      log: false
+    )
+
+    emit(id, {:generation_changed, id})
+  end
+
+  defp expire(scope, %{status: status} = generation) when status in ["running", "queued"] do
     if DateTime.after?(generation.expires_at, DateTime.utc_now()) do
       generation
     else
       finish(scope, generation.id, {:error, :figure_budget_exceeded})
       emit(generation.id, {:generation_cancel, generation.id})
-      AI.finish(scope, generation.lease_id)
+      AI.finish(scope, generation.lease_id, :expired)
       get!(scope, generation.id)
     end
   end
@@ -217,7 +379,7 @@ defmodule Leitor.Generations do
 
   defp error_atom(error) do
     errors =
-      ~w(unavailable invalid_input invalid_response provider_error runner_unavailable runner_timeout figure_review_failed figure_budget_exceeded)a
+      ~w(unavailable invalid_input invalid_response provider_error runner_unavailable runner_timeout figure_review_failed figure_budget_exceeded quota_exceeded busy credential_unavailable)a
 
     Enum.find(errors, :provider_error, &(Atom.to_string(&1) == error))
   end

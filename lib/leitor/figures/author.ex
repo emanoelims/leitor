@@ -221,7 +221,13 @@ defmodule Leitor.Figures.Author do
     buffer = :ets.new(:figure_source, [:set, :private])
     :ets.insert(buffer, [{:size, 0}, {:chunks, []}, {:usage, nil}])
     callback = fn fragment -> append(buffer, fragment) end
-    options = Keyword.put(options, :usage_callback, fn usage -> :ets.insert(buffer, {:usage, usage}) end)
+    measured = Keyword.get(options, :usage_callback, fn _usage -> :ok end)
+
+    options =
+      Keyword.put(options, :usage_callback, fn usage ->
+        :ets.insert(buffer, {:usage, usage})
+        measured.(usage)
+      end)
 
     try do
       result =

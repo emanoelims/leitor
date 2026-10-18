@@ -10,8 +10,11 @@ defmodule Leitor.AI do
   alias Leitor.AI.Credential
   alias Leitor.AI.Policy
   alias Leitor.AI.Reservation
+  alias Leitor.AI.Usage
   alias Leitor.AI.Vault
   alias Leitor.Repo
+
+  require Logger
 
   @typedoc "Supported credit-charged product operations."
   @type operation :: :read | :write | :illustration
@@ -133,6 +136,8 @@ defmodule Leitor.AI do
           user_id: user_id,
           operation: Atom.to_string(operation),
           mode: client.mode,
+          model: client.model,
+          outcome: "running",
           credits: credits,
           expires_at:
             DateTime.shift(now,
@@ -157,6 +162,15 @@ defmodule Leitor.AI do
     if account.personal_used + credits > limits.personal_daily_limit, do: {:error, :quota_exceeded}, else: :ok
   end
 
+  @doc "Reports whether a global lease slot is available. Reservation remains atomic; this scheduling hint never authorizes provider use."
+  @spec capacity_available?() :: boolean()
+  def capacity_available? do
+    now = DateTime.utc_now()
+
+    Repo.aggregate(from(r in Reservation, where: is_nil(r.finished_at) and r.expires_at > ^now), :count) <
+      policy().global_concurrent
+  end
+
   defp check_capacity(user_id, account, now, limits) do
     active = from r in Reservation, where: is_nil(r.finished_at) and r.expires_at > ^now
 
@@ -177,16 +191,130 @@ defmodule Leitor.AI do
 
   @doc "Releases the caller's concurrency lease idempotently. Credits are never refunded."
   @spec finish(Scope.t(), Ecto.UUID.t() | nil) :: :ok
-  def finish(_scope, nil), do: :ok
+  @spec finish(Scope.t(), Ecto.UUID.t() | nil, :completed | :failed | :cancelled | :expired) :: :ok
+  def finish(scope, id, outcome \\ :completed)
+  def finish(_scope, nil, _outcome), do: :ok
 
-  def finish(%Scope{user: %{id: user_id}}, id) do
+  def finish(%Scope{user: %{id: user_id}}, id, outcome) when outcome in [:completed, :failed, :cancelled, :expired] do
     now = DateTime.truncate(DateTime.utc_now(), :second)
 
-    Repo.update_all(from(r in Reservation, where: r.id == ^id and r.user_id == ^user_id and is_nil(r.finished_at)),
-      set: [finished_at: now]
-    )
+    {_count, changed} =
+      Repo.update_all(
+        from(r in Reservation,
+          where: r.id == ^id and r.user_id == ^user_id and is_nil(r.finished_at),
+          select: map(r, [:operation, :mode, :model, :inserted_at])
+        ),
+        set: [finished_at: now, outcome: Atom.to_string(outcome)]
+      )
+
+    Enum.each(changed, fn attempt ->
+      duration = max(0, DateTime.diff(now, attempt.inserted_at, :millisecond))
+      metadata = Map.put(Map.take(attempt, [:operation, :mode, :model]), :outcome, outcome)
+      :telemetry.execute([:leitor, :ai, :attempt, :stop], %{duration_ms: duration, count: 1}, metadata)
+
+      Logger.info(
+        "ai_attempt_finished operation=#{attempt.operation} mode=#{attempt.mode} outcome=#{outcome} duration_ms=#{duration}"
+      )
+    end)
 
     :ok
+  end
+
+  @doc "Returns request-local options with a scoped measurement callback. Neither keys nor provider content are stored in usage records."
+  @spec execution_options(Scope.t(), Client.t()) :: keyword()
+  def execution_options(scope, client) do
+    Keyword.put(Client.options(client), :usage_callback, &record_usage(scope, client.lease_id, &1))
+  end
+
+  @doc "Adds one actual provider response to its owned reservation atomically. Missing/invalid usage increments an unmeasured counter instead of inventing free requests."
+  @spec record_usage(Scope.t(), Ecto.UUID.t(), map()) :: :ok
+  def record_usage(%Scope{user: %{id: user_id}}, id, attrs) do
+    reservation = Repo.get_by!(Reservation, id: id, user_id: user_id)
+
+    increments =
+      case Usage.new(attrs) do
+        {:ok, usage} ->
+          cost = Usage.estimate(usage, reservation.model)
+
+          [
+            input_tokens: usage.input_tokens,
+            output_tokens: usage.output_tokens,
+            cache_read_tokens: usage.cache_read_tokens,
+            cache_write_tokens: usage.cache_write_tokens,
+            estimated_cost_micros: cost || 0,
+            measured_calls: if(cost, do: 1, else: 0),
+            unmeasured_calls: if(cost, do: 0, else: 1)
+          ]
+
+        {:error, _changeset} ->
+          [unmeasured_calls: 1]
+      end
+
+    Repo.update_all(from(r in Reservation, where: r.id == ^id and r.user_id == ^user_id), [inc: increments], log: false)
+    :ok
+  end
+
+  @doc "Lists the caller's twenty most recent measurements without prompts, provider errors, credentials or generated code. Expired unfinished leases are labeled expired."
+  @spec recent_attempts(Scope.t()) :: [map()]
+  def recent_attempts(%Scope{user: %{id: user_id}}) do
+    now = DateTime.utc_now()
+
+    from(r in Reservation,
+      where: r.user_id == ^user_id,
+      order_by: [desc: r.inserted_at, desc: r.id],
+      limit: 20,
+      select:
+        map(r, [
+          :id,
+          :operation,
+          :mode,
+          :credits,
+          :model,
+          :outcome,
+          :input_tokens,
+          :output_tokens,
+          :cache_read_tokens,
+          :cache_write_tokens,
+          :estimated_cost_micros,
+          :measured_calls,
+          :unmeasured_calls,
+          :inserted_at,
+          :finished_at,
+          :expires_at
+        ])
+    )
+    |> Repo.all()
+    |> Enum.map(fn attempt ->
+      outcome =
+        if is_nil(attempt.finished_at) and DateTime.compare(attempt.expires_at, now) != :gt,
+          do: "expired",
+          else: attempt.outcome
+
+      Map.put(attempt, :outcome, outcome)
+    end)
+  end
+
+  @doc "Summarizes the caller's current UTC-day measurements and active leases. Costs are estimates; missing calls remain visible. No other account's activity is exposed."
+  @spec activity(Scope.t()) :: map()
+  def activity(%Scope{user: %{id: user_id}}) do
+    now = DateTime.utc_now()
+    start = DateTime.new!(Date.utc_today(), ~T[00:00:00])
+
+    Repo.one(
+      from r in Reservation,
+        where: r.user_id == ^user_id and r.inserted_at >= ^start,
+        select: %{
+          attempts: count(r.id),
+          input_tokens: fragment("coalesce(sum(?), 0)::bigint", r.input_tokens),
+          output_tokens: fragment("coalesce(sum(?), 0)::bigint", r.output_tokens),
+          cost: fragment("coalesce(sum(?), 0)::bigint", r.estimated_cost_micros),
+          measured_calls: fragment("coalesce(sum(?), 0)::bigint", r.measured_calls),
+          unmeasured_calls: fragment("coalesce(sum(?), 0)::bigint", r.unmeasured_calls),
+          incomplete_attempts:
+            filter(count(r.id), r.measured_calls == 0 or is_nil(r.outcome) or r.outcome != "completed"),
+          active: filter(count(r.id), is_nil(r.finished_at) and r.expires_at > ^now)
+        }
+    )
   end
 
   defp validate_credential(id, attrs),

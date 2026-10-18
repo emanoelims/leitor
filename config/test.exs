@@ -27,6 +27,7 @@ config :leitor, LeitorWeb.Endpoint,
   server: false
 
 config :leitor, :ai_limits, %{cooldown_seconds: 0}
+config :leitor, :generation_queue, false
 
 # Print only warnings and errors during test
 config :logger, level: :warning

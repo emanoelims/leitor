@@ -1,5 +1,42 @@
 # Interactive figures
 
+## Profiles, revisions and evidence
+
+The composer offers three active profiles: interactive mechanism
+(`visual_explainer`), scientific diagram (`scientific_diagram`) and explanatory
+illustration (`explanatory_illustration`). Profiles change authoring and review
+instructions, not the isolation boundary. A scientific diagram may use a precise
+2D drawing; it is not forced into an isometric machine. All profiles still need
+meaningful controls, state-derived animation, model/interaction checks, theme and
+mobile evidence, and independent approval. Other creative formats remain marked
+as coming soon.
+
+Independent review must return validated consistency evidence for explanatory
+equations, signs, units, bounds and observable readouts. A contradictory
+explanation prevents acceptance even when the visual verdict alone is positive.
+This is an additional heuristic gate, not formal verification. See the
+[six-case quality report](figure-quality-report.md) for actual initial findings,
+automatic repairs and retained limitations.
+
+Accepted AI adjustments establish immutable ancestry. In the editor, **Versions**
+lists up to twenty related accepted account-owned versions, including descendants
+so an older restored version can return forward. Previews use the ordinary
+sandboxed runtime. Restoration costs no credits, replaces only the unchanged
+selected figure block and requires saving the page to persist it. Foreign,
+unrelated and draft targets are rejected; a stale editor block is not overwritten.
+Ancestry starts with new adjustments; existing artifacts are not assigned invented
+history. No new route or authentication scope is introduced: existing authenticated
+PageLive events and the ownership-checked artifact controller serve this feature.
+
+The trusted player and checker share foreground/color-scheme and shaded-material
+defaults before generated CSS. Dark surfaces remain distinguishable from the
+background, while the kit's light palette and explicit authored colors win their
+normal cascade. The player reapplies current defaults and then the original
+authored CSS even for older reviewed artifacts, without changing their hashed
+executable bundles. Authors setting custom backgrounds must also supply suitable
+foreground colors.
+See [AI usage](ai-usage.md) for waiting queues, recovery and measured costs.
+
 ## Isolated program author
 
 With `:figure_runner` enabled, authenticated page generation uses an authoring
@@ -39,6 +76,20 @@ bundle and returns a repair diagnostic before visual review. Model-only checks
 remain independent of drawing and animation. The existing data-only scene format
 remains available for static compositions.
 
+For personal reservations above 32,768 output tokens, a first construction that
+has spent at least half its authorized output budget hands its next successful
+render directly to independent review. It does not spend further coding turns
+on self-revision first. The exact validated source and passing execution evidence
+remain bound together; the independent verdict is still required. Repairs retain
+the existing frozen checks, stage ceiling and total deadline.
+
+Review budget accounting uses validated actual output usage when supplied by the
+provider, forwarding the original scoped measurement callback once. Unknown,
+incomplete or invalid counters conservatively consume the full allocation.
+Unspent review tokens remain within the same existing reservation for repairs;
+this never increases credits, token ceilings or the number of authoring stages.
+The report's `review_usage` records the charged output and whether it was measured.
+
 Visual review is a heuristic; mechanism-specific tests and human assessment
 remain necessary. Generated experiments are evidence, not an independent proof
 of physical correctness. The checker captures a detail frame immediately before
@@ -51,6 +102,15 @@ and cut planes; implementation style is not a substitute for visible correctness
 Minor aesthetic refinements are reported without blocking an otherwise polished,
 correct figure. Intentional cutaway occlusion and required mechanical separation
 are evaluated in context.
+
+Mobile framing uses a fresh default 390-pixel browser view, independently of
+prior inspection actions. The runner records actual drawing bounds and rejects
+substantial overhang beyond the largest visible SVG's viewBox (more than 5 percent
+of an axis or 4 units, whichever is greater). Hiding overflow or choosing an
+automatically cropped close-up cannot pass this gate. This catches geometric
+clipping even when the HTML document itself does not overflow. Optional labeled
+inspection views retain their desktop tested/detail evidence. This bound is a
+framing regression, not proof that every part or motion pose is correct.
 
 Optional `capture_steps` (up to eight ordinary UI actions) arrange screenshots
 after all experiment assertions pass. They are separate from the immutable
@@ -599,3 +659,29 @@ after two minutes. Individual checks retain the 75-second container and
 executable bundle. Stable GitHub releases deploy this private service before
 Phoenix. PostgreSQL retains final account-owned artifacts; the checker's job
 files and containers are disposable.
+
+## Automatically authored rack and pinion
+
+`test/fixtures/figures/rack-program.json` preserves the exact accepted program
+from a new-page editor request. Construction began with empty modules. Its first
+bounded job passed mechanical checks but failed visual review for occlusion,
+guide engagement, bearing seating and mobile framing. A second explicitly
+requested job continued the saved revision and retained the existing assertions;
+the independent reviewer accepted its repair. Visual inspection then found an
+automatic mobile close-up cropping the base and rack ends despite that acceptance.
+A new default-view framing gate rejected this source while the other fixtures
+still passed. An explicit in-editor AI adjustment repaired only the projection
+and layout, preserving the model, all 22 checks and the five experiments exactly.
+The corrected immutable revision passed fresh execution and independent review.
+No generated geometry, simulation or mechanical check was manually edited.
+This is evidence for bounded recovery
+and repair, not a single-attempt or universal-generation success claim.
+
+The figure models a 20-tooth, module-4 pinion with compatible straight rack
+flanks, a 20-degree pressure angle, a 40 mm pitch radius and about ±90.2 mm
+travel. Its pure model derives no-slip advance from `x = r * theta`. Authored
+model checks (22 assertions), five UI experiments and the observed-motion gate passed. Reader
+checks additionally confirmed forward motion, reverse travel, both automatic
+stops, reset and visible contact inspection. The opt-in suite rechecks the
+unchanged source in light, interacted, dark and mobile views. The study describes
+ideal kinematics, not load, friction, shaft deflection or manufacturing tolerance.

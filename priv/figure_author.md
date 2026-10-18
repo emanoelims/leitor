@@ -188,6 +188,13 @@ partition planes selective and reuse stable geometry between frames.
 
 # Leitor mechanical primitives
 
+The reader and checker share theme-aware body defaults: `--figure-text` and
+`--figure-muted`, with a transparent background and matching light/dark
+`color-scheme`. Unstyled labels, outputs and SVG `currentColor` inherit a readable
+foreground. If you choose an opaque custom panel background, explicitly set its
+foreground for both themes. Do not assume the browser's default black text is
+readable on a dark frame. Inspect small labels and readouts in dark.png too.
+
 Read `mechanics.mjs` before building a geared or slider-crank mechanism. Import
 `{spurGear, externalGearPair, sliderCrank}` from `/leitor/mechanics.mjs`. These are
 pure reusable primitives, not a scene preset. Author the requested machine,

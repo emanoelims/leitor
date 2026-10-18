@@ -824,6 +824,7 @@ msgstr ""
 #: lib/leitor_web/live/page_live.html.heex:550
 #: lib/leitor_web/live/page_live.html.heex:655
 #: lib/leitor_web/live/page_live.html.heex:656
+#: lib/leitor_web/live/page_live.html.heex:659
 #, elixir-autogen, elixir-format
 msgid "Keep in a jar"
 msgstr ""

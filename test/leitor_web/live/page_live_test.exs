@@ -592,14 +592,9 @@ defmodule LeitorWeb.PageLiveTest do
     anchor = %{"start_block" => 0, "end_block" => 0, "start_offset" => 2, "end_offset" => 11}
     render_hook(view, "select", anchor)
     assert has_element?(view, "#page-selection")
-    view |> element("#selection-highlight") |> render_click()
     assert has_element?(view, "#selection-highlight-palette")
     assert has_element?(view, "#selection-highlight-yellow[aria-pressed=true]")
-    view |> element("#selection-highlight-back") |> render_click()
-    assert has_element?(view, "#selection-highlight")
-    refute has_element?(view, ".selection-palette")
     view |> element("#selection-highlight") |> render_click()
-    view |> element("#selection-highlight-yellow") |> render_click()
     assert [%{kind: "highlight", quote: "wonderful"}] = Pages.list_marks(scope, page.id)
     assert_push_event(view, "reading-preference", %{key: "marker", value: "yellow"})
     refute has_element?(view, "#page-selection")
@@ -631,6 +626,38 @@ defmodule LeitorWeb.PageLiveTest do
     assert has_element?(reopened, "#page-notebook-marks", "A lovely word, worth keeping.")
     render_click(reopened, "remove-mark", %{"id" => definition.id})
     assert length(Pages.list_marks(scope, page.id)) == 2
+  end
+
+  test "existing highlights change color in place and can be erased from the selection toolbar", %{
+    conn: conn,
+    scope: scope
+  } do
+    {:ok, page} = Pages.create_page(scope, %{"title" => "Reading", "body" => "A wonderful sentence."})
+    anchor = %{"start_block" => 0, "end_block" => 0, "start_offset" => 2, "end_offset" => 11}
+    {:ok, highlight} = Pages.create_mark(scope, page.id, anchor, %{kind: "highlight", color: "blue"})
+    {:ok, other} = Pages.create_page(scope, %{"title" => "Other", "body" => page.body})
+    {:ok, unrelated} = Pages.create_mark(scope, other.id, anchor, %{kind: "highlight", color: "green"})
+    {:ok, view, _} = live(conn, ~p"/pages/#{page.id}")
+
+    render_hook(view, "select", Map.put(anchor, "highlight_id", unrelated.id))
+    refute has_element?(view, "#selection-highlight-remove")
+    render_hook(view, "select", Map.put(anchor, "highlight_id", highlight.id))
+    assert has_element?(view, "#selection-highlight-blue[aria-pressed=true]")
+    refute has_element?(view, "#selection-highlight")
+    view |> element("#selection-highlight-rose") |> render_click()
+    assert [%{id: id, color: "rose"}] = Pages.list_marks(scope, page.id)
+    assert id == highlight.id
+    assert Pages.get_mark!(scope, unrelated.id).color == "green"
+    refute has_element?(view, "#page-selection")
+
+    render_hook(view, "select", Map.put(anchor, "highlight_id", highlight.id))
+    view |> element("#selection-highlight-remove") |> render_click()
+    assert Pages.list_marks(scope, page.id) == []
+    refute has_element?(view, "#page-selection")
+    render_hook(view, "select", anchor)
+    assert has_element?(view, "#selection-highlight")
+    view |> element("#selection-highlight") |> render_click()
+    assert [%{color: "rose"}] = Pages.list_marks(scope, page.id)
   end
 
   test "the dictionary answers in a margin card that can be kept in a jar and retried", %{conn: conn, scope: scope} do

@@ -106,9 +106,11 @@ sheet and filters highlights, notes, definitions and questions. Its entries link
 back to the source and can be sent to a grammatical word jar with an explicit meaning.
 The corner minimap uses Gloss’s paragraph lines, vermilion annotation dots and
 viewport outline, with clicking, dragging and keyboard travel. Notes and
-highlights persist per account. The selection toolbar's highlighter opens a compact
-yellow, green, blue and rose palette and remembers the last chosen color. Highlights
-appear in the notebooks and minimap and can be removed from the notebook.
+highlights persist per account. The selection toolbar's highlighter applies the last chosen color on click.
+Hover or keyboard focus reveals yellow, green, blue and rose swatches inline,
+using Gloss's width transition; touch devices keep the swatches visible.
+Click an existing highlight to recolor it or erase it from the toolbar. Highlights
+appear in the notebooks and minimap and can also be removed from the notebook.
 Unique quotations are reanchored after edits; removed
 or ambiguous passages are retained in the notebook without pointing to another text.
 The bottom question toolbar is absent from this workspace.

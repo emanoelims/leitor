@@ -110,7 +110,7 @@ test('free pages, selection, notes, notebook, definitions and word jars work end
   await select(page,1,'wonderful discovery')
   await page.screenshot({path:testInfo.outputPath('page-selection.png'),fullPage:false,animations:'disabled'})
   await expect(page.locator('#selection-highlight')).toBeVisible()
-  await expect(page.locator('.selection-palette')).toHaveCount(0)
+  await expect(page.locator('.selection-highlighter')).toBeVisible()
   await page.locator('#selection-note').click()
   await page.getByLabel('Your note on the selection').fill('Notice the whole phrase.')
   await page.locator('#selection-note-form').getByRole('button',{name:'Keep note'}).click()
@@ -259,7 +259,7 @@ test('free pages, selection, notes, notebook, definitions and word jars work end
   await expect(page.locator('#selection-define .lucide-book-a')).toBeVisible()
   await expect(page.locator('#selection-explain .lucide-lightbulb')).toBeVisible()
   await expect(page.locator('#selection-highlight')).toBeVisible()
-  await expect(page.locator('.selection-palette')).toHaveCount(0)
+  await expect(page.locator('.selection-highlighter')).toBeVisible()
   await expect(page.locator('#selection-note')).toBeVisible()
   await page.keyboard.press('Escape')
   await page.locator('#page-notebook').click()
@@ -1232,7 +1232,7 @@ test('live Claude streams definitions and follow-ups in margin cards',async({pag
 })
 
 
-test('color highlights survive reload and can be removed through the notebook', async ({page}, testInfo) => {
+test('color highlights use the Gloss inline palette, persist, recolor and erase', async ({page,browser}, testInfo) => {
   await signIn(page)
   await page.goto('/pages/new')
   await page.getByRole('textbox',{name:'Page title'}).fill('Color highlights')
@@ -1242,10 +1242,15 @@ test('color highlights survive reload and can be removed through the notebook', 
   const entries=[['yellow','wonderful discovery'],['green','Café'],['blue','little attention'],['rose','read']]
   for(const [color,quote] of entries) {
     await select(page,0,quote)
-    await page.locator('#selection-highlight').click()
-    await expect(page.locator('.selection-palette')).toBeVisible()
-    await expect(page.locator('.selection-palette button')).toHaveCount(4)
-    await page.locator(`#selection-highlight-${color}`).click()
+    if(color==='yellow') {
+      await expect(page.locator('.selection-colors-reveal')).toHaveCSS('width','0px')
+      await page.locator('#selection-highlight').click()
+    } else {
+      await page.locator('#selection-highlight').hover()
+      await expect(page.locator('.selection-colors-reveal')).toHaveCSS('width','94px')
+      await expect(page.locator('#page-selection')).toHaveAttribute('role','toolbar')
+      await page.locator(`#selection-highlight-${color}`).click()
+    }
     await expect(page.locator('#page-selection')).toHaveCount(0)
     await expect.poll(async()=> (await page.locator(`#page-reading mark.highlight-${color}`).allTextContents()).join('')).toBe(quote)
     await expect(page.locator('#page-margin-root')).not.toHaveAttribute('data-active',/.+/)
@@ -1254,22 +1259,47 @@ test('color highlights survive reload and can be removed through the notebook', 
   for(const [color,quote] of entries) {
     await expect.poll(async()=> (await page.locator(`#page-reading mark.highlight-${color}`).allTextContents()).join('')).toBe(quote)
   }
-  await page.setViewportSize({width:390,height:844})
-  await select(page,0,'Café')
-  await page.locator('#selection-highlight').click()
-  await expect(page.locator('#selection-highlight-palette')).toBeInViewport()
+  // Keyboard focus reveals the same inline colors and keeps the lens anchored.
+  await select(page,0,'starts')
+  await page.locator('#selection-highlight').focus()
+  await page.keyboard.press('Tab')
+  await expect(page.locator('#selection-highlight-yellow')).toBeFocused()
+  await expect(page.locator('.selection-colors-reveal')).toHaveCSS('width','94px')
   await expect(page.locator('#selection-highlight-rose')).toHaveAttribute('aria-pressed','true')
-  await page.screenshot({path:testInfo.outputPath('highlight-palette-mobile.png'),animations:'disabled'})
   await page.keyboard.press('Escape')
-  await expect(page.locator('#page-selection')).toHaveCount(0)
-  const green=page.locator('#page-reading mark.highlight-green')
-  const id=await green.getAttribute('data-page-mark')
-  await green.click()
-  await expect(page.locator('#page-notebook-panel')).toBeVisible()
-  await expect(page.locator('#page-notebook-marks')).toContainText('Café')
-  await page.locator(`#notebook_marks-${id} button[phx-click="remove-mark"]`).click()
+  // A formatted, multi-node highlight opens all of its text, not just the clicked fragment.
+  const yellow=page.locator('#page-reading mark.highlight-yellow')
+  const id=await yellow.first().getAttribute('data-page-mark')
+  await yellow.first().click()
+  await expect(page.locator('#selection-highlight-remove')).toBeVisible()
+  await expect(page.locator('#selection-highlight-yellow')).toHaveAttribute('aria-pressed','true')
+  await expect(page.locator('#selection-highlight')).toHaveCount(0)
+  await page.locator('#selection-highlight-blue').click()
+  await expect(page.locator(`#page-reading mark[data-page-marks~="${id}"].highlight-blue`)).toHaveCount(2)
+  await expect(page.locator('#page-reading mark.highlight-yellow')).toHaveCount(0)
+  // Touch devices show the colors without requiring hover.
+  await page.setViewportSize({width:390,height:844})
+  await page.locator('#page-reading mark.highlight-green').click()
+  await expect(page.locator('#selection-highlight-palette')).toBeInViewport()
+  await page.screenshot({path:testInfo.outputPath('highlight-inline-mobile.png'),animations:'disabled'})
+  await page.locator('#selection-highlight-remove').click()
   await expect(page.locator('#page-reading mark.highlight-green')).toHaveCount(0)
   await page.reload()
   await expect(page.locator('#page-reading mark.highlight-green')).toHaveCount(0)
   await expect(page.locator('#page-reading mark.highlight-rose')).toHaveText('read')
+  await page.locator('#page-notebook').click()
+  await page.locator(`#notebook_marks-${id} button[phx-click="remove-mark"]`).click()
+  await expect(page.locator(`#page-reading mark[data-page-marks~="${id}"]`)).toHaveCount(0)
+  const touchContext=await browser.newContext({storageState:await page.context().storageState(),viewport:{width:390,height:844},hasTouch:true,isMobile:true})
+  try {
+    const touch=await touchContext.newPage()
+    await touch.goto(page.url())
+    await select(touch,0,'starts')
+    await expect(touch.locator('.selection-colors-reveal')).toHaveCSS('width','94px')
+    await expect(touch.locator('#selection-highlight-rose')).toBeInViewport()
+    await touch.locator('#selection-highlight-green').tap()
+    await expect(touch.locator('#page-reading mark.highlight-green')).toHaveText('starts')
+  } finally {
+    await touchContext.close()
+  }
 })

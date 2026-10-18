@@ -24,7 +24,7 @@ export const PageReader = {
     mountScenes(this.el)
     this.position = new ReadingPosition(this.el)
     this.marks = JSON.parse(this.el.dataset.marks || '[]')
-    this.select = () => {
+    this.select = (highlightId = null) => {
       if (this.el.closest('.page-focus-mode')) return
       const selection = window.getSelection()
       if (!selection?.rangeCount || selection.isCollapsed) return
@@ -36,13 +36,23 @@ export const PageReader = {
       const rect = range.getBoundingClientRect()
       selectionGeometry = {rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},scrollY:window.scrollY,version:++selectionVersion}
       window.dispatchEvent(new Event('page:selection'))
-      this.pushEvent('select',{start_block:Number(first.dataset.pageBlock),end_block:Number(last.dataset.pageBlock),start_offset:prefix(first,range.startContainer,range.startOffset),end_offset:prefix(last,range.endContainer,range.endOffset),selection_version:selectionGeometry.version})
+      this.pushEvent('select',{start_block:Number(first.dataset.pageBlock),end_block:Number(last.dataset.pageBlock),start_offset:prefix(first,range.startContainer,range.startOffset),end_offset:prefix(last,range.endContainer,range.endOffset),selection_version:selectionGeometry.version,...(typeof highlightId==='string'?{highlight_id:highlightId}:{})})
     }
     this.onClick = e => {
       if (this.el.closest('.page-focus-mode') || e.target.closest('a,button')) return
       const mark = e.target.closest('[data-page-mark]')
       if (!window.getSelection()?.isCollapsed) {e.preventDefault(); return}
-      if (mark) {if(mark.dataset.pageMark!=='pending')this.pushEvent('activate-mark', {id:mark.dataset.pageMark}); return}
+      if (mark) {
+        const id=mark.dataset.pageMark
+        if(this.marks.find(item=>item.id===id)?.kind==='highlight') {
+          const spans=[...this.el.querySelectorAll(`[data-page-marks~="${id}"]`)]
+          const range=document.createRange()
+          range.selectNodeContents(spans[0]);const end=document.createRange();end.selectNodeContents(spans.at(-1));range.setEnd(end.endContainer,end.endOffset)
+          const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range)
+          this.select(id)
+        } else if(id!=='pending') this.pushEvent('activate-mark',{id})
+        return
+      }
     }
     this.onKey = e => {
       if (e.defaultPrevented || e.target.closest('input,textarea,select,[contenteditable],#page-selection,[role="dialog"],[role="menu"],[role="listbox"],[role="combobox"]') || document.getElementById('page-selection') || document.getElementById('page-shortcut-dialog') || e.metaKey || e.ctrlKey || e.altKey) return

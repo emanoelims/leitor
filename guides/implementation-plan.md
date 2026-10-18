@@ -46,7 +46,9 @@ selection tools. Appearance preferences persist locally.
 The reader uses the local Gloss reference for typography, themes, customization,
 selection actions, margin connectors, and card motion. Paragraph numbers start
 hidden. The bottom question toolbar is absent. The selection toolbar includes a highlighter
-with yellow, green, blue and rose choices. Highlights persist with the page,
+with yellow, green, blue and rose choices that expand inline on hover or keyboard
+focus. Clicking applies the remembered color; touching uses visible swatches.
+Existing highlights open the same toolbar for recoloring or erasing. Highlights persist with the page,
 appear in both notebooks and the corner reading map, and can be removed from
 the notebook. The last chosen color is remembered with local reading preferences.
 

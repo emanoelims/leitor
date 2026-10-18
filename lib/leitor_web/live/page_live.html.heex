@@ -558,6 +558,7 @@
     class={[
       "page-selection",
       @selection_mode == "actions" && "page-selection-actions",
+      @selection_mode == "highlight" && "page-selection-highlight",
       @selection_mode != "actions" && "page-selection-expanded"
     ]}
     role={if @selection_mode == "actions", do: "toolbar", else: "dialog"}
@@ -661,6 +662,18 @@
           </details>
           <span class="selection-divider"></span>
           <button
+            id="selection-highlight"
+            type="button"
+            aria-label={gettext("Highlight text")}
+            title={gettext("Highlight text")}
+            phx-click="selection-mode"
+            phx-value-mode="highlight"
+          ><.icon name="lucide-highlighter" class="size-[15px]" /><span
+            class="selection-color-dot selection-marker-color"
+            data-color={@marker_color}
+            aria-hidden="true"
+          ></span></button>
+          <button
             id="selection-note"
             type="button"
             aria-label={gettext("Add a note")}
@@ -670,6 +683,44 @@
           ><.icon name="lucide-pen-line" class="size-[15px]" /></button>
         </div>
         <p id="selection-copy-status" phx-update="ignore" class="sr-only" role="status"></p>
+      <% "highlight" -> %>
+        <div class="selection-palette-heading">
+          <button
+            id="selection-highlight-back"
+            type="button"
+            class="icon-button"
+            aria-label={gettext("Back to selection actions")}
+            phx-click="selection-mode"
+            phx-value-mode="actions"
+          ><.icon name="lucide-arrow-right" class="size-4 rotate-180" /></button>
+          <span>{gettext("Highlight text")}</span>
+        </div>
+        <div
+          id="selection-highlight-palette"
+          class="selection-palette"
+          role="group"
+          aria-label={gettext("Highlight color")}
+          phx-mounted={JS.focus_first()}
+        >
+          <button
+            :for={
+              {color, label} <- [
+                {"yellow", gettext("Yellow")},
+                {"green", gettext("Green")},
+                {"blue", gettext("Blue")},
+                {"rose", gettext("Rose")}
+              ]
+            }
+            id={"selection-highlight-#{color}"}
+            type="button"
+            aria-label={gettext("Highlight in %{color}", color: label)}
+            aria-pressed={to_string(@marker_color == color)}
+            phx-click="highlight"
+            phx-value-color={color}
+          ><span class="selection-swatch selection-marker-color" data-color={color}>
+            <.icon :if={@marker_color == color} name="lucide-check" class="size-4" />
+          </span><span>{label}</span></button>
+        </div>
       <% "note" -> %>
         <.form for={@note_form} id="selection-note-form" phx-submit="note">
           <.input

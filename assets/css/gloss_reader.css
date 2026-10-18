@@ -108,7 +108,21 @@ body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index
 .page-selection-actions .selection-tools { overflow:visible; gap:2px; }
 .page-selection-actions .selection-tools>button,.selection-more>summary { display:inline-flex; flex:none; align-items:center; justify-content:center; height:32px; padding:0 12px 0 10px; gap:6px; border-radius:10px; color:var(--gloss-lens-text); font-size:13px; line-height:1; white-space:nowrap; transition:background-color .15s,transform .15s var(--gloss-ease); }
 .page-selection-actions #selection-ask { padding-left:12px; padding-right:10px; gap:8px; font-weight:500; }
-.page-selection-actions #selection-note { width:32px; padding:0; }
+.page-selection-actions :is(#selection-note,#selection-highlight) { width:32px; padding:0; }
+.page-selection-actions #selection-highlight { position:relative; }
+.selection-marker-color[data-color=yellow] { --selection-marker:#edc95c; }
+.selection-marker-color[data-color=green] { --selection-marker:#9fd1a2; }
+.selection-marker-color[data-color=blue] { --selection-marker:#9fc8ed; }
+.selection-marker-color[data-color=rose] { --selection-marker:#e9acb8; }
+.selection-color-dot { position:absolute; right:4px; bottom:4px; width:6px; height:6px; border-radius:50%; background:var(--selection-marker); }
+.page-selection.page-selection-highlight { width:244px; padding:8px; }
+.selection-palette-heading { display:flex; align-items:center; gap:8px; margin-bottom:6px; color:var(--ink); font-size:13px; }
+.selection-palette-heading .icon-button { width:28px; height:28px; border:0; border-radius:7px; }
+.selection-palette { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; }
+.selection-palette button { display:flex; align-items:center; flex-direction:column; gap:6px; padding:8px 5px; border:0; border-radius:9px; background:transparent; color:var(--ink); font-size:11px; cursor:pointer; transition:background-color .15s; }
+.selection-palette button:is(:hover,:focus-visible) { background:var(--soft); }
+.selection-palette button:focus-visible { outline:2px solid var(--gloss-pen); outline-offset:-2px; }
+.selection-swatch { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--selection-marker); color:#29261f; }
 .page-selection-actions .selection-tools>button>[class*="lucide-"] { color:var(--gloss-lens-muted); }
 .page-selection-actions .selection-tools>button:hover>[class*="lucide-"] { color:var(--gloss-lens-text); }
 .page-selection-actions .selection-tools>button:hover,.selection-more>summary:hover { background:var(--gloss-lens-hover); }

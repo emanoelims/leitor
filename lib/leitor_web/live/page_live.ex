@@ -454,7 +454,7 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
-  def handle_event("selection-mode", %{"mode" => mode}, socket) when mode in ~w(actions note ask pot),
+  def handle_event("selection-mode", %{"mode" => mode}, socket) when mode in ~w(actions highlight note ask pot),
     do: {:noreply, assign(socket, selection_mode: mode)}
 
   def handle_event("selection-mode", _, socket), do: {:noreply, socket}
@@ -953,8 +953,12 @@ defmodule LeitorWeb.PageLive do
 
   defp keep_mark(socket, attrs) do
     case Pages.create_mark(socket.assigns.current_scope, socket.assigns.text.id, socket.assigns.selection_anchor, attrs) do
-      {:ok, mark} -> {:noreply, socket |> assign(selection: nil, error: nil, active_mark_id: mark.id) |> refresh_marks()}
-      {:error, _} -> {:noreply, assign(socket, error: "Write a note between 1 and 4,000 characters.")}
+      {:ok, mark} ->
+        active_id = if mark.kind == "highlight", do: nil, else: mark.id
+        {:noreply, socket |> assign(selection: nil, error: nil, active_mark_id: active_id) |> refresh_marks()}
+
+      {:error, _} ->
+        {:noreply, assign(socket, error: "Write a note between 1 and 4,000 characters.")}
     end
   end
 

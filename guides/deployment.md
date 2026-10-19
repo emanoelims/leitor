@@ -34,6 +34,16 @@ back if deployment fails; future schema changes must remain compatible with the
 previous release during rollout. Redeploy an earlier compatible image through
 the Fly dashboard for emergency recovery, accounting for any applied migrations.
 
+Version 0.6.0 adds three migrations for sharing permissions, comments and explicit
+annotation authorship. The first migration leaves author IDs nullable until the
+last installs an insert trigger, backfills intervening legacy writes and enforces
+NOT NULL. The trigger assigns the source owner only when the application omits
+the author, preserving inserts from 0.5.2 during rollout or image recovery. New
+shared-reader writes always supply their explicit reader author. Existing
+development databases that already enforced NOT NULL receive the same final
+trigger and constraint through the last migration. All shares start restricted;
+publishing the release does not expose existing pages. No new secrets are needed.
+
 Version 0.4.0 includes three additive migrations for artifact parent references,
 AI measurements, and queued-generation indexes/status. Existing attempts remain
 unmeasured. No new secrets are required. Queue dispatch runs only in serving
@@ -84,8 +94,10 @@ Lumis writes its compiled parser cache to `/tmp/lumis`; user data lives in
 Postgres, not the application's ephemeral filesystem.
 
 The public `/health` route has the API pipeline and no browser session. It reports
-only readiness and does not expose database details. All product screens retain
-the authenticated browser pipeline and LiveView session. Email delivery uses
+only readiness and does not expose database details. Workspace screens retain
+the authenticated browser pipeline and LiveView session. Shared readers at
+`/s/:token` allow optional authentication and enforce page permissions separately,
+including on figure fetches and comment writes. Email delivery uses
 Resend in production, the local mailbox in development, and Swoosh's test adapter
 in tests. Never enable development routes on Fly.
 

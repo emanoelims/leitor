@@ -4,6 +4,38 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-18
+
+### Added
+
+- Page sharing through restricted email invitations or revocable links with view
+  and comment permissions. Comment access lets visitors discuss selected passages
+  using a display name; verified email invitations require the matching account.
+- Private reader highlights, notes and AI answers on shared pages, with explicit,
+  idempotent import of guest drafts after signing in. AI and word jars use the
+  current reader's account and allowance. Shared embedded figures keep their
+  interaction and sandbox restrictions.
+- Link renewal and access revocation update open shared readers immediately.
+
+### Fixed
+
+- Restore the inline highlight palette, recoloring and erasing, matching the
+  reference's colors before and after reloading in every theme.
+- Restore missing selection icons and the word-jar action label.
+
+### Changed
+
+- Update `req_llm` to 1.28.0 and `jsv` to 0.26.1.
+
+### Migration
+
+Three migrations add sharing permissions and comments, backfill annotation authors,
+and add guest import keys. A compatibility trigger assigns the source owner only
+when an older application inserts an annotation without its author; explicit
+reader ownership is preserved. This keeps old-version inserts working during
+rollout and recovery. All pages start restricted. No new secrets are required.
+Collaborative source editing is outside this release.
+
 ## [0.5.2] - 2026-10-18
 
 Release 0.5.1 was tagged before its version bump, so its deployment stopped at

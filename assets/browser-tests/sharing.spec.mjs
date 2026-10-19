@@ -17,8 +17,19 @@ async function select(page,quote) {
   await expect(page.locator('#page-selection')).toBeVisible()
 }
 
+const quoteStyle=locator=>locator.evaluate(node=>{
+  const style=getComputedStyle(node)
+  return Object.fromEntries(['fontFamily','fontSize','lineHeight','borderLeftWidth','borderLeftColor','paddingLeft','backgroundColor','borderRadius'].map(key=>[key,style[key]]))
+})
+
+async function theme(page,value) {
+  await page.locator('#reading-font').click()
+  await page.locator(`#reading-theme-${value}`).click()
+  await page.locator('#reading-font').click()
+}
+
 test('sharing permissions, guest conversations and private notes work across independent browsers',async({page,browser},testInfo)=>{
-  test.setTimeout(90000)
+  test.setTimeout(120000)
   await signIn(page)
   await page.goto('/pages/new')
   await page.getByRole('textbox',{name:'Page title'}).fill('A page to share')
@@ -28,6 +39,17 @@ test('sharing permissions, guest conversations and private notes work across ind
     node.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}))
   })
   await page.locator('#page-save').click()
+  await select(page,'wonderful')
+  await page.locator('#selection-note').click()
+  await page.getByLabel('Your note on the selection').fill('An owner-only thought')
+  await page.getByRole('button',{name:'Keep note',exact:true}).click()
+  const ownerQuote=page.locator('.page-margin-card.is-active blockquote')
+  const expectedStyles={}
+  for(const value of ['light','dark']) {
+    await theme(page,value)
+    expectedStyles[value]=await quoteStyle(ownerQuote)
+  }
+  await theme(page,'light')
   await page.locator('#page-share').click()
   await expect(page.locator('#page-sharing-dialog')).toBeVisible()
   const link=await page.locator('#open-shared-page').getAttribute('href')
@@ -68,9 +90,24 @@ test('sharing permissions, guest conversations and private notes work across ind
     await guest.getByLabel('Your note on the selection').fill('My private guest thought')
     await guest.getByRole('button',{name:'Keep note',exact:true}).click()
     await expect(guest.locator('#shared-personal-notes')).toContainText('My private guest thought')
+    const guestCard=guest.locator('#shared-personal-notes .page-margin-card.is-active')
+    for(const value of ['light','dark']) {
+      await theme(guest,value)
+      expect(await quoteStyle(guestCard.locator('blockquote'))).toEqual(expectedStyles[value])
+    }
+    await guestCard.getByRole('button',{name:'Collapse note',exact:true}).click()
+    await expect(guest.locator('#shared-personal-notes .page-card-summary')).toBeVisible()
+    await guest.locator('#shared-personal-notes .page-card-summary').click()
+    await expect(guestCard.locator('.page-answer')).toContainText('My private guest thought')
+    await guestCard.getByRole('button',{name:'Go to paragraph 1',exact:true}).click()
+    await expect(guest.locator('#page-block-0')).toHaveClass(/is-flash/)
+    await guest.screenshot({path:testInfo.outputPath('shared-gloss-note-dark.png')})
+    await theme(guest,'light')
+    await guest.screenshot({path:testInfo.outputPath('shared-gloss-note-light.png')})
     await observer.locator('#personal-tab').click()
     await expect(observer.locator('#shared-personal-notes')).not.toContainText('My private guest thought')
     await guest.reload()
+    await guest.locator("[data-phx-main].phx-connected").waitFor()
     await guest.locator('#personal-tab').click()
     await expect(guest.locator('#shared-personal-notes')).toContainText('My private guest thought')
     await select(guest,'wonderful')
@@ -86,11 +123,13 @@ test('sharing permissions, guest conversations and private notes work across ind
     await page.screenshot({path:testInfo.outputPath('share-permissions.png')})
     await signIn(guest)
     await guest.goto(sharedUrl)
+    await guest.locator("[data-phx-main].phx-connected").waitFor()
     await guest.locator('#personal-tab').click()
     await guest.locator('#import-guest-notes').click()
     await expect(guest.locator('#import-guest-notes')).toHaveCount(0)
     await expect(guest.locator('#shared-personal-notes')).toContainText('My private guest thought')
     await guest.reload()
+    await guest.locator("[data-phx-main].phx-connected").waitFor()
     await guest.locator('#personal-tab').click()
     await expect(guest.locator('#shared-personal-notes')).toContainText('My private guest thought')
     await guest.locator('#shared-tab').click()

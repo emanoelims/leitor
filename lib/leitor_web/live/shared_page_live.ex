@@ -78,6 +78,7 @@ defmodule LeitorWeb.SharedPageLive do
       if location do
         socket
         |> assign(panel: "personal", panel_open: true, active_mark_id: mark.id)
+        |> refresh_personal()
         |> push_event("page-jump", %{id: mark.id})
       else
         socket
@@ -210,8 +211,33 @@ defmodule LeitorWeb.SharedPageLive do
 
   def handle_event("note", %{"note" => %{"body" => body}}, socket), do: keep_mark(socket, %{kind: "note", body: body})
 
-  def handle_event("activate-mark", %{"id" => id}, socket),
-    do: {:noreply, assign(socket, panel: "personal", panel_open: true, active_mark_id: id, selection: nil)}
+  def handle_event("activate-mark", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.personal_marks, &(&1.id == id)) do
+      {:noreply,
+       socket
+       |> assign(panel: "personal", panel_open: true, active_mark_id: id, selection: nil)
+       |> refresh_personal()}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("collapse-mark", _, socket),
+    do: {:noreply, socket |> assign(active_mark_id: nil) |> refresh_personal()}
+
+  def handle_event("jump-mark", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.personal_marks, &(&1.id == id)) do
+      {:noreply, push_event(socket, "page-jump", %{id: id})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("stop-help", _, socket) do
+    socket = if socket.assigns.busy, do: cancel_async(socket, :shared_help), else: socket
+    AI.finish(socket.assigns.current_scope, socket.assigns.lease_id, :cancelled)
+    {:noreply, assign(socket, busy: false, pending: nil, lease_id: nil, ai_raw: "", ai_preview: "")}
+  end
 
   def handle_event("remove-mark", %{"id" => id}, socket) do
     socket =
@@ -350,6 +376,8 @@ defmodule LeitorWeb.SharedPageLive do
   def handle_info(_, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_async(:shared_help, _result, %{assigns: %{pending: nil}} = socket), do: {:noreply, socket}
+
   def handle_async(:shared_help, {:ok, {:ok, data}}, %{assigns: %{pending: pending}} = socket) when not is_nil(pending) do
     result =
       Sharing.create_mark(socket.assigns.current_scope, socket.assigns.token, pending.anchor, %{
@@ -364,7 +392,7 @@ defmodule LeitorWeb.SharedPageLive do
     socket = assign(socket, busy: false, pending: nil, lease_id: nil, ai_preview: "", error: nil)
 
     case result do
-      {:ok, _} -> {:noreply, refresh_personal(socket)}
+      {:ok, mark} -> {:noreply, socket |> assign(active_mark_id: mark.id) |> refresh_personal()}
       {:error, reason} -> {:noreply, fail(socket, reason)}
     end
   end
@@ -444,7 +472,14 @@ defmodule LeitorWeb.SharedPageLive do
       socket =
         assign(socket,
           busy: true,
-          pending: %{anchor: anchor, action: action, quote: selection.quote, question: question},
+          pending: %{
+            anchor: anchor,
+            action: action,
+            quote: selection.quote,
+            question: question,
+            block_index: selection.block_index,
+            mark_id: nil
+          },
           lease_id: client.lease_id,
           ai_preview: "",
           ai_raw: "",
@@ -550,8 +585,11 @@ defmodule LeitorWeb.SharedPageLive do
   defp keep_mark(socket, attrs) do
     if socket.assigns.current_scope do
       case Sharing.create_mark(socket.assigns.current_scope, socket.assigns.token, socket.assigns.selection_anchor, attrs) do
-        {:ok, _} ->
-          {:noreply, socket |> assign(selection: nil, panel: "personal", panel_open: true) |> refresh_personal()}
+        {:ok, mark} ->
+          {:noreply,
+           socket
+           |> assign(selection: nil, panel: "personal", panel_open: true, active_mark_id: mark.id)
+           |> refresh_personal()}
 
         {:error, reason} ->
           {:noreply, fail(socket, reason)}
@@ -569,6 +607,7 @@ defmodule LeitorWeb.SharedPageLive do
          |> assign(
            selection: nil,
            guest_drafts: socket.assigns.guest_drafts ++ [draft],
+           active_mark_id: draft["id"],
            panel: "personal",
            panel_open: true
          )

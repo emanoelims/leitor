@@ -159,52 +159,57 @@
             <p id="shared-comments-empty" class="hidden only:block notebook-empty-state">
               {gettext("No shared comments yet.")}
             </p>
-            <article
+            <ReaderComponents.annotation_frame
               :for={{dom_id, comment} <- @streams.comments}
               id={dom_id}
-              class="shared-comment-card"
+              layout="stack"
             >
-              <header>
-                <strong>{comment.author_name}</strong><span class="muted">{if is_nil(
-                                                                                comment.user_id
-                                                                              ),
-                                                                              do:
-                                                                                gettext("Visitor"),
-                                                                              else:
-                                                                                gettext("Member")}</span>
-              </header>
-              <p :if={comment.parent_id} class="shared-reply-label">{gettext("Reply")}</p>
-              <button
-                type="button"
-                class="shared-quote"
-                phx-click="jump-comment"
-                phx-value-id={comment.id}
-              >“{comment.quote}” <span>¶{comment.block_index + 1}</span></button>
-              <p class="shared-comment-body">
-                {if comment.deleted_at, do: gettext("Comment removed"), else: comment.body}
-              </p>
-              <footer>
-                <button
-                  :if={!comment.deleted_at && @access.role in ~w(owner comment)}
-                  type="button"
-                  class="action"
-                  phx-click="reply"
-                  phx-value-id={comment.id}
-                >{gettext("Reply")}</button>
-                <button
-                  :if={
-                    !comment.deleted_at &&
-                      (@access.role == "owner" ||
-                         Sharing.author?(@current_scope, @visitor_id, comment))
-                  }
-                  type="button"
-                  class="icon-button"
-                  phx-click="remove-comment"
-                  phx-value-id={comment.id}
-                  aria-label={gettext("Remove comment")}
-                ><.icon name="lucide-trash-2" class="size-4" /></button>
-              </footer>
-            </article>
+              <div class="page-card-expanded">
+                <header>
+                  <strong>{comment.author_name}</strong>
+                  <button
+                    type="button"
+                    class="page-cite"
+                    aria-label={
+                      gettext("Go to paragraph %{number}", number: comment.block_index + 1)
+                    }
+                    phx-click="jump-comment"
+                    phx-value-id={comment.id}
+                  >¶{comment.block_index + 1}</button>
+                  <span class="muted">{if is_nil(comment.user_id),
+                    do: gettext("Visitor"),
+                    else: gettext("Member")}</span>
+                </header>
+                <blockquote>{comment.quote}</blockquote>
+                <p :if={comment.parent_id} class="shared-reply-label">{gettext("Reply")}</p>
+                <p class="page-answer shared-comment-body">
+                  {if comment.deleted_at, do: gettext("Comment removed"), else: comment.body}
+                </p>
+                <footer>
+                  <button
+                    :if={!comment.deleted_at && @access.role in ~w(owner comment)}
+                    type="button"
+                    class="icon-button"
+                    phx-click="reply"
+                    phx-value-id={comment.id}
+                    aria-label={gettext("Reply")}
+                    title={gettext("Reply")}
+                  ><.icon name="lucide-corner-down-right" class="size-4" /></button>
+                  <button
+                    :if={
+                      !comment.deleted_at &&
+                        (@access.role == "owner" ||
+                           Sharing.author?(@current_scope, @visitor_id, comment))
+                    }
+                    type="button"
+                    class="icon-button"
+                    phx-click="remove-comment"
+                    phx-value-id={comment.id}
+                    aria-label={gettext("Remove comment")}
+                  ><.icon name="lucide-trash-2" class="size-4" /></button>
+                </footer>
+              </div>
+            </ReaderComponents.annotation_frame>
           </div>
           <div class="shared-pagination">
             <button
@@ -241,41 +246,34 @@
                   "Only you can see these notes. Guest notes stay in this browser tab; sign in to save notes to your account."
                 )}
           </p>
-          <article :if={@busy} class="shared-comment-card" aria-busy="true" id="shared-ai-pending">
-            <blockquote>{@pending.quote}</blockquote><div
-              :if={@ai_preview != ""}
-              class="page-answer"
-            >
-              {Phoenix.HTML.raw(PageDocument.render_answer(@ai_preview))}
-            </div><LeitorWeb.WritingComponents.generating :if={@ai_preview == ""} />
-          </article>
+          <ReaderComponents.pending_annotation
+            :if={@busy}
+            id="shared-ai-pending"
+            pending={@pending}
+            answer={@ai_preview}
+            document={@document}
+            layout="stack"
+          />
           <div id="shared-personal-notes" phx-update="stream">
             <p id="shared-personal-empty" class="hidden only:block notebook-empty-state">
               {gettext("Select text to highlight it, keep a note or ask AI.")}
             </p>
-            <article
+            <ReaderComponents.annotation
               :for={{dom_id, mark} <- @streams.personal}
               id={dom_id}
-              class="shared-comment-card"
-            >
-              <header>
-                <span>{t(String.capitalize(mark.kind))}</span><button
-                  type="button"
-                  class="icon-button"
-                  phx-click="remove-mark"
-                  phx-value-id={mark.id}
-                  aria-label={gettext("Remove personal note")}
-                ><.icon name="lucide-trash-2" class="size-4" /></button>
-              </header>
-              <blockquote class={"highlight-#{mark.color}"}>{mark.quote}</blockquote>
-              <div :if={mark.body != ""} class="page-answer">
-                {Phoenix.HTML.raw(PageDocument.render_answer(mark.body))}
-              </div>
-            </article>
+              mark={mark}
+              document={@document}
+              active={@active_mark_id == mark.id}
+              busy={@busy}
+              pending={@pending}
+              actions={[]}
+              layout="stack"
+            />
           </div>
         </div>
       </aside>
     </div>
+    <ReaderComponents.citation_preview />
     <div
       id="page-scroll-rail"
       phx-hook="PageRail"

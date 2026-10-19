@@ -13,6 +13,8 @@ defmodule LeitorWeb.PageLive do
   alias Leitor.Learning
   alias Leitor.PageDocument
   alias Leitor.Pages
+  alias Leitor.Sharing
+  alias Leitor.Sharing.Notifier
   alias Leitor.WritingDocument
   alias LeitorWeb.ReaderComponents
   alias LeitorWeb.ReadingPreferences
@@ -48,6 +50,11 @@ defmodule LeitorWeb.PageLive do
        editing_mark_id: nil,
        editing_highlight_id: nil,
        editing_highlight_color: nil,
+       sharing_open: false,
+       sharing_share: nil,
+       sharing_url: "",
+       sharing_form: to_form(%{}, as: "share"),
+       invite_form: to_form(%{"email" => "", "role" => "comment"}, as: "invite"),
        notebook_open: false,
        notebook_filter: "all",
        mark_count: 0,
@@ -71,6 +78,7 @@ defmodule LeitorWeb.PageLive do
        marks_json: "[]",
        notebook_markdown: ""
      )
+     |> stream(:page_collaborators, [])
      |> stream(:margin_marks, [])
      |> stream(:notebook_marks, [])}
   end
@@ -106,6 +114,71 @@ defmodule LeitorWeb.PageLive do
   def handle_params(_, _, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_event("share-page", _, %{assigns: %{text: nil}} = socket), do: {:noreply, socket}
+
+  def handle_event("share-page", _, socket),
+    do: {:noreply, socket |> assign(sharing_open: !socket.assigns.sharing_open) |> load_sharing()}
+
+  def handle_event("set-link-access", %{"share" => attrs}, socket) do
+    case Sharing.set_link(socket.assigns.current_scope, socket.assigns.text.id, attrs) do
+      {:ok, _} -> {:noreply, load_sharing(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Choose a valid sharing permission."))}
+    end
+  end
+
+  def handle_event("renew-share-link", _, socket) do
+    Sharing.rotate(socket.assigns.current_scope, socket.assigns.text.id)
+
+    {:noreply,
+     socket |> load_sharing() |> put_flash(:info, gettext("Link renewed. Older links no longer open this page."))}
+  end
+
+  def handle_event("invite-collaborator", %{"invite" => attrs}, socket) do
+    scope = socket.assigns.current_scope
+
+    case Sharing.invite(scope, socket.assigns.text.id, attrs) do
+      {:ok, member} ->
+        share = Sharing.ensure(scope, socket.assigns.text.id)
+        result = Notifier.invite(member.email, socket.assigns.page_title, url(~p"/s/#{share.token}"))
+
+        message =
+          case result do
+            {:ok, _} -> gettext("Invitation sent.")
+            {:error, _} -> gettext("Access saved, but the email could not be sent. Copy the link instead.")
+          end
+
+        {:noreply,
+         socket
+         |> assign(invite_form: to_form(%{"email" => "", "role" => "comment"}, as: "invite"))
+         |> load_sharing()
+         |> put_flash(:info, message)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, invite_form: to_form(changeset, as: "invite", action: :insert))}
+
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, gettext("This page has reached its invitation limit."))}
+    end
+  end
+
+  def handle_event("collaborator-role", %{"id" => id, "collaborator" => %{"role" => role}}, socket) do
+    scope = socket.assigns.current_scope
+
+    case Enum.find(Sharing.collaborators(scope, socket.assigns.text.id), &(&1.id == id)) do
+      nil ->
+        {:noreply, socket}
+
+      member ->
+        Sharing.invite(scope, socket.assigns.text.id, %{"email" => member.email, "role" => role})
+        {:noreply, load_sharing(socket)}
+    end
+  end
+
+  def handle_event("remove-collaborator", %{"id" => id}, socket) do
+    Sharing.remove_collaborator(socket.assigns.current_scope, socket.assigns.text.id, id)
+    {:noreply, load_sharing(socket)}
+  end
+
   def handle_event("preview-artwork", %{"source" => source, "language" => language}, socket)
       when is_binary(source) and byte_size(source) <= 98_304 do
     html = if language in Leitor.Illustration.languages(), do: Leitor.Illustration.render(source, language), else: ""
@@ -1034,6 +1107,21 @@ defmodule LeitorWeb.PageLive do
     if Enum.any?(mapped, &(&1.id == jump_id && &1.block != nil)),
       do: push_event(socket, "page-jump", %{id: jump_id}),
       else: socket
+  end
+
+  defp load_sharing(%{assigns: %{sharing_open: false}} = socket), do: socket
+
+  defp load_sharing(socket) do
+    scope = socket.assigns.current_scope
+    share = Sharing.ensure(scope, socket.assigns.text.id)
+
+    socket
+    |> assign(
+      sharing_share: share,
+      sharing_url: url(~p"/s/#{share.token}"),
+      sharing_form: to_form(%{"link_role" => share.link_role}, as: "share")
+    )
+    |> stream(:page_collaborators, Sharing.collaborators(scope, socket.assigns.text.id), reset: true)
   end
 
   defp mark_title(%{kind: "note"}), do: "Note"

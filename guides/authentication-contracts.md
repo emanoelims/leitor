@@ -14,7 +14,7 @@ input, concurrent schedule, or deployment configuration.
 | AUTH-005 | Email changes require a valid, unexpired token for the current email context. Rejected changes preserve the stored email and tokens. | `test/leitor/accounts_test.exs`: `update_user_email/2`; settings confirmation tests. |
 | AUTH-006 | Protected routes require authentication. Email settings require authentication within the last 10 minutes. | `test/leitor_web/user_auth_test.exs`: `require_authenticated_user/2`, `on_mount :require_authenticated`, and `on_mount :require_sudo_mode`; `test/leitor_web/live/user_live/settings_test.exs`: `Settings page`. |
 | AUTH-007 | Caller scopes retain the supplied user; an absent user produces no scope. | `test/leitor/accounts/scope_test.exs`: executable `Scope.for_user/1` examples. |
-| AUTH-008 | Only pages, creation, the combined notes/word-jars notebook, per-page notebooks, and account screens remain in the product. Every product entry requires an authenticated scope. The legacy word-jars route redirects inside the authenticated scope; retired screens have no route. Only authentication screens remain in the public LiveView session. | `page_live_test.exs`, `notebook_live_test.exs`, `learning_workflows_test.exs`, and `controllers/workspace_routes_test.exs`. |
+| AUTH-008 | Only pages, creation, the combined notes/word-jars notebook, per-page notebooks, and account screens remain in the product. Workspace entries require an authenticated scope; `/s/:token` authorizes optional-account visitors through explicit page permissions. The legacy word-jars route redirects inside the authenticated scope; retired screens have no route. Authentication and shared-reader screens use the public LiveView session. | `page_live_test.exs`, `notebook_live_test.exs`, `learning_workflows_test.exs`, and `controllers/workspace_routes_test.exs`. |
 | AUTH-009 | Texts, page annotations, vocabulary, attempts, and hosted room management are filtered by scope; caller-supplied ownership is never cast. | `library_test.exs`, `pages_test.exs`, `notebook_live_test.exs`, `learning_test.exs`, `study_test.exs`: ownership cases. |
 | AUTH-010 | The retained Study context authorizes invitation-based collaboration, host-only advancement and closure, and bounded messages. Participant metadata omits email. Room screens and routes have been retired; stored records are preserved. | Domain `test/leitor/study_collaboration_test.exs`: synchronization, rejection, chat, and closure. |
 
@@ -32,10 +32,9 @@ uses the stricter 10-minute window.
 route authentication. A room invitation is a capability for collaboration, not
 permission to mutate the host's resources. Protected LiveViews share the existing
 `:require_authenticated_user` session and the browser authentication plug.
-The `:current_user` session contains registration, login and confirmation screens.
+The `:current_user` session contains registration, login, confirmation and shared-reader screens.
 There is no browser password login or password-update endpoint. Email settings require
-recent authentication through an email link. Page annotations inherit ownership from
-their parent text; browser-supplied quotes and owner IDs are never trusted.
+recent authentication through an email link. Page annotations belong to their reader through an explicit `user_id`; browser-supplied quotes and owner IDs are never trusted.
 
 Email delivery is tested through Swoosh's test adapter. These tests do not prove
 production mail delivery. Production uses Swoosh's Resend adapter with a required
@@ -128,3 +127,53 @@ recovery, cancellation, expiration and unauthorized base revisions;
 `figure_runner_test.exs` exercises the real isolated compiler/browser explicitly
 when `LEITOR_RUN_SANDBOX_TESTS=1`. Source-analysis tests are supplementary and do
 not establish that arbitrary JavaScript can be safely executed on a host.
+
+## Page sharing and reader privacy
+
+`/pages`, `/pages/:id`, notebooks and account settings remain in the existing
+`[:browser, :require_authenticated_user]` pipeline and authenticated LiveView session.
+`/s/:token` is in the existing `:current_user` LiveView session with the `:browser`
+pipeline: account authentication is optional, page authorization is mandatory.
+The shared figure endpoint uses `:artifact` and independently checks the current
+link, source-page membership, artifact owner and ready status on every request.
+No owner identity is installed into a visitor session. Only the accepted bundle,
+styles and integrity digest are returned; author source and review evidence stay private.
+Shared responses disable caching, indexing and referrer propagation.
+
+A share starts restricted. Only the page owner can change access, rotate the
+random link, or manage email invitations. Link roles are `disabled`, `view` and
+`comment`; editing is not granted in this first delivery. An explicit email grant
+requires the matching confirmed account. Removing a grant does not remove broader
+access supplied by a general link. Rotating a link invalidates older URLs, including
+URLs previously sent to invited people; explicit grants remain on the new URL.
+Revocation broadcasts contain only invalidations, and shared readers reauthorize.
+Comment writes lock the sharing row and check access inside the transaction.
+
+Visitors get a signed, HttpOnly browser identity, separate from account sessions.
+A display name is unverified and grants no permission. Comment attribution and
+source quotations are assigned server-side; submitted owner IDs and quotes are
+ignored. Replies may reference only a comment on the same shared page. Only the
+author or page owner can remove comment content; other people's replies are retained.
+Comments are bounded to 4000 characters, six per actor per minute and 1000 per page,
+with 50-comment pages. General links may be forwarded; use restricted invitations
+when access must depend on a verified email.
+
+Private page marks now have an explicit `user_id`, backfilled from their existing
+page owners in the migration. A reader's notes and AI answers belong to that
+reader, independently of the source owner, and remain in that reader's notebook.
+Shared comments use a separate table and never include personal mark contents.
+Guest drafts stay only in session storage in the current browser tab and are
+revalidated against the current text before restoration. They are not uploaded as
+shared comments or silently associated with an email address. After signing in, a reader
+can explicitly import these drafts into their private notebook. The bounded import
+is transactional and idempotent per reader, page and draft UUID.
+
+AI and word jars require an authenticated account. Shared reading uses the current
+reader's AI authorization, quotas, language preferences and credentials. It never
+uses the page owner's private provider configuration. Access is rechecked before
+saving the result. Original source changes invalidate in-flight selections and
+cancel obsolete shared-reader AI work. Existing executable sandbox restrictions
+also apply to shared figures.
+
+Evidence: `sharing_test.exs`, `shared_page_live_test.exs`,
+`shared_figure_controller_test.exs`, and `assets/browser-tests/sharing.spec.mjs`.

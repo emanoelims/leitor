@@ -9,6 +9,7 @@ defmodule LeitorWeb.Router do
     plug :put_root_layout, html: {LeitorWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug LeitorWeb.SharingSession
     plug :fetch_current_scope_for_user
     plug LeitorWeb.Locale
   end
@@ -55,6 +56,11 @@ defmodule LeitorWeb.Router do
     get "/figures/:id", FigureController, :show
   end
 
+  scope "/", LeitorWeb do
+    pipe_through :artifact
+    get "/s/:token/figures/:id", SharedFigureController, :show
+  end
+
   ## Authentication routes
 
   scope "/", LeitorWeb do
@@ -80,11 +86,13 @@ defmodule LeitorWeb.Router do
 
     live_session :current_user,
       on_mount: [{LeitorWeb.UserAuth, :mount_current_scope}, {LeitorWeb.Locale, :default}] do
+      live "/s/:token", SharedPageLive, :show
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
       live "/users/log-in/:token", UserLive.Confirmation, :new
     end
 
+    get "/s/:token/sign-in", SharedFigureController, :sign_in
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end

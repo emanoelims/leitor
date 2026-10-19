@@ -102,7 +102,7 @@ body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index
 /* Gloss uses the same translucent ink for the sweep and the persisted mark. */
 body { --gloss-marker-opacity:46%; }
 :is([data-theme=dark],[data-theme=ink]) body { --gloss-marker-opacity:24%; }
-.free-page .page-mark[class*="highlight-"],.page-notebook-entry blockquote[class*="highlight-"] { --page-marker:color-mix(in oklab,var(--selection-marker) var(--gloss-marker-opacity),transparent); background-color:var(--page-marker); color:inherit; transition:background-color .2s; }
+.free-page .page-mark[class*="highlight-"],.page-notebook-entry blockquote[class*="highlight-"],.shared-comment-card blockquote[class*="highlight-"] { --page-marker:color-mix(in oklab,var(--selection-marker) var(--gloss-marker-opacity),transparent); background-color:var(--page-marker); color:inherit; transition:background-color .2s; }
 .free-page .page-mark-annotation { text-decoration:none; background-image:linear-gradient(var(--gloss-line),var(--gloss-line)); background-repeat:no-repeat; background-size:100% 1.5px; background-position:0 calc(100% - .08em); transition:background-color .25s var(--gloss-ease); }
 .free-page .page-mark-annotation:is(.is-active,.is-hover) { background-color:var(--gloss-wash); }
 .free-page .page-mark-annotation.is-active { background-image:linear-gradient(var(--gloss-pen),var(--gloss-pen)); }

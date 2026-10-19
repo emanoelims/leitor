@@ -9,7 +9,7 @@ msgstr ""
 msgid "A"
 msgstr "A"
 
-#: lib/leitor_web/live/page_live.html.heex:78
+#: lib/leitor_web/live/page_live.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "A few helpful keys"
 msgstr "Alguns atalhos úteis"
@@ -55,7 +55,7 @@ msgid "A place for every new word."
 msgstr "Um lugar para cada palavra nova."
 
 #: lib/leitor_web/i18n.ex:227
-#: lib/leitor_web/live/notebook_live.ex:334
+#: lib/leitor_web/live/notebook_live.ex:335
 #, elixir-autogen, elixir-format, fuzzy
 msgid "A place for your thoughts"
 msgstr "Um lugar para suas ideias"
@@ -75,12 +75,12 @@ msgstr "Uma confirmação rápida"
 msgid "A second look is where understanding begins."
 msgstr "Um novo olhar é o começo da compreensão."
 
-#: lib/leitor_web/live/notebook_live.ex:307
+#: lib/leitor_web/live/notebook_live.ex:308
 #, elixir-autogen, elixir-format
 msgid "A thought in the margin. A word made yours. All together, right here."
 msgstr "Uma ideia na margem. Uma palavra que agora é sua. Tudo junto, bem aqui."
 
-#: lib/leitor_web/live/page_live.html.heex:731
+#: lib/leitor_web/components/selection_components.ex:205
 #, elixir-autogen, elixir-format
 msgid "A thought, in your own words"
 msgstr "Uma ideia, com suas palavras"
@@ -95,7 +95,7 @@ msgstr "Uma ideia guardada."
 msgid "A word, a meaning, a memory…"
 msgstr "Uma palavra, um significado, uma lembrança…"
 
-#: lib/leitor_web/live/notebook_live.ex:257
+#: lib/leitor_web/live/notebook_live.ex:258
 #, elixir-autogen, elixir-format
 msgid "A word, a thought, a page title…"
 msgstr "Uma palavra, uma ideia, um título…"
@@ -142,7 +142,7 @@ msgstr "Configurações da conta"
 msgid "Actions"
 msgstr "Ações"
 
-#: lib/leitor_web/live/page_live.html.heex:564
+#: lib/leitor_web/components/selection_components.ex:31
 #, elixir-autogen, elixir-format
 msgid "Actions for the selection"
 msgstr "Ações para o texto selecionado"
@@ -152,13 +152,13 @@ msgstr "Ações para o texto selecionado"
 msgid "Add a meaning and select a word or expression up to 200 characters."
 msgstr "Adicione um significado e selecione uma palavra ou expressão de até 200 caracteres."
 
-#: lib/leitor_web/live/page_live.html.heex:708
-#: lib/leitor_web/live/page_live.html.heex:709
+#: lib/leitor_web/components/selection_components.ex:182
+#: lib/leitor_web/components/selection_components.ex:183
 #, elixir-autogen, elixir-format
 msgid "Add a note"
 msgstr "Adicionar nota"
 
-#: lib/leitor_web/live/page_live.html.heex:499
+#: lib/leitor_web/live/page_live.html.heex:516
 #, elixir-autogen, elixir-format
 msgid "Add a note or ask about a passage. It will stay here, in reading order."
 msgstr "Adicione uma nota ou pergunte sobre um trecho. Tudo fica aqui, na ordem da leitura."
@@ -195,7 +195,7 @@ msgid "All"
 msgstr "Todas"
 
 #: lib/leitor_web/i18n.ex:273
-#: lib/leitor_web/live/notebook_live.ex:265
+#: lib/leitor_web/live/notebook_live.ex:266
 #, elixir-autogen, elixir-format
 msgid "All pages"
 msgstr "Todas as páginas"
@@ -225,8 +225,8 @@ msgstr "Um idioma pedido explicitamente tem prioridade."
 msgid "An open page, waiting for your next thought."
 msgstr "Uma página aberta, esperando sua próxima ideia."
 
-#: lib/leitor_web/live/notebook_live.ex:271
-#: lib/leitor_web/live/page_live.html.heex:477
+#: lib/leitor_web/live/notebook_live.ex:272
+#: lib/leitor_web/live/page_live.html.heex:494
 #, elixir-autogen, elixir-format
 msgid "Annotation types"
 msgstr "Tipos de anotação"
@@ -251,28 +251,29 @@ msgstr "Padrão da aplicação"
 msgid "Application language"
 msgstr "Idioma da aplicação"
 
-#: lib/leitor_web/live/page_live.html.heex:572
-#: lib/leitor_web/live/page_live.html.heex:748
+#: lib/leitor_web/components/selection_components.ex:39
+#: lib/leitor_web/components/selection_components.ex:222
 #, elixir-autogen, elixir-format
 msgid "Ask"
 msgstr "Perguntar"
 
-#: lib/leitor_web/live/page_live.html.heex:378
+#: lib/leitor_web/live/page_live.html.heex:395
 #, elixir-autogen, elixir-format
 msgid "Ask a follow-up"
 msgstr "Fazer outra pergunta"
 
-#: lib/leitor_web/live/page_live.html.heex:379
+#: lib/leitor_web/live/page_live.html.heex:396
 #, elixir-autogen, elixir-format
 msgid "Ask a follow-up…"
 msgstr "Faça outra pergunta…"
 
 #: lib/leitor_web/i18n.ex:278
+#: lib/leitor_web/live/shared_page_live.ex:289
 #, elixir-autogen, elixir-format
 msgid "Ask a question up to 500 characters."
 msgstr "Faça uma pergunta de até 500 caracteres."
 
-#: lib/leitor_web/live/page_live.html.heex:744
+#: lib/leitor_web/components/selection_components.ex:218
 #, elixir-autogen, elixir-format
 msgid "Ask about this passage…"
 msgstr "Pergunte sobre este trecho…"
@@ -299,7 +300,7 @@ msgid "Back to log in"
 msgstr "Voltar para entrar"
 
 #: lib/leitor_web/components/layouts.ex:81
-#: lib/leitor_web/live/notebook_live.ex:310
+#: lib/leitor_web/live/notebook_live.ex:311
 #, elixir-autogen, elixir-format
 msgid "Back to your pages"
 msgstr "Voltar às suas páginas"
@@ -370,7 +371,7 @@ msgid "Choose workspace"
 msgstr "Escolher espaço"
 
 #: lib/leitor_web/i18n.ex:228
-#: lib/leitor_web/live/page_live.html.heex:316
+#: lib/leitor_web/live/page_live.html.heex:333
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Claude"
 msgstr "Claude"
@@ -380,7 +381,7 @@ msgstr "Claude"
 msgid "Claude models"
 msgstr "Modelos Claude"
 
-#: lib/leitor_web/live/page_live.html.heex:416
+#: lib/leitor_web/live/page_live.html.heex:433
 #, elixir-autogen, elixir-format
 msgid "Click to jump there"
 msgstr "Clique para ir até o trecho"
@@ -410,7 +411,7 @@ msgstr "Fechar janela"
 msgid "Close dialog"
 msgstr "Fechar janela"
 
-#: lib/leitor_web/live/page_live.html.heex:473
+#: lib/leitor_web/live/page_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "Close notebook"
 msgstr "Fechar caderno"
@@ -430,7 +431,7 @@ msgstr "Cobalto"
 msgid "Code block"
 msgstr "Bloco de código"
 
-#: lib/leitor_web/live/page_live.html.heex:273
+#: lib/leitor_web/live/page_live.html.heex:290
 #, elixir-autogen, elixir-format
 msgid "Collapse note"
 msgstr "Recolher nota"
@@ -494,17 +495,17 @@ msgstr "Copiado como Markdown."
 msgid "Copied."
 msgstr "Copiado."
 
-#: lib/leitor_web/live/page_live.html.heex:341
+#: lib/leitor_web/live/page_live.html.heex:358
 #, elixir-autogen, elixir-format
 msgid "Copy annotation"
 msgstr "Copiar anotação"
 
-#: lib/leitor_web/live/page_live.html.heex:451
+#: lib/leitor_web/live/page_live.html.heex:468
 #, elixir-autogen, elixir-format
 msgid "Copy notebook as Markdown"
 msgstr "Copiar caderno como Markdown"
 
-#: lib/leitor_web/live/page_live.html.heex:650
+#: lib/leitor_web/components/selection_components.ex:124
 #, elixir-autogen, elixir-format
 msgid "Copy quote"
 msgstr "Copiar trecho"
@@ -515,13 +516,13 @@ msgid "Couldn't delete this reading. Try again."
 msgstr "Não foi possível excluir esta leitura. Tente novamente."
 
 #: lib/leitor_web/i18n.ex:229
-#: lib/leitor_web/live/notebook_live.ex:113
+#: lib/leitor_web/live/notebook_live.ex:114
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Couldn't remove this word. Try again."
 msgstr "Não foi possível remover esta palavra. Tente novamente."
 
 #: lib/leitor_web/i18n.ex:230
-#: lib/leitor_web/live/notebook_live.ex:104
+#: lib/leitor_web/live/notebook_live.ex:105
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Couldn't update this word. Try again."
 msgstr "Não foi possível atualizar esta palavra. Tente novamente."
@@ -547,13 +548,13 @@ msgstr "Criar conta"
 msgid "Creating account..."
 msgstr "Criando conta…"
 
-#: lib/leitor_web/live/page_live.html.heex:604
-#: lib/leitor_web/live/page_live.html.heex:639
+#: lib/leitor_web/components/selection_components.ex:78
+#: lib/leitor_web/components/selection_components.ex:113
 #, elixir-autogen, elixir-format
 msgid "Define"
 msgstr "Definir"
 
-#: lib/leitor_web/live/page_live.html.heex:202
+#: lib/leitor_web/live/page_live.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "Define it, mark it, or keep a thought here."
 msgstr "Veja a definição, marque ou guarde uma ideia aqui."
@@ -598,19 +599,19 @@ msgstr "Divisor"
 msgid "Don't have an account?"
 msgstr "Ainda não tem uma conta?"
 
-#: lib/leitor_web/live/page_live.html.heex:463
+#: lib/leitor_web/live/page_live.html.heex:480
 #, elixir-autogen, elixir-format
 msgid "Download notebook as Markdown"
 msgstr "Baixar caderno como Markdown"
 
-#: lib/leitor_web/live/page_live.html.heex:349
-#: lib/leitor_web/live/page_live.html.heex:519
+#: lib/leitor_web/live/page_live.html.heex:366
+#: lib/leitor_web/live/page_live.html.heex:536
 #, elixir-autogen, elixir-format
 msgid "Edit note"
 msgstr "Editar nota"
 
-#: lib/leitor_web/live/page_live.html.heex:42
-#: lib/leitor_web/live/page_live.html.heex:43
+#: lib/leitor_web/live/page_live.html.heex:51
+#: lib/leitor_web/live/page_live.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Edit page"
 msgstr "Editar página"
@@ -637,7 +638,8 @@ msgstr "E-mail alterado com sucesso."
 msgid "Empty for now."
 msgstr "Vazio por enquanto."
 
-#: lib/leitor_web/live/page_live.html.heex:192
+#: lib/leitor_web/live/page_live.html.heex:209
+#: lib/leitor_web/live/shared_page_live.html.heex:72
 #, elixir-autogen, elixir-format
 msgid "End of this page"
 msgstr "Fim desta página"
@@ -657,7 +659,7 @@ msgstr "Enter para gerar · Shift Enter para nova linha"
 msgid "Even"
 msgstr "Normal"
 
-#: lib/leitor_web/live/page_live.html.heex:583
+#: lib/leitor_web/components/selection_components.ex:57
 #, elixir-autogen, elixir-format
 msgid "Explain"
 msgstr "Explicar"
@@ -684,7 +686,7 @@ msgid "Find a page"
 msgstr "Buscar página"
 
 #: lib/leitor_web/components/notebook_components.ex:90
-#: lib/leitor_web/live/notebook_live.ex:341
+#: lib/leitor_web/live/notebook_live.ex:342
 #, elixir-autogen, elixir-format
 msgid "Find a page to read"
 msgstr "Buscar uma página para ler"
@@ -699,7 +701,7 @@ msgstr "Buscar texto"
 msgid "Find a title…"
 msgstr "Buscar título…"
 
-#: lib/leitor_web/live/notebook_live.ex:245
+#: lib/leitor_web/live/notebook_live.ex:246
 #, elixir-autogen, elixir-format
 msgid "Find annotations"
 msgstr "Buscar anotações"
@@ -813,11 +815,11 @@ msgstr "Pote"
 msgid "Justified"
 msgstr "Justificado"
 
-#: lib/leitor_web/live/page_live.html.heex:395
-#: lib/leitor_web/live/page_live.html.heex:550
-#: lib/leitor_web/live/page_live.html.heex:655
-#: lib/leitor_web/live/page_live.html.heex:656
-#: lib/leitor_web/live/page_live.html.heex:659
+#: lib/leitor_web/components/selection_components.ex:129
+#: lib/leitor_web/components/selection_components.ex:130
+#: lib/leitor_web/components/selection_components.ex:133
+#: lib/leitor_web/live/page_live.html.heex:412
+#: lib/leitor_web/live/page_live.html.heex:567
 #, elixir-autogen, elixir-format
 msgid "Keep in a jar"
 msgstr "Guardar em um pote"
@@ -832,13 +834,13 @@ msgstr "Continuar aprendendo"
 msgid "Keep me logged in on this device"
 msgstr "Continuar conectado neste dispositivo"
 
-#: lib/leitor_web/live/page_live.html.heex:735
+#: lib/leitor_web/components/selection_components.ex:209
 #, elixir-autogen, elixir-format
 msgid "Keep note"
 msgstr "Guardar nota"
 
-#: lib/leitor_web/live/page_live.html.heex:26
-#: lib/leitor_web/live/page_live.html.heex:27
+#: lib/leitor_web/live/page_live.html.heex:35
+#: lib/leitor_web/live/page_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Keyboard shortcuts"
 msgstr "Atalhos do teclado"
@@ -941,12 +943,12 @@ msgstr "Sinta-se em casa"
 msgid "Manage your account email"
 msgstr "Gerencie o e-mail da sua conta"
 
-#: lib/leitor_web/live/page_live.html.heex:197
+#: lib/leitor_web/live/page_live.html.heex:214
 #, elixir-autogen, elixir-format
 msgid "Margin notes"
 msgstr "Notas na margem"
 
-#: lib/leitor_web/live/page_live.html.heex:755
+#: lib/leitor_web/components/selection_components.ex:229
 #, elixir-autogen, elixir-format
 msgid "Meaning"
 msgstr "Significado"
@@ -961,8 +963,8 @@ msgstr "Significado / nota de aprendizado"
 msgid "More"
 msgstr "Mais"
 
-#: lib/leitor_web/live/page_live.html.heex:615
-#: lib/leitor_web/live/page_live.html.heex:615
+#: lib/leitor_web/components/selection_components.ex:89
+#: lib/leitor_web/components/selection_components.ex:89
 #, elixir-autogen, elixir-format
 msgid "More actions"
 msgstr "Mais ações"
@@ -997,7 +999,8 @@ msgstr "Chegando agora?"
 msgid "New page"
 msgstr "Nova página"
 
-#: lib/leitor_web/live/notebook_live.ex:388
+#: lib/leitor_web/live/notebook_live.ex:394
+#: lib/leitor_web/live/shared_page_live.html.heex:222
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr "Próxima"
@@ -1008,7 +1011,7 @@ msgid "Night"
 msgstr "Noite"
 
 #: lib/leitor_web/i18n.ex:226
-#: lib/leitor_web/live/notebook_live.ex:333
+#: lib/leitor_web/live/notebook_live.ex:334
 #, elixir-autogen, elixir-format
 msgid "No annotations found"
 msgstr "Nenhuma anotação encontrada"
@@ -1036,8 +1039,8 @@ msgstr "Nota"
 #: lib/leitor_web/components/layouts.ex:212
 #: lib/leitor_web/components/layouts.ex:227
 #: lib/leitor_web/live/notebook_live.ex:37
-#: lib/leitor_web/live/page_live.html.heex:438
-#: lib/leitor_web/live/page_live.html.heex:444
+#: lib/leitor_web/live/page_live.html.heex:455
+#: lib/leitor_web/live/page_live.html.heex:461
 #, elixir-autogen, elixir-format
 msgid "Notebook"
 msgstr "Caderno"
@@ -1047,12 +1050,12 @@ msgstr "Caderno"
 msgid "Notebook downloaded."
 msgstr "Caderno baixado."
 
-#: lib/leitor_web/live/notebook_live.ex:375
+#: lib/leitor_web/live/notebook_live.ex:381
 #, elixir-autogen, elixir-format
 msgid "Notebook pages"
 msgstr "Páginas do caderno"
 
-#: lib/leitor_web/live/notebook_live.ex:216
+#: lib/leitor_web/live/notebook_live.ex:217
 #, elixir-autogen, elixir-format
 msgid "Notebook sections"
 msgstr "Seções do caderno"
@@ -1062,17 +1065,17 @@ msgstr "Seções do caderno"
 msgid "Notes"
 msgstr "Notas"
 
-#: lib/leitor_web/live/notebook_live.ex:224
+#: lib/leitor_web/live/notebook_live.ex:225
 #, elixir-autogen, elixir-format
 msgid "Notes & ideas"
 msgstr "Notas e ideias"
 
-#: lib/leitor_web/live/page_live.html.heex:53
+#: lib/leitor_web/live/page_live.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Notes on this page"
 msgstr "Notas desta página"
 
-#: lib/leitor_web/live/page_live.html.heex:498
+#: lib/leitor_web/live/page_live.html.heex:515
 #, elixir-autogen, elixir-format
 msgid "Nothing here yet"
 msgstr "Nada por aqui ainda"
@@ -1112,7 +1115,7 @@ msgstr "Abrir nova página"
 msgid "Open or close your notebook"
 msgstr "Abrir ou fechar seu caderno"
 
-#: lib/leitor_web/live/notebook_live.ex:351
+#: lib/leitor_web/live/notebook_live.ex:357
 #, elixir-autogen, elixir-format
 msgid "Open the source passage"
 msgstr "Abrir trecho de origem"
@@ -1127,7 +1130,7 @@ msgstr "Ordenar páginas"
 msgid "Other words"
 msgstr "Outras palavras"
 
-#: lib/leitor_web/live/notebook_live.ex:382
+#: lib/leitor_web/live/notebook_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "Page"
 msgstr "Página"
@@ -1138,7 +1141,7 @@ msgstr "Página"
 msgid "Page controls"
 msgstr "Controles da página"
 
-#: lib/leitor_web/live/page_live.html.heex:52
+#: lib/leitor_web/live/page_live.html.heex:61
 #, elixir-autogen, elixir-format
 msgid "Page notebook"
 msgstr "Caderno da página"
@@ -1148,7 +1151,7 @@ msgstr "Caderno da página"
 msgid "Page saved. Ready to read."
 msgstr "Página salva. Pronta para ler."
 
-#: lib/leitor_web/live/page_live.html.heex:146
+#: lib/leitor_web/live/page_live.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Page title"
 msgstr "Título da página"
@@ -1209,7 +1212,8 @@ msgstr "Encontre uma boa ideia."
 msgid "Plain paragraph"
 msgstr "Parágrafo simples"
 
-#: lib/leitor_web/live/page_live.html.heex:423
+#: lib/leitor_web/live/page_live.html.heex:440
+#: lib/leitor_web/live/shared_page_live.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "Position in the page"
 msgstr "Posição na página"
@@ -1231,7 +1235,8 @@ msgstr "Preferências salvas."
 msgid "Prepositions"
 msgstr "Preposições"
 
-#: lib/leitor_web/live/notebook_live.ex:381
+#: lib/leitor_web/live/notebook_live.ex:387
+#: lib/leitor_web/live/shared_page_live.html.heex:216
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr "Anterior"
@@ -1251,7 +1256,7 @@ msgstr "Só para você · Até 10 MB"
 msgid "Pronouns"
 msgstr "Pronomes"
 
-#: lib/leitor_web/live/page_live.html.heex:743
+#: lib/leitor_web/components/selection_components.ex:217
 #, elixir-autogen, elixir-format
 msgid "Question about the selection"
 msgstr "Pergunta sobre o trecho selecionado"
@@ -1296,7 +1301,7 @@ msgstr "Padrão para leitura"
 msgid "Reading font"
 msgstr "Fonte da leitura"
 
-#: lib/leitor_web/live/page_live.html.heex:232
+#: lib/leitor_web/live/page_live.html.heex:249
 #, elixir-autogen, elixir-format
 msgid "Reading your passage…"
 msgstr "Lendo seu trecho…"
@@ -1318,13 +1323,13 @@ msgstr "Cadastre-se no Leitor."
 msgid "Remove"
 msgstr "Remover"
 
-#: lib/leitor_web/live/page_live.html.heex:356
-#: lib/leitor_web/live/page_live.html.heex:526
+#: lib/leitor_web/live/page_live.html.heex:373
+#: lib/leitor_web/live/page_live.html.heex:543
 #, elixir-autogen, elixir-format
 msgid "Remove annotation"
 msgstr "Remover anotação"
 
-#: lib/leitor_web/live/notebook_live.ex:297
+#: lib/leitor_web/live/notebook_live.ex:298
 #, elixir-autogen, elixir-format
 msgid "Reset filters"
 msgstr "Limpar filtros"
@@ -1339,13 +1344,13 @@ msgstr "Restaurar ajustes do texto"
 msgid "Sans"
 msgstr "Sem serifa"
 
-#: lib/leitor_web/live/page_live.html.heex:69
-#: lib/leitor_web/live/page_live.html.heex:73
+#: lib/leitor_web/live/page_live.html.heex:78
+#: lib/leitor_web/live/page_live.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Save & read"
 msgstr "Salvar e ler"
 
-#: lib/leitor_web/live/page_live.html.heex:70
+#: lib/leitor_web/live/page_live.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Save & read · ⌘/Ctrl S"
 msgstr "Salvar e ler · ⌘/Ctrl S"
@@ -1367,17 +1372,18 @@ msgstr "Salvar preferências"
 msgid "Save while editing"
 msgstr "Salvar durante a escrita"
 
-#: lib/leitor_web/live/page_live.html.heex:776
+#: lib/leitor_web/components/selection_components.ex:250
 #, elixir-autogen, elixir-format
 msgid "Save word"
 msgstr "Salvar palavra"
 
 #: lib/leitor_web/i18n.ex:352
+#: lib/leitor_web/live/shared_page_live.ex:266
 #, elixir-autogen, elixir-format
 msgid "Saved to your word jars."
 msgstr "Salvo nos seus potes de palavras."
 
-#: lib/leitor_web/live/page_live.html.heex:71
+#: lib/leitor_web/live/page_live.html.heex:80
 #: lib/leitor_web/live/preferences_live.ex:48
 #: lib/leitor_web/live/preferences_live.ex:325
 #, elixir-autogen, elixir-format
@@ -1399,22 +1405,22 @@ msgstr "Busca e filtros"
 msgid "Search and filters"
 msgstr "Busca e filtros"
 
-#: lib/leitor_web/live/notebook_live.ex:256
+#: lib/leitor_web/live/notebook_live.ex:257
 #, elixir-autogen, elixir-format
 msgid "Search your notebook"
 msgstr "Buscar no caderno"
 
-#: lib/leitor_web/live/notebook_live.ex:337
+#: lib/leitor_web/live/notebook_live.ex:338
 #, elixir-autogen, elixir-format
 msgid "Select a passage on any page and keep a note. Your annotations will be gathered here."
 msgstr "Selecione um trecho em qualquer página e guarde uma nota. Suas anotações ficam reunidas aqui."
 
-#: lib/leitor_web/live/page_live.html.heex:201
+#: lib/leitor_web/live/page_live.html.heex:218
 #, elixir-autogen, elixir-format
 msgid "Select a word or a passage."
 msgstr "Selecione uma palavra ou um trecho."
 
-#: lib/leitor_web/live/page_live.html.heex:384
+#: lib/leitor_web/live/page_live.html.heex:401
 #, elixir-autogen, elixir-format
 msgid "Send follow-up"
 msgstr "Enviar pergunta"
@@ -1449,8 +1455,8 @@ msgstr "Exibindo os 200 resultados mais recentes. Use a busca para encontrar pal
 msgid "Sign up"
 msgstr "Cadastrar"
 
-#: lib/leitor_web/live/page_live.html.heex:605
-#: lib/leitor_web/live/page_live.html.heex:638
+#: lib/leitor_web/components/selection_components.ex:79
+#: lib/leitor_web/components/selection_components.ex:112
 #, elixir-autogen, elixir-format
 msgid "Simplify"
 msgstr "Simplificar"
@@ -1490,7 +1496,7 @@ msgstr "Algo deu errado!"
 msgid "Something worth coming back to."
 msgstr "Algo que vale a pena revisitar."
 
-#: lib/leitor_web/live/notebook_live.ex:264
+#: lib/leitor_web/live/notebook_live.ex:265
 #, elixir-autogen, elixir-format
 msgid "Source page"
 msgstr "Página de origem"
@@ -1510,18 +1516,18 @@ msgstr "Espaçamento"
 msgid "Start with your email. A private reading space follows."
 msgstr "Comece pelo e-mail. Um espaço particular para ler espera por você."
 
-#: lib/leitor_web/live/page_live.html.heex:62
+#: lib/leitor_web/live/page_live.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Stop"
 msgstr "Parar"
 
-#: lib/leitor_web/live/page_live.html.heex:61
+#: lib/leitor_web/live/page_live.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Stop generating"
 msgstr "Parar geração"
 
-#: lib/leitor_web/live/page_live.html.heex:221
-#: lib/leitor_web/live/page_live.html.heex:322
+#: lib/leitor_web/live/page_live.html.heex:238
+#: lib/leitor_web/live/page_live.html.heex:339
 #, elixir-autogen, elixir-format
 msgid "Stop response"
 msgstr "Parar resposta"
@@ -1561,7 +1567,7 @@ msgstr "Texto para importar"
 msgid "The interface and AI can speak different languages."
 msgstr "A interface e a IA podem usar idiomas diferentes."
 
-#: lib/leitor_web/live/notebook_live.ex:303
+#: lib/leitor_web/live/notebook_live.ex:304
 #, elixir-autogen, elixir-format
 msgid "The things you keep"
 msgstr "O que você guarda"
@@ -1597,7 +1603,7 @@ msgstr "Título A–Z"
 msgid "Travel when the scroll map is focused"
 msgstr "Navegar pelo mapa de rolagem"
 
-#: lib/leitor_web/live/page_live.html.heex:331
+#: lib/leitor_web/live/page_live.html.heex:348
 #, elixir-autogen, elixir-format
 msgid "Try again"
 msgstr "Tentar novamente"
@@ -1617,7 +1623,7 @@ msgstr "Fonte"
 msgid "Unsaved"
 msgstr "Não salvo"
 
-#: lib/leitor_web/live/page_live.html.heex:147
+#: lib/leitor_web/live/page_live.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Untitled"
 msgstr "Sem título"
@@ -1652,7 +1658,7 @@ msgstr "Não foi possível conectar à internet"
 msgid "Welcome to Leitor"
 msgstr "Bem-vindo ao Leitor"
 
-#: lib/leitor_web/live/page_live.html.heex:756
+#: lib/leitor_web/components/selection_components.ex:230
 #, elixir-autogen, elixir-format
 msgid "What does this word mean?"
 msgstr "O que esta palavra significa?"
@@ -1672,12 +1678,12 @@ msgstr "Larga"
 msgid "Width"
 msgstr "Largura"
 
-#: lib/leitor_web/live/page_live.html.heex:763
+#: lib/leitor_web/components/selection_components.ex:237
 #, elixir-autogen, elixir-format
 msgid "Word jar"
 msgstr "Pote de palavras"
 
-#: lib/leitor_web/live/notebook_live.ex:229
+#: lib/leitor_web/live/notebook_live.ex:230
 #, elixir-autogen, elixir-format
 msgid "Word jars"
 msgstr "Potes de palavras"
@@ -1750,22 +1756,22 @@ msgid "Your next chapter"
 msgstr "Seu próximo capítulo"
 
 #: lib/leitor_web/i18n.ex:232
-#: lib/leitor_web/live/page_live.html.heex:316
+#: lib/leitor_web/live/page_live.html.heex:333
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Your note"
 msgstr "Sua nota"
 
-#: lib/leitor_web/live/page_live.html.heex:730
+#: lib/leitor_web/components/selection_components.ex:204
 #, elixir-autogen, elixir-format
 msgid "Your note on the selection"
 msgstr "Sua nota sobre o trecho"
 
-#: lib/leitor_web/live/notebook_live.ex:304
+#: lib/leitor_web/live/notebook_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "Your notebook."
 msgstr "Seu caderno."
 
-#: lib/leitor_web/live/page_live.html.heex:172
+#: lib/leitor_web/live/page_live.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Your own little corner"
 msgstr "Seu cantinho"
@@ -1816,13 +1822,13 @@ msgstr "pode guardar."
 msgid "close"
 msgstr "fechar"
 
-#: lib/leitor_web/live/notebook_live.ex:362
+#: lib/leitor_web/live/notebook_live.ex:368
 #, elixir-autogen, elixir-format
 msgid "follow-up"
 msgstr "continuação"
 
 #: lib/leitor_web/i18n.ex:233
-#: lib/leitor_web/live/notebook_live.ex:363
+#: lib/leitor_web/live/notebook_live.ex:369
 #, elixir-autogen, elixir-format, fuzzy
 msgid "follow-ups"
 msgstr "continuações"
@@ -1833,7 +1839,7 @@ msgid "meaning."
 msgstr "significado."
 
 #: lib/leitor_web/components/study_components.ex:134
-#: lib/leitor_web/live/notebook_live.ex:382
+#: lib/leitor_web/live/notebook_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "of"
 msgstr "de"
@@ -1872,13 +1878,6 @@ msgstr "↑↓ para escolher · Enter para inserir · Esc para fechar"
 msgid " of %{count}"
 msgstr " de %{count}"
 
-#: lib/leitor_web/live/page_live.html.heex:173
-#, elixir-autogen, elixir-format
-msgid "%{count} block · Private to you"
-msgid_plural "%{count} blocks · Private to you"
-msgstr[0] "%{count} bloco · Visível só para você"
-msgstr[1] "%{count} blocos · Visível só para você"
-
 #: lib/leitor_web/components/notebook_components.ex:72
 #, elixir-autogen, elixir-format
 msgid "%{count} collected word"
@@ -1886,15 +1885,15 @@ msgid_plural "%{count} collected words"
 msgstr[0] "%{count} palavra coletada"
 msgstr[1] "%{count} palavras coletadas"
 
-#: lib/leitor_web/live/page_live.html.heex:269
+#: lib/leitor_web/live/page_live.html.heex:286
 #, elixir-autogen, elixir-format
 msgid "%{count} follow-up"
 msgid_plural "%{count} follow-ups"
 msgstr[0] "%{count} continuação"
 msgstr[1] "%{count} continuações"
 
-#: lib/leitor_web/live/notebook_live.ex:325
-#: lib/leitor_web/live/page_live.html.heex:445
+#: lib/leitor_web/live/notebook_live.ex:326
+#: lib/leitor_web/live/page_live.html.heex:462
 #, elixir-autogen, elixir-format
 msgid "%{count} saved entry"
 msgid_plural "%{count} saved entries"
@@ -1942,7 +1941,7 @@ msgid "Delete this reading? Your vocabulary will be kept."
 msgstr "Excluir esta leitura? Seu vocabulário será mantido."
 
 #: lib/leitor_web/i18n.ex:240
-#: lib/leitor_web/live/page_live.html.heex:263
+#: lib/leitor_web/live/page_live.html.heex:280
 #, elixir-autogen, elixir-format
 msgid "Go to paragraph %{number}"
 msgstr "Ir para o parágrafo %{number}"
@@ -2130,7 +2129,7 @@ msgstr "Página em branco"
 msgid "Leave without saving? Your changes will be lost."
 msgstr "Sair sem salvar? Suas alterações serão perdidas."
 
-#: lib/leitor_web/live/page_live.html.heex:159
+#: lib/leitor_web/live/page_live.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "Your unsaved draft was restored in this tab. Save it to keep it."
 msgstr "Seu rascunho não salvo foi recuperado nesta aba. Salve para guardá-lo."
@@ -2559,7 +2558,7 @@ msgstr "O verificador isolado de figuras está indisponível ou excedeu o tempo 
 msgid "Adjust with AI"
 msgstr "Ajustar com IA"
 
-#: lib/leitor_web/live/page_live.html.heex:130
+#: lib/leitor_web/live/page_live.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Dismiss saved generation"
 msgstr "Dispensar geração salva"
@@ -2569,12 +2568,12 @@ msgstr "Dispensar geração salva"
 msgid "It is still working. You can leave this page and return."
 msgstr "Ela continua em andamento. Você pode sair desta página e voltar."
 
-#: lib/leitor_web/live/page_live.html.heex:122
+#: lib/leitor_web/live/page_live.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Recover generation"
 msgstr "Recuperar geração"
 
-#: lib/leitor_web/live/page_live.html.heex:101
+#: lib/leitor_web/live/page_live.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Saved generation"
 msgstr "Geração salva"
@@ -2594,7 +2593,7 @@ msgstr "Esta figura já está no seu rascunho."
 msgid "Your draft is safe. Continue from the saved request."
 msgstr "Seu rascunho está seguro. Continue a partir do pedido salvo."
 
-#: lib/leitor_web/live/page_live.html.heex:106
+#: lib/leitor_web/live/page_live.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "Your figure generation is saved."
 msgstr "A geração da sua figura está salva."
@@ -2826,8 +2825,8 @@ msgstr "Aguardando disponibilidade. Os créditos serão reservados somente quand
 msgid "Waiting"
 msgstr "Aguardando"
 
+#: lib/leitor_web/components/selection_components.ex:87
 #: lib/leitor_web/i18n.ex:364
-#: lib/leitor_web/live/page_live.html.heex:613
 #, elixir-autogen, elixir-format
 msgid "Dictionary"
 msgstr "Dicionário"
@@ -2842,44 +2841,409 @@ msgstr "Selecione uma palavra ou expressão de até 200 caracteres para consulta
 msgid "The dictionary is unavailable right now. Try again in a moment."
 msgstr "O dicionário está indisponível agora. Tente de novo em instantes."
 
-#: lib/leitor_web/live/page_live.html.heex:689
+#: lib/leitor_web/components/selection_components.ex:163
 #, elixir-autogen, elixir-format
 msgid "Blue"
 msgstr "Azul"
 
-#: lib/leitor_web/live/page_live.html.heex:688
+#: lib/leitor_web/components/selection_components.ex:162
 #, elixir-autogen, elixir-format
 msgid "Green"
 msgstr "Verde"
 
-#: lib/leitor_web/live/page_live.html.heex:682
+#: lib/leitor_web/components/selection_components.ex:156
 #, elixir-autogen, elixir-format
 msgid "Highlight color"
 msgstr "Cor do destaque"
 
-#: lib/leitor_web/live/page_live.html.heex:697
+#: lib/leitor_web/components/selection_components.ex:171
 #, elixir-autogen, elixir-format
 msgid "Highlight in %{color}"
 msgstr "Destacar em %{color}"
 
-#: lib/leitor_web/live/page_live.html.heex:668
-#: lib/leitor_web/live/page_live.html.heex:669
+#: lib/leitor_web/components/selection_components.ex:142
+#: lib/leitor_web/components/selection_components.ex:143
 #, elixir-autogen, elixir-format
 msgid "Highlight text"
 msgstr "Destacar texto"
 
-#: lib/leitor_web/live/page_live.html.heex:690
+#: lib/leitor_web/components/selection_components.ex:164
 #, elixir-autogen, elixir-format
 msgid "Rose"
 msgstr "Rosa"
 
-#: lib/leitor_web/live/page_live.html.heex:687
+#: lib/leitor_web/components/selection_components.ex:161
 #, elixir-autogen, elixir-format
 msgid "Yellow"
 msgstr "Amarelo"
 
-#: lib/leitor_web/live/page_live.html.heex:717
-#: lib/leitor_web/live/page_live.html.heex:718
+#: lib/leitor_web/components/selection_components.ex:191
+#: lib/leitor_web/components/selection_components.ex:192
 #, elixir-autogen, elixir-format
 msgid "Remove highlight"
 msgstr "Remover destaque"
+
+#: lib/leitor_web/live/page_live.ex:147
+#, elixir-autogen, elixir-format
+msgid "Access saved, but the email could not be sent. Copy the link instead."
+msgstr "Acesso salvo, mas não foi possível enviar o e-mail. Copie o link."
+
+#: lib/leitor_web/live/shared_page_live.ex:267
+#, elixir-autogen, elixir-format
+msgid "Add a meaning and choose a word jar."
+msgstr "Adicione um significado e escolha um pote."
+
+#: lib/leitor_web/components/sharing_components.ex:82
+#, elixir-autogen, elixir-format
+msgid "Anyone with the link can comment"
+msgstr "Qualquer pessoa com o link pode comentar"
+
+#: lib/leitor_web/components/sharing_components.ex:81
+#, elixir-autogen, elixir-format
+msgid "Anyone with the link can view"
+msgstr "Qualquer pessoa com o link pode visualizar"
+
+#: lib/leitor_web/components/sharing_components.ex:39
+#: lib/leitor_web/components/sharing_components.ex:62
+#, elixir-autogen, elixir-format
+msgid "Can comment"
+msgstr "Pode comentar"
+
+#: lib/leitor_web/components/sharing_components.ex:39
+#: lib/leitor_web/components/sharing_components.ex:62
+#, elixir-autogen, elixir-format
+msgid "Can view"
+msgstr "Pode visualizar"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:147
+#, elixir-autogen, elixir-format
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: lib/leitor_web/live/page_live.ex:125
+#, elixir-autogen, elixir-format
+msgid "Choose a valid sharing permission."
+msgstr "Escolha uma permissão de compartilhamento válida."
+
+#: lib/leitor_web/components/selection_components.ex:49
+#: lib/leitor_web/live/shared_page_live.html.heex:134
+#, elixir-autogen, elixir-format
+msgid "Comment"
+msgstr "Comentar"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:115
+#, elixir-autogen, elixir-format
+msgid "Comment on the selected passage"
+msgstr "Comentar o trecho selecionado"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "Comment removed"
+msgstr "Comentário removido"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:32
+#: lib/leitor_web/live/shared_page_live.html.heex:33
+#: lib/leitor_web/live/shared_page_live.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Comments and personal notes"
+msgstr "Comentários e notas pessoais"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Comments here are visible to everyone with access. Personal notes stay private."
+msgstr "Os comentários aqui são visíveis para quem tem acesso. As notas pessoais continuam privadas."
+
+#: lib/leitor_web/components/sharing_components.ex:99
+#, elixir-autogen, elixir-format
+msgid "Copy link"
+msgstr "Copiar link"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:120
+#, elixir-autogen, elixir-format
+msgid "Display name"
+msgstr "Nome de exibição"
+
+#: lib/leitor_web/components/sharing_components.ex:31
+#, elixir-autogen, elixir-format
+msgid "Email address"
+msgstr "Endereço de e-mail"
+
+#: lib/leitor_web/components/sharing_components.ex:78
+#, elixir-autogen, elixir-format
+msgid "General access"
+msgstr "Acesso geral"
+
+#: lib/leitor_web/live/page_live.ex:146
+#, elixir-autogen, elixir-format
+msgid "Invitation sent."
+msgstr "Convite enviado."
+
+#: lib/leitor_web/components/sharing_components.ex:41
+#, elixir-autogen, elixir-format
+msgid "Invite"
+msgstr "Convidar"
+
+#: lib/leitor_web/components/sharing_components.ex:30
+#, elixir-autogen, elixir-format
+msgid "Invite by email"
+msgstr "Convidar por e-mail"
+
+#: lib/leitor_web/live/shared_page_live.ex:578
+#, elixir-autogen, elixir-format
+msgid "Keep a shorter note or remove an older guest note."
+msgstr "Escreva uma nota menor ou remova uma nota de visitante antiga."
+
+#: lib/leitor_web/components/sharing_components.ex:87
+#, elixir-autogen, elixir-format
+msgid "Link access applies even after an individual invitation is removed. Visitors with comment access can join using a display name."
+msgstr "O acesso pelo link continua válido mesmo após remover um convite. Visitantes com permissão para comentar podem entrar usando um nome de exibição."
+
+#: lib/leitor_web/live/page_live.ex:133
+#, elixir-autogen, elixir-format
+msgid "Link renewed. Older links no longer open this page."
+msgstr "Link renovado. Os links antigos não abrem mais esta página."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:174
+#, elixir-autogen, elixir-format
+msgid "Member"
+msgstr "Membro"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "No shared comments yet."
+msgstr "Nenhum comentário compartilhado ainda."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Notes visibility"
+msgstr "Visibilidade das notas"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:236
+#, elixir-autogen, elixir-format
+msgid "Only you can see these notes and AI conversations. They are saved in your notebook."
+msgstr "Só você pode ver estas notas e conversas com a IA. Elas ficam salvas no seu caderno."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:240
+#, elixir-autogen, elixir-format
+msgid "Only you can see these notes. Guest notes stay in this browser tab; sign in to save notes to your account."
+msgstr "Só você pode ver estas notas. As notas de visitante ficam nesta aba; entre para salvar novas notas na sua conta."
+
+#: lib/leitor_web/components/sharing_components.ex:47
+#, elixir-autogen, elixir-format
+msgid "Only you have explicit access."
+msgstr "Só você tem acesso individual."
+
+#: lib/leitor_web/components/sharing_components.ex:100
+#, elixir-autogen, elixir-format
+msgid "Open shared page"
+msgstr "Abrir página compartilhada"
+
+#: lib/leitor_web/components/sharing_components.ex:38
+#, elixir-autogen, elixir-format
+msgid "Permission"
+msgstr "Permissão"
+
+#: lib/leitor_web/components/sharing_components.ex:61
+#, elixir-autogen, elixir-format
+msgid "Permission for %{email}"
+msgstr "Permissão de %{email}"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:95
+#, elixir-autogen, elixir-format
+msgid "Personal"
+msgstr "Pessoal"
+
+#: lib/leitor_web/live/shared_page_live.ex:642
+#, elixir-autogen, elixir-format
+msgid "Please wait a minute before adding another comment."
+msgstr "Aguarde um minuto antes de adicionar outro comentário."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:143
+#, elixir-autogen, elixir-format
+msgid "Post comment"
+msgstr "Publicar comentário"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:142
+#, elixir-autogen, elixir-format
+msgid "Posting…"
+msgstr "Publicando…"
+
+#: lib/leitor_web/components/sharing_components.ex:70
+#, elixir-autogen, elixir-format
+msgid "Remove access for %{email}"
+msgstr "Remover acesso de %{email}"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:204
+#, elixir-autogen, elixir-format
+msgid "Remove comment"
+msgstr "Remover comentário"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:267
+#, elixir-autogen, elixir-format
+msgid "Remove personal note"
+msgstr "Remover nota pessoal"
+
+#: lib/leitor_web/components/sharing_components.ex:103
+#, elixir-autogen, elixir-format
+msgid "Renew link"
+msgstr "Renovar link"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:176
+#: lib/leitor_web/live/shared_page_live.html.heex:193
+#, elixir-autogen, elixir-format
+msgid "Reply"
+msgstr "Responder"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "Reply to comment"
+msgstr "Responder ao comentário"
+
+#: lib/leitor_web/components/sharing_components.ex:80
+#, elixir-autogen, elixir-format
+msgid "Restricted · only invited people"
+msgstr "Restrito · somente pessoas convidadas"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:152
+#, elixir-autogen, elixir-format
+msgid "Select a passage and choose Comment to start a conversation."
+msgstr "Selecione um trecho e escolha Comentar para iniciar uma conversa."
+
+#: lib/leitor_web/live/shared_page_live.ex:639
+#, elixir-autogen, elixir-format
+msgid "Select a passage from the page before commenting."
+msgstr "Selecione um trecho da página antes de comentar."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:254
+#, elixir-autogen, elixir-format
+msgid "Select text to highlight it, keep a note or ask AI."
+msgstr "Selecione um texto para destacá-lo, guardar uma nota ou perguntar à IA."
+
+#: lib/leitor_web/components/sharing_components.ex:41
+#, elixir-autogen, elixir-format
+msgid "Sending…"
+msgstr "Enviando…"
+
+#: lib/leitor_web/components/sharing_components.ex:15
+#: lib/leitor_web/live/page_live.html.heex:27
+#: lib/leitor_web/live/page_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Share page"
+msgstr "Compartilhar página"
+
+#: lib/leitor_web/components/sharing_components.ex:19
+#, elixir-autogen, elixir-format
+msgid "Share this page. Your personal notebook and AI conversations stay private."
+msgstr "Compartilhe esta página. Seu caderno pessoal e suas conversas com a IA continuam privados."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Shared"
+msgstr "Compartilhado"
+
+#: lib/leitor_web/live/shared_page_live.ex:27
+#, elixir-autogen, elixir-format
+msgid "Shared page"
+msgstr "Página compartilhada"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:52
+#, elixir-autogen, elixir-format
+msgid "Shared with you"
+msgstr "Compartilhado com você"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:40
+#, elixir-autogen, elixir-format
+msgid "Sign in"
+msgstr "Entrar"
+
+#: lib/leitor_web/live/shared_page_live.ex:633
+#, elixir-autogen, elixir-format
+msgid "Sign in to use AI and save words. Your account uses its own allowance."
+msgstr "Entre para usar a IA e salvar palavras. Sua conta usa a própria cota."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:326
+#, elixir-autogen, elixir-format
+msgid "Sign in with email"
+msgstr "Entrar com e-mail"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:323
+#, elixir-autogen, elixir-format
+msgid "The link may have been disabled or renewed. If you were invited, sign in with the invited email address."
+msgstr "O link pode ter sido desativado ou renovado. Se você recebeu um convite, entre com o e-mail convidado."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "The owner has enabled viewing only."
+msgstr "O proprietário liberou apenas a visualização."
+
+#: lib/leitor_web/live/shared_page_live.ex:380
+#, elixir-autogen, elixir-format
+msgid "The response could not be completed. Try again."
+msgstr "Não foi possível concluir a resposta. Tente novamente."
+
+#: lib/leitor_web/live/shared_page_live.ex:645
+#, elixir-autogen, elixir-format
+msgid "This action could not be completed. Try again."
+msgstr "Não foi possível concluir esta ação. Tente novamente."
+
+#: lib/leitor_web/live/page_live.ex:160
+#, elixir-autogen, elixir-format
+msgid "This page has reached its invitation limit."
+msgstr "Esta página atingiu o limite de convites."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:321
+#, elixir-autogen, elixir-format
+msgid "This page is not available."
+msgstr "Esta página não está disponível."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "View access"
+msgstr "Acesso de visualização"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:172
+#, elixir-autogen, elixir-format
+msgid "Visitor"
+msgstr "Visitante"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "You are commenting as a visitor. This name is not a verified identity."
+msgstr "Você está comentando como visitante. Este nome não é uma identidade verificada."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "You can comment"
+msgstr "Você pode comentar"
+
+#: lib/leitor_web/live/shared_page_live.ex:636
+#, elixir-autogen, elixir-format
+msgid "You do not have permission to comment on this page."
+msgstr "Você não tem permissão para comentar nesta página."
+
+#: lib/leitor_web/live/shared_page_live.ex:644
+#, elixir-autogen, elixir-format
+msgid "Your daily AI allowance has been reached."
+msgstr "Você atingiu sua cota diária de IA."
+
+#: lib/leitor_web/live/shared_page_live.html.heex:121
+#, elixir-autogen, elixir-format
+msgid "Your name"
+msgstr "Seu nome"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Your page"
+msgstr "Sua página"
+
+#: lib/leitor_web/live/shared_page_live.html.heex:232
+#, elixir-autogen, elixir-format
+msgid "Save guest notes to my notebook"
+msgstr "Salvar notas de visitante no meu caderno"
+
+#: lib/leitor_web/live/page_live.html.heex:190
+#, elixir-autogen, elixir-format
+msgid "%{count} block"
+msgid_plural "%{count} blocks"
+msgstr[0] "%{count} bloco"
+msgstr[1] "%{count} blocos"

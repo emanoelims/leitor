@@ -442,3 +442,23 @@ attempt; it does not run as part of tests.
 Leitor is MIT licensed; see [LICENSE](LICENSE). Third-party code and fonts retain
 their own notices. The bundled Anatomy kit is MIT licensed, with its upstream
 notice and pinned provenance in `assets/vendor/anatomy/`.
+
+### Sharing a page
+
+The reader's Share button opens page-level permissions and email invitations.
+Sharing starts restricted. A general link can allow viewing or commenting; an
+individual invitation requires signing in with its confirmed email. Renewing the
+link invalidates older URLs. Removing an individual invitation does not override
+access granted by a general link. Only owners manage permissions; collaborative
+text editing is intentionally outside this delivery.
+
+Shared comments and replies appear to readers with page access. Personal highlights,
+notes and AI answers stay private and belong to each reader, including in the global
+notebook. Guests can comment with an unverified display name when the general link
+allows it; their personal drafts live only in that browser tab. AI and word jars
+require login and use the reader's own allowance and credentials. Shared figures
+expose only ready artifacts actually embedded in that owner's page.
+
+See [the authentication contracts](guides/authentication-contracts.md) for access,
+revocation and privacy boundaries, and run the sharing browser test with
+`npm --prefix assets run test:browser -- sharing.spec.mjs` against the local server.

@@ -46,6 +46,7 @@ defmodule LeitorWeb.NotebookLive do
        page: result.page,
        total: result.total,
        page_count: max(div(result.total + result.per_page - 1, result.per_page), 1),
+       shared_sources: Leitor.Sharing.links_for(socket.assigns.current_scope, Enum.map(sources, & &1.id)),
        sources: Enum.map(sources, &{&1.title, &1.id}),
        filter_form: to_form(%{"search" => filters.search, "text_id" => filters.text_id || ""}, as: "filters")
      )
@@ -346,7 +347,12 @@ defmodule LeitorWeb.NotebookLive do
               <span class="notebook-entry-kind">{t(entry_title(entry.kind))}</span>
               <.link
                 id={"notebook-source-#{entry.id}"}
-                navigate={~p"/pages/#{entry.text_id}?#{[mark: entry.id]}"}
+                navigate={
+                  if token =
+                       entry.text.user_id != @current_scope.user.id && @shared_sources[entry.text_id],
+                     do: ~p"/s/#{token}?#{[mark: entry.id]}",
+                     else: ~p"/pages/#{entry.text_id}?#{[mark: entry.id]}"
+                }
                 class="notebook-source-link"
                 title={gettext("Open the source passage")}
               ><span>{entry.text.title}</span><.icon name="lucide-arrow-up-right" class="size-4" /></.link>

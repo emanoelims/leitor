@@ -105,8 +105,15 @@ and explanations call Anthropic only on request. The notebook opens as a right-h
 sheet and filters highlights, notes, definitions and questions. Its entries link
 back to the source and can be sent to a grammatical word jar with an explicit meaning.
 The corner minimap uses Gloss’s paragraph lines, vermilion annotation dots and
-viewport outline, with clicking, dragging and keyboard travel. Notes and existing
-highlights persist per account. Color highlighting is absent from the selection toolbar. Unique quotations are reanchored after edits; removed
+viewport outline, with clicking, dragging and keyboard travel. Notes and
+highlights persist per account. The selection toolbar's highlighter applies the last chosen color on click.
+Hover or keyboard focus reveals yellow, green, blue and rose swatches inline,
+using Gloss's width transition; touch devices keep the swatches visible.
+The marker sweep and saved highlight share Gloss’s translucent ink, with 46%
+opacity on light themes and 24% on dark themes, and preserve the surrounding text color.
+Click an existing highlight to recolor it or erase it from the toolbar. Highlights
+appear in the notebooks and minimap and can also be removed from the notebook.
+Unique quotations are reanchored after edits; removed
 or ambiguous passages are retained in the notebook without pointing to another text.
 The bottom question toolbar is absent from this workspace.
 

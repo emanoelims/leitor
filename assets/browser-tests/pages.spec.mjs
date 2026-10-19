@@ -109,7 +109,8 @@ test('free pages, selection, notes, notebook, definitions and word jars work end
   const url=page.url()
   await select(page,1,'wonderful discovery')
   await page.screenshot({path:testInfo.outputPath('page-selection.png'),fullPage:false,animations:'disabled'})
-  await expect(page.locator('#selection-highlight, .selection-palette')).toHaveCount(0)
+  await expect(page.locator('#selection-highlight')).toBeVisible()
+  await expect(page.locator('.selection-highlighter')).toBeVisible()
   await page.locator('#selection-note').click()
   await page.getByLabel('Your note on the selection').fill('Notice the whole phrase.')
   await page.locator('#selection-note-form').getByRole('button',{name:'Keep note'}).click()
@@ -257,7 +258,8 @@ test('free pages, selection, notes, notebook, definitions and word jars work end
   await select(page,1,'attention')
   await expect(page.locator('#selection-define .lucide-book-a')).toBeVisible()
   await expect(page.locator('#selection-explain .lucide-lightbulb')).toBeVisible()
-  await expect(page.locator('#selection-highlight, .selection-palette')).toHaveCount(0)
+  await expect(page.locator('#selection-highlight')).toBeVisible()
+  await expect(page.locator('.selection-highlighter')).toBeVisible()
   await expect(page.locator('#selection-note')).toBeVisible()
   await page.keyboard.press('Escape')
   await page.locator('#page-notebook').click()
@@ -1227,4 +1229,133 @@ test('live Claude streams definitions and follow-ups in margin cards',async({pag
   await expect(page.locator('.page-follow-turn:not(.page-follow-pending) .page-answer')).toHaveText(response)
   await page.reload()
   await expect(page.locator('.page-follow-turn:not(.page-follow-pending) .page-answer')).toHaveText(response)
+})
+
+
+test('color highlights use the Gloss inline palette, persist, recolor and erase', async ({page,browser}, testInfo) => {
+  await signIn(page)
+  await page.goto('/pages/new')
+  await page.getByRole('textbox',{name:'Page title'}).fill('Color highlights')
+  await pastePage(page,'A **wonderful** discovery starts with a little attention. Café is a good place to read.')
+  await page.locator('#page-save').click()
+  await expect(page.locator('#page-reading')).toBeVisible()
+  const entries=[['yellow','wonderful discovery'],['green','Café'],['blue','little attention'],['rose','read']]
+  for(const [color,quote] of entries) {
+    await select(page,0,quote)
+    if(color==='yellow') {
+      await expect(page.locator('.selection-colors-reveal')).toHaveCSS('width','0px')
+      await page.locator('#selection-highlight').click()
+    } else {
+      await page.locator('#selection-highlight').hover()
+      await expect(page.locator('.selection-colors-reveal')).toHaveCSS('width','94px')
+      await expect(page.locator('#page-selection')).toHaveAttribute('role','toolbar')
+      await page.locator(`#selection-highlight-${color}`).click()
+    }
+    await expect(page.locator('#page-selection')).toHaveCount(0)
+    await expect.poll(async()=> (await page.locator(`#page-reading mark.highlight-${color}`).allTextContents()).join('')).toBe(quote)
+    await expect(page.locator('#page-margin-root')).not.toHaveAttribute('data-active',/.+/)
+  }
+  await page.reload()
+  for(const [color,quote] of entries) {
+    await expect.poll(async()=> (await page.locator(`#page-reading mark.highlight-${color}`).allTextContents()).join('')).toBe(quote)
+  }
+  // Keyboard focus reveals the same inline colors and keeps the lens anchored.
+  await select(page,0,'starts')
+  await page.locator('#selection-highlight').focus()
+  await page.keyboard.press('Tab')
+  await expect(page.locator('#selection-highlight-yellow')).toBeFocused()
+  await expect(page.locator('.selection-colors-reveal')).toHaveCSS('width','94px')
+  await expect(page.locator('#selection-highlight-rose')).toHaveAttribute('aria-pressed','true')
+  await page.keyboard.press('Escape')
+  // A formatted, multi-node highlight opens all of its text, not just the clicked fragment.
+  const yellow=page.locator('#page-reading mark.highlight-yellow')
+  const id=await yellow.first().getAttribute('data-page-mark')
+  await yellow.first().click()
+  await expect(page.locator('#selection-highlight-remove')).toBeVisible()
+  await expect(page.locator('#selection-highlight-remove .lucide-eraser')).toHaveCSS('mask-image',/^url\(/)
+  await expect(page.locator('#selection-highlight-yellow')).toHaveAttribute('aria-pressed','true')
+  await expect(page.locator('#selection-highlight')).toHaveCount(0)
+  await page.locator('#selection-highlight-blue').click()
+  await expect(page.locator(`#page-reading mark[data-page-marks~="${id}"].highlight-blue`)).toHaveCount(2)
+  await expect(page.locator('#page-reading mark.highlight-yellow')).toHaveCount(0)
+  await select(page,0,'starts')
+  await page.locator('#selection-more>summary').click()
+  await expect(page.locator('#selection-pot')).toHaveText('Keep in a jar')
+  await expect(page.locator('#selection-pot .lucide-flask-conical')).toHaveCSS('mask-image',/^url\(/)
+  await page.locator('#selection-pot').click()
+  await page.getByLabel('Meaning',{exact:true}).fill('begins')
+  await page.locator('#selection-pot-form').getByRole('button',{name:'Save word'}).click()
+  await expect(page.locator('#page-selection')).toHaveCount(0)
+  // Touch devices show the colors without requiring hover.
+  await page.setViewportSize({width:390,height:844})
+  await page.locator('#page-reading mark.highlight-green').click()
+  await expect(page.locator('#selection-highlight-palette')).toBeInViewport()
+  await page.screenshot({path:testInfo.outputPath('highlight-inline-mobile.png'),animations:'disabled'})
+  await page.locator('#selection-highlight-remove').click()
+  await expect(page.locator('#page-reading mark.highlight-green')).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('#page-reading mark.highlight-green')).toHaveCount(0)
+  await expect(page.locator('#page-reading mark.highlight-rose')).toHaveText('read')
+  await page.locator('#page-notebook').click()
+  await page.locator(`#notebook_marks-${id} button[phx-click="remove-mark"]`).click()
+  await expect(page.locator(`#page-reading mark[data-page-marks~="${id}"]`)).toHaveCount(0)
+  const touchContext=await browser.newContext({storageState:await page.context().storageState(),viewport:{width:390,height:844},hasTouch:true,isMobile:true})
+  try {
+    const touch=await touchContext.newPage()
+    await touch.goto(page.url())
+    await select(touch,0,'starts')
+    await expect(touch.locator('.selection-colors-reveal')).toHaveCSS('width','94px')
+    await expect(touch.locator('#selection-highlight-rose')).toBeInViewport()
+    await touch.locator('#selection-highlight-green').tap()
+    await expect(touch.locator('#page-reading mark.highlight-green')).toHaveText('starts')
+  } finally {
+    await touchContext.close()
+  }
+})
+
+test('highlight ink and text stay consistent after the sweep and reload in every theme', async ({page},testInfo) => {
+  test.setTimeout(90000)
+  await signIn(page)
+  await page.goto('/pages/new')
+  await page.getByRole('textbox',{name:'Page title'}).fill('Highlight ink consistency')
+  await pastePage(page,'A **wonderful** discovery starts with a little attention. Café is a good place to read.')
+  await page.locator('#page-save').click()
+  await expect(page.locator('#page-reading')).toBeVisible()
+  const entries=[['yellow','wonderful discovery'],['green','Café'],['blue','little attention'],['rose','read']]
+  const paint=locator=>locator.evaluateAll(nodes=>nodes.map(node=>{
+    const style=getComputedStyle(node)
+    return {background:style.backgroundColor,image:style.backgroundImage,text:style.color,parentText:getComputedStyle(node.parentElement).color}
+  }))
+  for(const theme of ['ink','light','dark','sepia','snow']) {
+    await page.locator('#reading-font').click()
+    await page.locator(`#reading-theme-${theme}`).click()
+    await page.locator('#reading-font').click()
+    const fresh=new Map()
+    for(const [color,quote] of entries) {
+      await select(page,0,quote)
+      await page.locator('#selection-highlight').hover()
+      await page.locator(`#selection-highlight-${color}`).click()
+      const marks=page.locator(`#page-reading mark.highlight-${color}`)
+      await expect(marks.first()).toHaveClass(/is-new/)
+      await marks.evaluateAll(nodes=>Promise.all(nodes.flatMap(node=>node.getAnimations()).map(animation=>animation.finished)))
+      fresh.set(color,await paint(marks))
+    }
+    await page.reload()
+    await expect(page.locator('#page-reading')).toBeVisible()
+    for(const [color] of entries) {
+      const restored=await paint(page.locator(`#page-reading mark.highlight-${color}`))
+      expect(restored.length).toBe(fresh.get(color).length)
+      for(const [index,state] of restored.entries()) {
+        const original=fresh.get(color)[index]
+        expect(original.image,`${theme} ${color}: sweep and saved ink must match`).toBe(`linear-gradient(${state.background}, ${state.background})`)
+        expect(original.text,`${theme} ${color}: fresh highlight preserves text color`).toBe(original.parentText)
+        expect(state.text,`${theme} ${color}: restored highlight preserves text color`).toBe(state.parentText)
+        expect(state.text).toBe(original.text)
+      }
+    }
+    if(theme==='ink') await page.screenshot({path:testInfo.outputPath('highlights-ink-reloaded.png')})
+    await page.locator('#page-notebook').click()
+    for(let i=0;i<entries.length;i++) await page.locator('#page-notebook-marks button[phx-click="remove-mark"]').first().click()
+    await page.locator('#close-page-notebook').click()
+  }
 })

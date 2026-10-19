@@ -46,6 +46,8 @@ defmodule LeitorWeb.PageLive do
        selection_anchor: nil,
        selection_mode: "actions",
        editing_mark_id: nil,
+       editing_highlight_id: nil,
+       editing_highlight_color: nil,
        notebook_open: false,
        notebook_filter: "all",
        mark_count: 0,
@@ -83,6 +85,7 @@ defmodule LeitorWeb.PageLive do
      |> detach_page_generation()
      |> assign(
        text: text,
+       editing_highlight_id: nil,
        active_mark_id: nil,
        page_title: text.title,
        editing: text.body == "",
@@ -286,9 +289,13 @@ defmodule LeitorWeb.PageLive do
   def handle_event("select", anchor, socket) do
     case PageDocument.selection(socket.assigns.document, anchor) do
       {:ok, selection} ->
+        highlight = selected_highlight(socket, anchor, selection)
+
         {:noreply,
          assign(socket,
            selection: selection,
+           editing_highlight_id: highlight && highlight.id,
+           editing_highlight_color: highlight && highlight.color,
            editing_mark_id: nil,
            selection_anchor: anchor,
            selection_mode: "actions",
@@ -306,7 +313,7 @@ defmodule LeitorWeb.PageLive do
     do:
       {:noreply,
        socket
-       |> assign(selection: nil, editing_mark_id: nil)
+       |> assign(selection: nil, editing_mark_id: nil, editing_highlight_id: nil)
        |> push_event("page-clear-selection", %{version: params["version"]})}
 
   def handle_event("reading-face", %{"face" => face}, socket) when face in ~w(serif book sans legible) do
@@ -461,7 +468,15 @@ defmodule LeitorWeb.PageLive do
 
   def handle_event("highlight", %{"color" => color}, socket) when color in ~w(yellow green blue rose) do
     socket = socket |> assign(marker_color: color) |> push_event("reading-preference", %{key: "marker", value: color})
-    keep_mark(socket, %{kind: "highlight", color: color})
+
+    case socket.assigns.editing_highlight_id do
+      nil ->
+        keep_mark(socket, %{kind: "highlight", color: color})
+
+      id ->
+        {:ok, _} = Pages.update_mark(socket.assigns.current_scope, id, %{color: color})
+        {:noreply, socket |> assign(selection: nil, editing_highlight_id: nil) |> refresh_marks()}
+    end
   end
 
   def handle_event("note", %{"note" => attrs}, %{assigns: %{editing_mark_id: id}} = socket) when not is_nil(id) do
@@ -516,6 +531,12 @@ defmodule LeitorWeb.PageLive do
 
       {:ok, _} = Pages.delete_mark(socket.assigns.current_scope, id)
       socket = if socket.assigns.active_mark_id == id, do: assign(socket, active_mark_id: nil), else: socket
+
+      socket =
+        if socket.assigns.editing_highlight_id == id,
+          do: assign(socket, selection: nil, editing_highlight_id: nil),
+          else: socket
+
       {:noreply, refresh_marks(socket)}
     else
       {:noreply, socket}
@@ -949,12 +970,27 @@ defmodule LeitorWeb.PageLive do
   defp jar_category(category) when category in ~w(noun verb adj adv pron prep expression), do: category
   defp jar_category(_), do: "word"
 
+  defp selected_highlight(socket, %{"highlight_id" => id}, selection) when is_binary(id) do
+    socket.assigns.current_scope
+    |> Pages.list_marks(socket.assigns.text.id)
+    |> Enum.find_value(fn mark ->
+      if mark.id == id and mark.kind == "highlight" and PageDocument.locate(socket.assigns.document, mark) == selection,
+        do: mark
+    end)
+  end
+
+  defp selected_highlight(_socket, _anchor, _selection), do: nil
+
   defp keep_mark(%{assigns: %{selection_anchor: nil}} = socket, _attrs), do: {:noreply, socket}
 
   defp keep_mark(socket, attrs) do
     case Pages.create_mark(socket.assigns.current_scope, socket.assigns.text.id, socket.assigns.selection_anchor, attrs) do
-      {:ok, mark} -> {:noreply, socket |> assign(selection: nil, error: nil, active_mark_id: mark.id) |> refresh_marks()}
-      {:error, _} -> {:noreply, assign(socket, error: "Write a note between 1 and 4,000 characters.")}
+      {:ok, mark} ->
+        active_id = if mark.kind == "highlight", do: nil, else: mark.id
+        {:noreply, socket |> assign(selection: nil, error: nil, active_mark_id: active_id) |> refresh_marks()}
+
+      {:error, _} ->
+        {:noreply, assign(socket, error: "Write a note between 1 and 4,000 characters.")}
     end
   end
 

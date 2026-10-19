@@ -656,10 +656,52 @@
                 title={gettext("Keep in a jar")}
                 phx-click="selection-mode"
                 phx-value-mode="pot"
-              ><.icon name="hero-beaker" class="size-4" /></button>
+              ><.icon name="lucide-flask-conical" class="size-4" />{gettext("Keep in a jar")}</button>
             </div>
           </details>
           <span class="selection-divider"></span>
+          <div class={["selection-highlighter", @editing_highlight_id && "is-editing"]}>
+            <button
+              :if={!@editing_highlight_id}
+              id="selection-highlight"
+              type="button"
+              aria-label={gettext("Highlight text")}
+              title={gettext("Highlight text")}
+              phx-click="highlight"
+              phx-value-color={@marker_color}
+            ><.icon name="lucide-highlighter" class="size-[15px]" /><span
+              class="selection-color-dot selection-marker-color"
+              data-color={@marker_color}
+              aria-hidden="true"
+            ></span></button>
+            <div class="selection-colors-reveal">
+              <div
+                id="selection-highlight-palette"
+                class="selection-colors"
+                role="group"
+                aria-label={gettext("Highlight color")}
+              >
+                <button
+                  :for={
+                    {color, label} <- [
+                      {"yellow", gettext("Yellow")},
+                      {"green", gettext("Green")},
+                      {"blue", gettext("Blue")},
+                      {"rose", gettext("Rose")}
+                    ]
+                  }
+                  id={"selection-highlight-#{color}"}
+                  type="button"
+                  class="selection-marker-color"
+                  data-color={color}
+                  aria-label={gettext("Highlight in %{color}", color: label)}
+                  aria-pressed={to_string((@editing_highlight_color || @marker_color) == color)}
+                  phx-click="highlight"
+                  phx-value-color={color}
+                ></button>
+              </div>
+            </div>
+          </div>
           <button
             id="selection-note"
             type="button"
@@ -668,6 +710,15 @@
             phx-click="selection-mode"
             phx-value-mode="note"
           ><.icon name="lucide-pen-line" class="size-[15px]" /></button>
+          <button
+            :if={@editing_highlight_id}
+            id="selection-highlight-remove"
+            type="button"
+            aria-label={gettext("Remove highlight")}
+            title={gettext("Remove highlight")}
+            phx-click="remove-mark"
+            phx-value-id={@editing_highlight_id}
+          ><.icon name="lucide-eraser" class="size-[15px]" /></button>
         </div>
         <p id="selection-copy-status" phx-update="ignore" class="sr-only" role="status"></p>
       <% "note" -> %>

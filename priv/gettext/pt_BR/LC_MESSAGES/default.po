@@ -80,7 +80,7 @@ msgstr "Um novo olhar é o começo da compreensão."
 msgid "A thought in the margin. A word made yours. All together, right here."
 msgstr "Uma ideia na margem. Uma palavra que agora é sua. Tudo junto, bem aqui."
 
-#: lib/leitor_web/live/page_live.html.heex:680
+#: lib/leitor_web/live/page_live.html.heex:731
 #, elixir-autogen, elixir-format
 msgid "A thought, in your own words"
 msgstr "Uma ideia, com suas palavras"
@@ -152,8 +152,8 @@ msgstr "Ações para o texto selecionado"
 msgid "Add a meaning and select a word or expression up to 200 characters."
 msgstr "Adicione um significado e selecione uma palavra ou expressão de até 200 caracteres."
 
-#: lib/leitor_web/live/page_live.html.heex:666
-#: lib/leitor_web/live/page_live.html.heex:667
+#: lib/leitor_web/live/page_live.html.heex:708
+#: lib/leitor_web/live/page_live.html.heex:709
 #, elixir-autogen, elixir-format
 msgid "Add a note"
 msgstr "Adicionar nota"
@@ -252,7 +252,7 @@ msgid "Application language"
 msgstr "Idioma da aplicação"
 
 #: lib/leitor_web/live/page_live.html.heex:572
-#: lib/leitor_web/live/page_live.html.heex:697
+#: lib/leitor_web/live/page_live.html.heex:748
 #, elixir-autogen, elixir-format
 msgid "Ask"
 msgstr "Perguntar"
@@ -272,7 +272,7 @@ msgstr "Faça outra pergunta…"
 msgid "Ask a question up to 500 characters."
 msgstr "Faça uma pergunta de até 500 caracteres."
 
-#: lib/leitor_web/live/page_live.html.heex:693
+#: lib/leitor_web/live/page_live.html.heex:744
 #, elixir-autogen, elixir-format
 msgid "Ask about this passage…"
 msgstr "Pergunte sobre este trecho…"
@@ -817,6 +817,7 @@ msgstr "Justificado"
 #: lib/leitor_web/live/page_live.html.heex:550
 #: lib/leitor_web/live/page_live.html.heex:655
 #: lib/leitor_web/live/page_live.html.heex:656
+#: lib/leitor_web/live/page_live.html.heex:659
 #, elixir-autogen, elixir-format
 msgid "Keep in a jar"
 msgstr "Guardar em um pote"
@@ -831,7 +832,7 @@ msgstr "Continuar aprendendo"
 msgid "Keep me logged in on this device"
 msgstr "Continuar conectado neste dispositivo"
 
-#: lib/leitor_web/live/page_live.html.heex:684
+#: lib/leitor_web/live/page_live.html.heex:735
 #, elixir-autogen, elixir-format
 msgid "Keep note"
 msgstr "Guardar nota"
@@ -945,7 +946,7 @@ msgstr "Gerencie o e-mail da sua conta"
 msgid "Margin notes"
 msgstr "Notas na margem"
 
-#: lib/leitor_web/live/page_live.html.heex:704
+#: lib/leitor_web/live/page_live.html.heex:755
 #, elixir-autogen, elixir-format
 msgid "Meaning"
 msgstr "Significado"
@@ -1250,7 +1251,7 @@ msgstr "Só para você · Até 10 MB"
 msgid "Pronouns"
 msgstr "Pronomes"
 
-#: lib/leitor_web/live/page_live.html.heex:692
+#: lib/leitor_web/live/page_live.html.heex:743
 #, elixir-autogen, elixir-format
 msgid "Question about the selection"
 msgstr "Pergunta sobre o trecho selecionado"
@@ -1366,7 +1367,7 @@ msgstr "Salvar preferências"
 msgid "Save while editing"
 msgstr "Salvar durante a escrita"
 
-#: lib/leitor_web/live/page_live.html.heex:725
+#: lib/leitor_web/live/page_live.html.heex:776
 #, elixir-autogen, elixir-format
 msgid "Save word"
 msgstr "Salvar palavra"
@@ -1651,7 +1652,7 @@ msgstr "Não foi possível conectar à internet"
 msgid "Welcome to Leitor"
 msgstr "Bem-vindo ao Leitor"
 
-#: lib/leitor_web/live/page_live.html.heex:705
+#: lib/leitor_web/live/page_live.html.heex:756
 #, elixir-autogen, elixir-format
 msgid "What does this word mean?"
 msgstr "O que esta palavra significa?"
@@ -1671,7 +1672,7 @@ msgstr "Larga"
 msgid "Width"
 msgstr "Largura"
 
-#: lib/leitor_web/live/page_live.html.heex:712
+#: lib/leitor_web/live/page_live.html.heex:763
 #, elixir-autogen, elixir-format
 msgid "Word jar"
 msgstr "Pote de palavras"
@@ -1754,7 +1755,7 @@ msgstr "Seu próximo capítulo"
 msgid "Your note"
 msgstr "Sua nota"
 
-#: lib/leitor_web/live/page_live.html.heex:679
+#: lib/leitor_web/live/page_live.html.heex:730
 #, elixir-autogen, elixir-format
 msgid "Your note on the selection"
 msgstr "Sua nota sobre o trecho"
@@ -2840,3 +2841,45 @@ msgstr "Selecione uma palavra ou expressão de até 200 caracteres para consulta
 #, elixir-autogen, elixir-format
 msgid "The dictionary is unavailable right now. Try again in a moment."
 msgstr "O dicionário está indisponível agora. Tente de novo em instantes."
+
+#: lib/leitor_web/live/page_live.html.heex:689
+#, elixir-autogen, elixir-format
+msgid "Blue"
+msgstr "Azul"
+
+#: lib/leitor_web/live/page_live.html.heex:688
+#, elixir-autogen, elixir-format
+msgid "Green"
+msgstr "Verde"
+
+#: lib/leitor_web/live/page_live.html.heex:682
+#, elixir-autogen, elixir-format
+msgid "Highlight color"
+msgstr "Cor do destaque"
+
+#: lib/leitor_web/live/page_live.html.heex:697
+#, elixir-autogen, elixir-format
+msgid "Highlight in %{color}"
+msgstr "Destacar em %{color}"
+
+#: lib/leitor_web/live/page_live.html.heex:668
+#: lib/leitor_web/live/page_live.html.heex:669
+#, elixir-autogen, elixir-format
+msgid "Highlight text"
+msgstr "Destacar texto"
+
+#: lib/leitor_web/live/page_live.html.heex:690
+#, elixir-autogen, elixir-format
+msgid "Rose"
+msgstr "Rosa"
+
+#: lib/leitor_web/live/page_live.html.heex:687
+#, elixir-autogen, elixir-format
+msgid "Yellow"
+msgstr "Amarelo"
+
+#: lib/leitor_web/live/page_live.html.heex:717
+#: lib/leitor_web/live/page_live.html.heex:718
+#, elixir-autogen, elixir-format
+msgid "Remove highlight"
+msgstr "Remover destaque"

@@ -1,7 +1,7 @@
 import {t} from '../i18n'
 import {composeFigureStyle} from './kit/environment.mjs'
 
-// Only an account-owned, reviewed artifact can reach this player. Program code
+// Only an owned or explicitly shared, reviewed artifact can reach this player. Program code
 // executes in an opaque-origin sandbox, never in the Phoenix page's realm.
 export function mountProgram(element,blueprint) {
   const stage=element.querySelector('.figure-stage'),abort=new AbortController()
@@ -25,7 +25,7 @@ export function mountProgram(element,blueprint) {
   }
   window.addEventListener('message',message);document.addEventListener('visibilitychange',environment)
   iframe.addEventListener('load',environment)
-  fetch(`/figures/${encodeURIComponent(blueprint.artifact_id)}`,{credentials:'same-origin',signal:abort.signal,headers:{accept:'application/json'}})
+  fetch(`${element.closest('[data-shared-figures]')?.dataset.sharedFigures || "/figures"}/${encodeURIComponent(blueprint.artifact_id)}`,{credentials:'same-origin',signal:abort.signal,headers:{accept:'application/json'}})
     .then(async response=>{
       if(!response.ok)throw Error('Unavailable')
       const artifact=await response.json()

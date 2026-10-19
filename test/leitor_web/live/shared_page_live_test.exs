@@ -79,6 +79,34 @@ defmodule LeitorWeb.SharedPageLiveTest do
     refute render(visitor) =~ "A shared question"
   end
 
+  test "personal notes use the reader card controls, preserve their quote and stay private", %{
+    conn: conn,
+    owner: owner,
+    page: page,
+    share: share,
+    anchor: anchor
+  } do
+    {:ok, visitor, _} = live(conn, ~p"/s/#{share.token}")
+    render_hook(visitor, "select", anchor)
+    render_click(visitor, "selection-mode", %{"mode" => "note"})
+    visitor |> form("#selection-note-form", note: %{body: "A private thought"}) |> render_submit()
+    assert_push_event(visitor, "shared-drafts", %{drafts: [%{"id" => id}]})
+    card = "#shared-personal-notes [data-margin-mark='#{id}']"
+    assert has_element?(visitor, card <> ".page-margin-card.is-active[data-card-layout=stack]")
+    assert has_element?(visitor, card <> " blockquote", "wonderful")
+    refute has_element?(visitor, card <> " blockquote[class*=highlight-]")
+    assert has_element?(visitor, card <> " button[aria-label='Copy annotation']")
+    visitor |> element(card <> " button[aria-label='Go to paragraph 1']") |> render_click()
+    assert_push_event(visitor, "page-jump", %{id: ^id})
+    visitor |> element(card <> " button[aria-label='Collapse note']") |> render_click()
+    assert has_element?(visitor, card <> ".is-collapsed .page-card-summary")
+    visitor |> element(card <> " .page-card-summary") |> render_click()
+    assert has_element?(visitor, card <> ".is-active .page-answer", "A private thought")
+    assert Pages.list_marks(owner, page.id) == []
+    visitor |> element(card <> " button[aria-label='Remove annotation']") |> render_click()
+    refute has_element?(visitor, card)
+  end
+
   test "view-only visitors cannot forge comments and login returns to the shared link", %{
     conn: conn,
     owner: owner,

@@ -2,6 +2,8 @@ defmodule LeitorWeb.ReaderComponents do
   @moduledoc false
   use LeitorWeb, :html
 
+  alias LeitorWeb.WritingComponents
+
   attr :face, :string, required: true
   attr :font_size, :integer, required: true
   attr :numbers, :boolean, default: nil
@@ -265,4 +267,277 @@ defmodule LeitorWeb.ReaderComponents do
     </.popover>
     """
   end
+
+  attr :id, :string, required: true
+  attr :kind, :string, default: nil
+  attr :active, :boolean, default: true
+  attr :entering, :boolean, default: false
+  attr :layout, :string, default: "margin", values: ["margin", "stack"]
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def annotation_frame(assigns) do
+    ~H"""
+    <article
+      id={@id}
+      data-card-layout={@layout}
+      class={[
+        "page-margin-card",
+        @kind && "mark-#{@kind}",
+        if(@active, do: "is-active", else: "is-collapsed"),
+        @entering && "is-entering"
+      ]}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </article>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :mark, :map, required: true
+  attr :document, :map, required: true
+  attr :active, :boolean, default: false
+  attr :layout, :string, default: "margin", values: ["margin", "stack"]
+  attr :busy, :boolean, default: false
+  attr :pending, :map, default: nil
+  attr :help_stream, :map, default: nil
+  attr :actions, :list, default: [:retry, :edit, :follow, :collect]
+
+  def annotation(assigns) do
+    ~H"""
+    <.annotation_frame
+      id={@id}
+      kind={@mark.kind}
+      layout={@layout}
+      active={@active}
+      data-margin-mark={@mark.id}
+      data-margin-kind={@mark.kind}
+    >
+      <button
+        :if={!@active}
+        type="button"
+        class="page-card-summary"
+        phx-click="activate-mark"
+        phx-value-id={@mark.id}
+      >
+        <span><strong>{t(annotation_title(@mark))}</strong> “{@mark.quote}”</span><span class="page-cite">¶{@mark.block_index +
+          1}</span>
+        <small>{answer_summary(@mark.body)}</small>
+      </button>
+      <div :if={@active} class="page-card-expanded">
+        <header>
+          <strong>{t(annotation_title(@mark))}</strong><button
+            type="button"
+            class="page-cite"
+            data-page-cite-mark={@mark.id}
+            aria-label={gettext("Go to paragraph %{number}", number: @mark.block_index + 1)}
+            phx-click="jump-mark"
+            phx-value-id={@mark.id}
+          >¶{@mark.block_index + 1}</button><span
+            :if={@mark.replies != []}
+            class="page-follow-count"
+          >{ngettext("%{count} follow-up", "%{count} follow-ups", length(@mark.replies))}</span><button
+            type="button"
+            class="icon-button"
+            phx-click="collapse-mark"
+            aria-label={gettext("Collapse note")}
+          ><.icon name="lucide-chevrons-down-up" class="size-3" /></button>
+        </header>
+        <blockquote>{@mark.quote}</blockquote>
+        <h3 :if={@mark.kind == "answer" && annotation_title(@mark) == "Ask"}>{@mark.question}</h3>
+        <div class="page-answer">
+          {answer_html(
+            if(
+              @busy && @pending && @pending.mark_id == @mark.id && @pending.action == "retry" &&
+                @help_stream && @help_stream.answer != "",
+              do: @help_stream.answer,
+              else: @mark.body
+            ),
+            @document
+          )}
+        </div>
+        <div
+          :for={reply <- @mark.replies}
+          id={"#{@id}-reply-#{reply.id}"}
+          class="page-follow-turn"
+        >
+          <h4><.icon name="lucide-corner-down-right" class="size-3" />{reply.question}</h4><div class="page-answer">
+            {answer_html(reply.body, @document)}
+          </div>
+        </div>
+        <div
+          :if={
+            @busy && @pending && @pending.mark_id == @mark.id && @pending.action == "follow" &&
+              @help_stream && @help_stream.answer != ""
+          }
+          class="page-follow-turn page-follow-pending"
+          aria-busy="true"
+        >
+          <h4>
+            <.icon name="lucide-corner-down-right" class="size-3" />{@pending.question}
+          </h4>
+          <div class="page-answer">{answer_html(@help_stream.answer, @document)}</div>
+        </div>
+        <WritingComponents.generating :if={
+          @busy && @pending && @pending.mark_id == @mark.id &&
+            (!@help_stream || @help_stream.answer == "")
+        } />
+        <footer>
+          <span>{if @mark.kind in ["note", "highlight"],
+            do: gettext("Your note"),
+            else: gettext("Claude")}</span>
+          <button
+            :if={@busy && @pending && @pending.mark_id == @mark.id}
+            type="button"
+            class="icon-button"
+            phx-click="stop-help"
+            aria-label={gettext("Stop response")}
+          ><.icon name="lucide-square" class="size-3" /></button>
+          <button
+            :if={:retry in @actions && @mark.kind in ["definition", "answer"]}
+            type="button"
+            class="icon-button"
+            phx-click="retry-mark"
+            phx-value-id={@mark.id}
+            disabled={@busy}
+            aria-label={gettext("Try again")}
+          ><.icon name="lucide-rotate-ccw" class="size-4" /></button>
+          <button
+            type="button"
+            class="icon-button"
+            phx-click={
+              JS.dispatch("leitor:copy",
+                detail: %{text: annotation_markdown(@mark), status_id: "mark-copy-#{@mark.id}"}
+              )
+            }
+            aria-label={gettext("Copy annotation")}
+          ><.icon name="lucide-copy" class="size-4" /></button>
+          <button
+            :if={:edit in @actions && @mark.kind == "note"}
+            type="button"
+            class="icon-button"
+            phx-click="edit-note"
+            phx-value-id={@mark.id}
+            aria-label={gettext("Edit note")}
+          ><.icon name="lucide-pen-line" class="size-4" /></button>
+          <button
+            type="button"
+            class="icon-button"
+            phx-click="remove-mark"
+            phx-value-id={@mark.id}
+            aria-label={gettext("Remove annotation")}
+          ><.icon name="lucide-trash-2" class="size-4" /></button>
+        </footer>
+        <p
+          id={"mark-copy-#{@mark.id}"}
+          phx-update="ignore"
+          class="page-copy-status"
+          role="status"
+        >
+        </p>
+        <.form
+          :if={:follow in @actions && @mark.kind in ["definition", "answer"]}
+          for={to_form(%{"question" => ""}, as: "follow")}
+          id={"follow-up-#{@mark.id}"}
+          phx-submit="follow-up"
+          phx-value-id={@mark.id}
+          class="page-follow-form"
+        >
+          <.input
+            name="follow[question]"
+            value=""
+            id={"follow-question-#{@mark.id}"}
+            aria-label={gettext("Ask a follow-up")}
+            placeholder={gettext("Ask a follow-up…")}
+            maxlength="500"
+            required
+            class="page-follow-input"
+            disabled={@busy}
+          /><button type="submit" aria-label={gettext("Send follow-up")} disabled={@busy}><.icon
+            name="lucide-arrow-up"
+            class="size-4"
+          /></button>
+        </.form>
+        <button
+          :if={:collect in @actions && String.length(@mark.quote) <= 200}
+          type="button"
+          class="page-collect-word"
+          phx-click="mark-to-pot"
+          phx-value-id={@mark.id}
+        ><.icon name="hero-beaker" class="size-3" />{gettext("Keep in a jar")}</button>
+      </div>
+    </.annotation_frame>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :pending, :map, required: true
+  attr :document, :map, required: true
+  attr :answer, :string, default: ""
+  attr :layout, :string, default: "margin", values: ["margin", "stack"]
+
+  def pending_annotation(assigns) do
+    ~H"""
+    <.annotation_frame
+      id={@id}
+      layout={@layout}
+      entering
+      data-margin-mark="pending"
+      data-margin-block={@pending.block_index}
+      aria-busy="true"
+    >
+      <header>
+        <strong>{t(String.capitalize(@pending.action))}</strong><span class="page-cite">¶{@pending.block_index +
+          1}</span><button
+          type="button"
+          class="icon-button"
+          phx-click="stop-help"
+          aria-label={gettext("Stop response")}
+        ><.icon name="lucide-square" class="size-3" /></button>
+      </header>
+      <blockquote>{@pending.quote}</blockquote>
+      <div
+        :if={@answer != ""}
+        class="page-answer page-stream-answer"
+      >
+        {answer_html(@answer, @document)}
+      </div>
+      <WritingComponents.generating :if={@answer == ""} />
+      <footer><span>{gettext("Reading your passage…")}</span></footer>
+    </.annotation_frame>
+    """
+  end
+
+  def citation_preview(assigns) do
+    ~H"""
+    <div
+      id="page-citation-preview"
+      phx-hook="PageCitations"
+      phx-update="ignore"
+      class="page-cite-preview"
+      role="tooltip"
+      hidden
+    >
+      <p data-cite-number></p><p data-cite-text></p><p>{gettext("Click to jump there")}</p>
+    </div>
+    """
+  end
+
+  defp annotation_title(%{kind: "highlight"}), do: gettext_noop("Highlight")
+  defp annotation_title(%{kind: "note"}), do: "Note"
+  defp annotation_title(%{kind: "definition", question: "Dictionary"}), do: "Dictionary"
+  defp annotation_title(%{kind: "definition"}), do: "Define"
+  defp annotation_title(%{question: question}) when question in ["Explain", "Simplify"], do: question
+  defp annotation_title(_), do: "Ask"
+
+  defp answer_html(markdown, document),
+    do: Phoenix.HTML.raw(Leitor.PageDocument.render_answer(markdown, length(document.blocks)))
+
+  defp answer_summary(markdown), do: Leitor.PageDocument.prepare(markdown).text
+
+  defp annotation_markdown(mark),
+    do:
+      "> #{String.replace(mark.quote, "\n", "\n> ")}\n\n#{mark.body}" <>
+        Enum.map_join(mark.replies, "", &"\n\n### #{&1.question}\n\n#{&1.body}")
 end

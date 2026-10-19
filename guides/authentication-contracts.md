@@ -159,7 +159,11 @@ with 50-comment pages. General links may be forwarded; use restricted invitation
 when access must depend on a verified email.
 
 Private page marks now have an explicit `user_id`, backfilled from their existing
-page owners in the migration. A reader's notes and AI answers belong to that
+page owners in the migration. A rollout compatibility trigger fills an omitted
+author with the source owner for legacy application inserts only; explicit
+reader authors are never replaced. The final migration enforces NOT NULL after
+installing this fallback and backfilling intervening legacy inserts.
+A reader's notes and AI answers belong to that
 reader, independently of the source owner, and remain in that reader's notebook.
 Shared comments use a separate table and never include personal mark contents.
 Guest drafts stay only in session storage in the current browser tab and are

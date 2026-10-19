@@ -7,7 +7,8 @@ defmodule Leitor.Repo.Migrations.AddPageSharingAndAnnotationAuthors do
     end
 
     execute "UPDATE page_marks SET user_id = texts.user_id FROM texts WHERE texts.id = page_marks.text_id"
-    alter table(:page_marks), do: modify(:user_id, :binary_id, null: false)
+    # The rollout migration installs the legacy insert fallback before enforcing
+    # NOT NULL, while the previous application is still serving.
     create index(:page_marks, [:user_id, :text_id])
 
     create table(:page_shares, primary_key: false) do

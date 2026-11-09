@@ -1124,16 +1124,8 @@ defmodule LeitorWeb.PageLive do
     |> stream(:page_collaborators, Sharing.collaborators(scope, socket.assigns.text.id), reset: true)
   end
 
-  defp mark_title(%{kind: "note"}), do: "Note"
-  defp mark_title(%{kind: "definition", question: "Dictionary"}), do: "Dictionary"
-  defp mark_title(%{kind: "definition"}), do: "Define"
-  defp mark_title(%{question: question}) when question in ["Explain", "Simplify"], do: question
-  defp mark_title(_), do: "Ask"
-
   defp answer_html(markdown, document),
     do: Phoenix.HTML.raw(PageDocument.render_answer(markdown, length(document.blocks)))
-
-  defp answer_summary(markdown), do: PageDocument.prepare(markdown).text
 
   defp mark_markdown(mark),
     do:

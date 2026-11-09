@@ -22,7 +22,8 @@ body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index
 .free-page .free-page-layout { grid-template-columns:minmax(0,var(--page-measure,720px)) minmax(300px,360px); gap:72px; }
 .free-page .page-margins { position:relative; padding-top:0; }
 .free-page .page-margin-intro { position:absolute; top:200px; left:0; right:0; }
-.free-page .page-margin-card { top:0; visibility:hidden; padding:10px 14px 12px 15px; border-left:1.5px solid var(--line); border-radius:0 10px 10px 0; transition:transform .42s var(--gloss-ease),background-color .25s,border-color .25s,box-shadow .25s,opacity .3s; will-change:transform; }
+.free-page .page-margin-card { font-size:13px; line-height:1.6; top:0; visibility:hidden; padding:10px 14px 12px 15px; border-left:1.5px solid var(--line); border-radius:0 10px 10px 0; transition:transform .42s var(--gloss-ease),background-color .25s,border-color .25s,box-shadow .25s,opacity .3s; will-change:transform; }
+.free-page .page-margin-card[data-card-layout=stack] { position:relative; visibility:visible; margin-bottom:14px; will-change:auto; }
 .free-page .page-margin-card.is-active { background:var(--card); border-left-color:var(--gloss-pen); box-shadow:var(--gloss-card-shadow); z-index:2; }
 .free-page .page-margin-card.is-entering { animation:page-gloss-in .5s var(--gloss-ease); }
 .free-page .page-margin-card[data-margin-mini] { padding-block:5px; }
@@ -102,7 +103,7 @@ body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index
 /* Gloss uses the same translucent ink for the sweep and the persisted mark. */
 body { --gloss-marker-opacity:46%; }
 :is([data-theme=dark],[data-theme=ink]) body { --gloss-marker-opacity:24%; }
-.free-page .page-mark[class*="highlight-"],.page-notebook-entry blockquote[class*="highlight-"],.shared-comment-card blockquote[class*="highlight-"] { --page-marker:color-mix(in oklab,var(--selection-marker) var(--gloss-marker-opacity),transparent); background-color:var(--page-marker); color:inherit; transition:background-color .2s; }
+.free-page .page-mark[class*="highlight-"],.page-notebook-entry blockquote[class*="highlight-"] { --page-marker:color-mix(in oklab,var(--selection-marker) var(--gloss-marker-opacity),transparent); background-color:var(--page-marker); color:inherit; transition:background-color .2s; }
 .free-page .page-mark-annotation { text-decoration:none; background-image:linear-gradient(var(--gloss-line),var(--gloss-line)); background-repeat:no-repeat; background-size:100% 1.5px; background-position:0 calc(100% - .08em); transition:background-color .25s var(--gloss-ease); }
 .free-page .page-mark-annotation:is(.is-active,.is-hover) { background-color:var(--gloss-wash); }
 .free-page .page-mark-annotation.is-active { background-image:linear-gradient(var(--gloss-pen),var(--gloss-pen)); }

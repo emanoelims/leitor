@@ -34,6 +34,17 @@ back if deployment fails; future schema changes must remain compatible with the
 previous release during rollout. Redeploy an earlier compatible image through
 the Fly dashboard for emergency recovery, accounting for any applied migrations.
 
+Version 0.7.0 adds five additive migrations for EPUB books: books, their chapters'
+`book_id`, stored images, the cover reference, and the choice between the database
+and an object for an image's bytes. They run together on the first deploy and need
+no backfill. Object storage is optional and provided by Tigris through
+`fly storage create -a leitor -n leitor-books`; the bucket must stay private,
+because images are served only by the application after an access check. Without
+`BUCKET_NAME` images are stored in Postgres, and images already there keep working.
+After deployment, import an illustrated EPUB, confirm its objects with
+`tigris ls t3://leitor-books`, and open a shared chapter signed out. Rolling back
+to 0.6.0 would list book chapters as separate pages.
+
 Version 0.6.0 adds three migrations for sharing permissions, comments and explicit
 annotation authorship. The first migration leaves author IDs nullable until the
 last installs an insert trigger, backfills intervening legacy writes and enforces
@@ -82,6 +93,9 @@ Fly secrets:
 - `MAIL_FROM`: the verified email address only, without a display name or brackets.
   The application adds the `Leitor` display name.
 - `ANTHROPIC_API_KEY`: the Claude API credential.
+- `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`
+  and `AWS_REGION` (optional): the private Tigris bucket for book images, set by
+  `fly storage create`. Without `BUCKET_NAME` images stay in the database.
 
 GitHub's encrypted `FLY_API_TOKEN` secret contains an app-scoped deployment token
 for `leitor`, initially valid for one year. Rotate it before expiry with

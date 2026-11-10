@@ -16,6 +16,8 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
   with the book and served only to its readers or through a share link for a shared
   chapter. The cover appears on the shelf and on the book page. Images that are
   too large, mislabelled, remote or SVG are left out and counted in the import message.
+- Book images are kept in object storage (Tigris) when `BUCKET_NAME` and its credentials are set, through
+  `Req` with AWS Signature V4 and no new dependency. Existing images in the database keep working.
 
 ### Changed
 

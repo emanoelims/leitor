@@ -1,5 +1,7 @@
 import Config
 
+alias Leitor.Library.Storage
+
 # Only in tests, remove the complexity from the password hashing algorithm
 config :argon2_elixir, t_cost: 1, m_cost: 8
 
@@ -26,6 +28,8 @@ config :leitor, LeitorWeb.Endpoint,
   secret_key_base: "Z7gmgTXF4Tjv5Cx/OE88lM5v8bJmEZiFDpJYx2HKwiKGTxZUCIEWkPHePkIYGTEB",
   server: false
 
+# Object storage is off in tests unless a test configures a bucket; its requests go to Req.Test stubs.
+config :leitor, Storage, req_options: [plug: {Req.Test, Storage}, retry: false]
 config :leitor, :ai_limits, %{cooldown_seconds: 0}
 config :leitor, :generation_queue, false
 

@@ -339,7 +339,7 @@ defmodule Leitor.Sharing do
            Repo.one(
              from a in BookAsset,
                where: a.id == ^id and a.book_id == ^book_id,
-               select: struct(a, [:id, :content_type, :digest, :data])
+               select: struct(a, [:id, :content_type, :digest, :data, :storage_key])
            ) do
       {:ok, asset}
     else

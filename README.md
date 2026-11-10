@@ -152,12 +152,33 @@ An EPUB becomes a book at `/books/:id`: one read-only chapter per reading-order 
 titled from its navigation document or NCX, rendered from sanitized HTML. PNG, JPEG, GIF and WebP
 images (up to 8 MB each) and the cover are stored with the book and served only to its readers,
 or through a share link for a shared chapter; SVG, remote, mislabelled and oversized images are left
-out and counted in the import message. EPUB uploads may be up to 30 MB. Fixed-layout books are not
+out and counted in the import message. Images are kept in object storage (Tigris) when a bucket is
+configured, otherwise in the database; see [Object storage](#object-storage). EPUB uploads may be up to 30 MB. Fixed-layout books are not
 supported; chapters over 250 KB are split between elements.
 DOCX title metadata is read locally. Optional `pdfinfo` supplies PDF titles.
 PDF extraction requires `pdftotext` (`brew install poppler` on macOS). Missing
 tools or unreadable files produce a recoverable import error. Other formats are
 limited to 300,000 bytes of extracted text, and PDF import to 200 pages.
+
+## Object storage
+
+Book images go to an S3-compatible bucket, Tigris on Fly.io, when these variables are set; without
+`BUCKET_NAME` they stay in the database, which is what development and tests use. Existing database
+images keep working after a bucket is configured.
+
+```sh
+fly storage create -a leitor -n <bucket-name> -y   # sets the variables below as secrets
+```
+
+| Variable | Purpose |
+| --- | --- |
+| `BUCKET_NAME` | Bucket name; enables object storage |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Bucket credentials |
+| `AWS_ENDPOINT_URL_S3` | Endpoint, `https://t3.storage.dev` by default |
+| `AWS_REGION` | Region, `auto` by default |
+
+The bucket must stay private: images are served only by the app, which checks access on every request.
+Deleting a book removes its objects; a failure while removing is logged and leaves an unreferenced object.
 
 ## Language tutor
 

@@ -112,6 +112,9 @@ defmodule LeitorWeb.LibraryLive do
          |> put_flash(:info, book_saved_message(book.skipped_images))
          |> push_navigate(to: ~p"/pages/#{hd(book.chapters).id}")}
 
+      {:error, :storage_unavailable} ->
+        {:noreply, put_flash(socket, :error, gettext("We couldn't store this book's images. Try again in a moment."))}
+
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("We couldn't save this book. Check its chapters and try again."))}
     end

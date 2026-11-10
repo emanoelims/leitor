@@ -1,5 +1,9 @@
 defmodule Leitor.Library.BookAsset do
-  @moduledoc "An image imported with a book. The bytes live in the database and are served only to the book's readers."
+  @moduledoc """
+  An image imported with a book, served only to the book's readers.
+
+  The bytes are either in `data` or, when object storage is configured, in the object named by `storage_key`.
+  """
   use Ecto.Schema
 
   @primary_key {:id, Ecto.UUID, autogenerate: [version: 7]}
@@ -10,6 +14,7 @@ defmodule Leitor.Library.BookAsset do
     field :byte_size, :integer
     field :digest, :binary
     field :data, :binary
+    field :storage_key, :string
 
     timestamps(type: :utc_datetime, updated_at: false)
   end

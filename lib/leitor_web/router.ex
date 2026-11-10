@@ -74,6 +74,7 @@ defmodule LeitorWeb.Router do
       live "/pages", LibraryLive, :index
       live "/pages/new", PageLive, :new
       live "/pages/:id", PageLive, :show
+      live "/books/:id", BookLive, :show
       live "/notebook", NotebookLive, :index
       live "/settings", PreferencesLive, :index
       live "/users/settings", UserLive.Settings, :edit

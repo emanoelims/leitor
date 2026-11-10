@@ -3,6 +3,8 @@ defmodule LeitorWeb.LibraryLive do
   use LeitorWeb, :live_view
 
   alias Leitor.Library
+  alias Leitor.Library.Book
+  alias Leitor.Library.Epub
   alias Leitor.Library.Import
 
   @impl true
@@ -63,6 +65,15 @@ defmodule LeitorWeb.LibraryLive do
     end
   end
 
+  def handle_event("delete-book", %{"id" => id}, socket) do
+    scope = socket.assigns.current_scope
+
+    case Library.delete_book(scope, Library.get_book!(scope, id)) do
+      {:ok, _} -> {:noreply, refresh(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Couldn't delete this book. Try again."))}
+    end
+  end
+
   def handle_event("validate", %{"material" => params}, socket),
     do: {:noreply, assign(socket, form: to_form(Map.take(params, ["body"]), as: "material"))}
 
@@ -71,7 +82,7 @@ defmodule LeitorWeb.LibraryLive do
   def handle_event("import", %{"material" => params}, socket) do
     result =
       consume_uploaded_entries(socket, :material, fn %{path: path}, entry ->
-        {:ok, Import.extract_document(path, entry.client_name)}
+        {:ok, read_upload(path, entry.client_name)}
       end)
 
     body =
@@ -84,7 +95,7 @@ defmodule LeitorWeb.LibraryLive do
 
         [] ->
           content = params["body"] || ""
-          {:ok, %{title: Import.title(content), body: content}}
+          {:ok, {:text, %{title: Import.title(content), body: content}}}
       end
 
     save_material(socket, body)
@@ -92,7 +103,21 @@ defmodule LeitorWeb.LibraryLive do
 
   defp save_material(socket, {:error, reason}), do: {:noreply, put_flash(socket, :error, reason)}
 
-  defp save_material(socket, {:ok, %{title: title, body: content}}) do
+  defp save_material(socket, {:ok, {:book, book}}) do
+    case Library.create_book(socket.assigns.current_scope, book) do
+      {:ok, _book} ->
+        {:noreply,
+         socket
+         |> assign(import_open: false, form: to_form(%{"body" => ""}, as: "material"))
+         |> put_flash(:info, gettext("Book saved. Ready to read."))
+         |> push_navigate(to: ~p"/pages/#{hd(book.chapters).id}")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("We couldn't save this book. Check its chapters and try again."))}
+    end
+  end
+
+  defp save_material(socket, {:ok, {:text, %{title: title, body: content}}}) do
     attrs = %{title: title, body: content, position: 0, source: "import"}
 
     case Library.create_text(socket.assigns.current_scope, attrs) do
@@ -108,35 +133,53 @@ defmodule LeitorWeb.LibraryLive do
     end
   end
 
+  # An EPUB becomes a book with chapters; everything else is read as a single text.
+  defp read_upload(path, name) do
+    if String.downcase(Path.extname(name)) == ".epub" do
+      with {:ok, book} <- Epub.extract_book(path), do: {:ok, {:book, book}}
+    else
+      with {:ok, document} <- Import.extract_document(path, name), do: {:ok, {:text, document}}
+    end
+  end
+
   @impl true
   def handle_info({event, %Library.Text{}}, socket) when event in [:created, :updated, :deleted],
     do: {:noreply, refresh(socket)}
 
+  def handle_info({event, %Book{}}, socket) when event in [:book_created, :book_deleted], do: {:noreply, refresh(socket)}
+
   defp library_path(search, source, sort), do: ~p"/pages?#{%{search: search, source: source, sort: sort}}"
 
   defp refresh(socket) do
-    all_texts = Library.list_texts(socket.assigns.current_scope)
+    scope = socket.assigns.current_scope
+    items = Library.list_texts(scope) ++ Library.list_books(scope)
     source = socket.assigns.source
     search = String.downcase(socket.assigns.search)
 
-    texts =
-      all_texts
-      |> Enum.filter(fn text ->
-        String.contains?(String.downcase(text.title), search) and
-          (source == "all" or (source == "page" and text.source == "page") or
-             (source == "import" and text.source != "page"))
-      end)
-      |> sort_texts(socket.assigns.sort)
+    shown =
+      items
+      |> Enum.filter(&(matches_search?(&1, search) and matches_source?(&1, source)))
+      |> sort_items(socket.assigns.sort)
 
     socket
-    |> assign(count: length(texts), all_count: length(all_texts), page_title: gettext("Your pages"))
-    |> stream(:texts, texts, reset: true)
+    |> assign(count: length(shown), all_count: length(items), page_title: gettext("Your pages"))
+    |> stream(:texts, shown, reset: true)
   end
 
-  defp sort_texts(texts, "title"), do: Enum.sort_by(texts, &{String.downcase(&1.title), &1.id})
+  defp matches_search?(item, search),
+    do: String.contains?(String.downcase(item.title <> " " <> (Map.get(item, :author) || "")), search)
 
-  defp sort_texts(texts, "recent"),
-    do: Enum.sort_by(texts, &{DateTime.to_unix(&1.updated_at, :microsecond), &1.id}, :desc)
+  defp matches_source?(_item, "all"), do: true
+  defp matches_source?(%Book{}, source), do: source == "import"
+  defp matches_source?(text, "page"), do: text.source == "page"
+  defp matches_source?(text, "import"), do: text.source != "page"
+
+  defp sort_items(items, "title"), do: Enum.sort_by(items, &{String.downcase(&1.title), &1.id})
+
+  defp sort_items(items, "recent"),
+    do: Enum.sort_by(items, &{DateTime.to_unix(&1.updated_at, :microsecond), &1.id}, :desc)
+
+  defp book_path(%Book{last_text_id: last, first_text_id: first}), do: ~p"/pages/#{last || first}"
 
   defp preview(body) do
     body
@@ -282,36 +325,62 @@ defmodule LeitorWeb.LibraryLive do
           <.link navigate={~p"/pages/new"} class="text-link">{gettext("Open a new page")}
           <.icon name="lucide-thin-arrow-right" class="size-4" /></.link>
         </div>
-        <article :for={{id, text} <- @streams.texts} id={id} class="shelf-card">
-          <div class="shelf-card-top">
-            <span><.icon
-              name={
-                if text.source == "page", do: "lucide-thin-pen-line", else: "lucide-thin-book-open"
-              }
-              class="size-3.5"
-            /> {if text.source == "page",
-              do: gettext("Your writing"),
-              else: gettext("From your shelf")}</span>
-            <button
-              type="button"
-              class="icon-button shelf-delete"
-              aria-label={gettext("Delete %{title}", title: text.title)}
-              phx-click="delete"
-              phx-value-id={text.id}
-              data-confirm={gettext("Delete this reading? Your vocabulary will be kept.")}
-            ><.icon name="lucide-thin-trash-2" class="size-4" /></button>
-          </div>
-          <.link navigate={~p"/pages/#{text.id}"} class="shelf-card-reading">
-            <h2>{text.title}</h2><p>
-              {if String.trim(text.body) == "",
-                do: gettext("An open page, waiting for your next thought."),
-                else: preview(text.body)}
-            </p>
-            <div class="shelf-card-footer">
-              <span>{reading_time(text.body)}</span><span>{LeitorWeb.I18n.date(text.updated_at)}
-              <.icon name="lucide-thin-arrow-up-right" class="size-4" /></span>
+        <article :for={{id, item} <- @streams.texts} id={id} class="shelf-card">
+          <%= if match?(%Book{}, item) do %>
+            <div class="shelf-card-top">
+              <span><.icon name="lucide-thin-book-open" class="size-3.5" /> {gettext("Book")}</span>
+              <button
+                type="button"
+                class="icon-button shelf-delete"
+                aria-label={gettext("Delete %{title}", title: item.title)}
+                phx-click="delete-book"
+                phx-value-id={item.id}
+                data-confirm={
+                  gettext("Delete this book and all of its chapters, notes and highlights?")
+                }
+              ><.icon name="lucide-thin-trash-2" class="size-4" /></button>
             </div>
-          </.link>
+            <.link navigate={book_path(item)} class="shelf-card-reading" id={"book-#{item.id}-open"}>
+              <h2>{item.title}</h2>
+              <p :if={item.author}>{item.author}</p>
+              <div class="shelf-card-footer">
+                <span>{ngettext("%{count} chapter", "%{count} chapters", item.chapter_count)}</span><span>{LeitorWeb.I18n.date(
+                  item.updated_at
+                )}
+                <.icon name="lucide-thin-arrow-up-right" class="size-4" /></span>
+              </div>
+            </.link>
+          <% else %>
+            <div class="shelf-card-top">
+              <span><.icon
+                name={
+                  if item.source == "page", do: "lucide-thin-pen-line", else: "lucide-thin-book-open"
+                }
+                class="size-3.5"
+              /> {if item.source == "page",
+                do: gettext("Your writing"),
+                else: gettext("From your shelf")}</span>
+              <button
+                type="button"
+                class="icon-button shelf-delete"
+                aria-label={gettext("Delete %{title}", title: item.title)}
+                phx-click="delete"
+                phx-value-id={item.id}
+                data-confirm={gettext("Delete this reading? Your vocabulary will be kept.")}
+              ><.icon name="lucide-thin-trash-2" class="size-4" /></button>
+            </div>
+            <.link navigate={~p"/pages/#{item.id}"} class="shelf-card-reading">
+              <h2>{item.title}</h2><p>
+                {if String.trim(item.body) == "",
+                  do: gettext("An open page, waiting for your next thought."),
+                  else: preview(item.body)}
+              </p>
+              <div class="shelf-card-footer">
+                <span>{reading_time(item.body)}</span><span>{LeitorWeb.I18n.date(item.updated_at)}
+                <.icon name="lucide-thin-arrow-up-right" class="size-4" /></span>
+              </div>
+            </.link>
+          <% end %>
         </article>
       </div>
       <footer class="workspace-footer">

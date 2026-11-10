@@ -142,16 +142,19 @@ selection survives card updates, and the selection lens follows Gloss sizing,
 theme colors, and contextual word/passage actions.
 
 The product routes are `/` and `/pages` (the page library), `/pages/new`,
-`/pages/:id`, and `/notebook`, plus account and
+`/pages/:id`, `/books/:id`, and `/notebook`, plus account and
 authentication flows. The former sentence reader, writing, lessons, exercises,
 review, progress, rooms, resource-management screens, and component gallery
 have been removed. Their database records remain intact.
 
 The shelf accepts Markdown (.md/.markdown), TXT, EPUB, DOCX, and text-based PDF files (up to 10 MB).
-EPUB and DOCX title metadata are read locally. Optional `pdfinfo` supplies PDF titles.
+An EPUB becomes a book at `/books/:id`: one read-only chapter per reading-order document,
+titled from its navigation document or NCX, rendered from sanitized HTML. Images, covers and
+fixed-layout books are not imported; chapters over 250 KB are split between elements.
+DOCX title metadata is read locally. Optional `pdfinfo` supplies PDF titles.
 PDF extraction requires `pdftotext` (`brew install poppler` on macOS). Missing
-tools or unreadable files produce a recoverable import error. Import chapters
-separately: extracted text is limited to 300,000 bytes and PDF import to 200 pages.
+tools or unreadable files produce a recoverable import error. Other formats are
+limited to 300,000 bytes of extracted text, and PDF import to 200 pages.
 
 ## Language tutor
 

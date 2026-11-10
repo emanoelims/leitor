@@ -4,6 +4,19 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+### Added
+
+- EPUB import as a book: each spine document becomes a read-only chapter that keeps
+  headings, emphasis, lists, quotes, tables and internal links, with a table of
+  contents, previous/next navigation and a shelf card that resumes where you stopped.
+  Highlights, notes, AI help, the word jar and sharing work on every chapter.
+  Chapters are sanitized to a small allowlist (no scripts, styles, forms, images or
+  remote content); images and covers are not imported yet.
+
+### Changed
+
+- EPUB files no longer flatten into a single 300,000-byte text, so whole books import.
+
 ## [0.6.0] - 2026-10-18
 
 ### Added

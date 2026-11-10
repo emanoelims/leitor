@@ -219,7 +219,7 @@ defmodule Leitor.Sharing do
   end
 
   defp comment_selection(access, %{"anchor" => anchor}) do
-    with {:ok, selection} <- PageDocument.selection(PageDocument.prepare(access.page.body), anchor),
+    with {:ok, selection} <- PageDocument.selection(PageDocument.for_text(access.page), anchor),
          do: {:ok, selection, nil}
   end
 
@@ -251,7 +251,7 @@ defmodule Leitor.Sharing do
       scope,
       token,
       fn access ->
-        with {:ok, selection} <- PageDocument.selection(PageDocument.prepare(access.page.body), anchor) do
+        with {:ok, selection} <- PageDocument.selection(PageDocument.for_text(access.page), anchor) do
           Mark
           |> struct!(Map.merge(selection, %{text_id: access.page.id, user_id: scope.user.id}))
           |> Mark.changeset(attrs)
@@ -277,7 +277,7 @@ defmodule Leitor.Sharing do
   def import_drafts(_scope, _token, _drafts), do: {:error, :invalid_selection}
 
   defp import_all_drafts(scope, page, drafts) do
-    document = PageDocument.prepare(page.body)
+    document = PageDocument.for_text(page)
 
     Enum.reduce_while(drafts, {:ok, 0}, fn draft, {:ok, count} ->
       case import_draft(scope, page.id, document, draft) do
@@ -309,6 +309,7 @@ defmodule Leitor.Sharing do
   def figure(scope, token, id) do
     with {:ok, access} <- resolve(scope, token),
          {:ok, id} <- Ecto.UUID.cast(id),
+         true <- access.page.source != "epub",
          true <- id in figure_ids(MDEx.parse_document!(access.page.body)),
          payload when not is_nil(payload) <-
            Repo.one(

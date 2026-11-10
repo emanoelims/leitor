@@ -11,6 +11,7 @@ defmodule LeitorWeb.PageLive do
   alias Leitor.Language
   alias Leitor.Language.AnswerStream
   alias Leitor.Learning
+  alias Leitor.Library
   alias Leitor.PageDocument
   alias Leitor.Pages
   alias Leitor.Sharing
@@ -44,6 +45,7 @@ defmodule LeitorWeb.PageLive do
        appearance: Map.put(ReadingPreferences.normalize(preferences), "focus", false),
        marker_color: if(preferences["marker"] in ~w(yellow green blue rose), do: preferences["marker"], else: "yellow"),
        document: PageDocument.prepare(""),
+       chapter: nil,
        selection: nil,
        selection_anchor: nil,
        selection_mode: "actions",
@@ -85,7 +87,9 @@ defmodule LeitorWeb.PageLive do
 
   @impl true
   def handle_params(%{"id" => id} = params, _, socket) do
-    text = Pages.get_page!(socket.assigns.current_scope, id)
+    scope = socket.assigns.current_scope
+    text = Pages.get_page!(scope, id)
+    if connected?(socket), do: Library.touch_book_progress(scope, text)
 
     {:noreply,
      socket
@@ -104,7 +108,8 @@ defmodule LeitorWeb.PageLive do
        pending: nil,
        form: to_form(%{"title" => text.title, "body" => text.body}, as: "page"),
        appearance: Map.put(socket.assigns.appearance, "focus", false),
-       document: PageDocument.prepare(text.body),
+       document: PageDocument.for_text(text),
+       chapter: Library.chapter_context(scope, text),
        generation_applied: false
      )
      |> assign(generation_recovery: Generations.latest(socket.assigns.current_scope, text.id))
@@ -323,6 +328,8 @@ defmodule LeitorWeb.PageLive do
     {:noreply, socket |> cancel_page_generation() |> push_event("page-ai-stopped", %{request_id: id})}
   end
 
+  def handle_event("edit", _, %{assigns: %{text: %{source: "epub"}}} = socket), do: {:noreply, socket}
+
   def handle_event("edit", _, socket), do: {:noreply, socket |> stop_page_help() |> assign(editing: true, selection: nil)}
 
   def handle_event("save", %{"page" => attrs}, socket) do
@@ -349,6 +356,9 @@ defmodule LeitorWeb.PageLive do
          |> assign(dirty: false, saved: true, editing: false)
          |> push_patch(to: ~p"/pages/#{text.id}")
          |> push_event("page-read-start", %{})}
+
+      {:error, :read_only} ->
+        {:noreply, put_flash(socket, :error, gettext("Book chapters can't be edited."))}
 
       {:error, changeset} ->
         {:noreply,

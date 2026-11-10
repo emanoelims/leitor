@@ -13,6 +13,7 @@ defmodule Leitor.Library.Text do
     field :source, :string
     field :analysis, :map, default: %{}
     field :user_id, :binary_id
+    field :book_id, :binary_id
 
     timestamps(type: :utc_datetime)
   end

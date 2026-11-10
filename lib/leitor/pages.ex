@@ -83,8 +83,10 @@ defmodule Leitor.Pages do
   @spec get_page!(Scope.t(), Ecto.UUID.t()) :: Text.t()
   def get_page!(%Scope{} = scope, id), do: Library.get_text!(scope, id)
 
-  @doc "Updates title and Markdown without replacing the page or its annotations."
-  @spec update_page(Scope.t(), Text.t(), map()) :: {:ok, Text.t()} | {:error, Ecto.Changeset.t()}
+  @doc "Updates title and Markdown without replacing the page or its annotations. EPUB chapters are read only."
+  @spec update_page(Scope.t(), Text.t(), map()) :: {:ok, Text.t()} | {:error, Ecto.Changeset.t() | :read_only}
+  def update_page(%Scope{}, %Text{source: "epub"}, _attrs), do: {:error, :read_only}
+
   def update_page(%Scope{} = scope, text, attrs) do
     with {:ok, updated} <-
            Library.update_text(scope, text, attrs |> Map.take(["title", "body"]) |> Map.put("source", "page")) do
@@ -111,7 +113,7 @@ defmodule Leitor.Pages do
   def create_mark(%Scope{} = scope, id, anchor, attrs) do
     text = get_page!(scope, id)
 
-    with {:ok, selection} <- PageDocument.selection(PageDocument.prepare(text.body), anchor) do
+    with {:ok, selection} <- PageDocument.selection(PageDocument.for_text(text), anchor) do
       mark = struct!(Mark, Map.merge(selection, %{text_id: text.id, user_id: scope.user.id}))
       mark |> Mark.changeset(attrs) |> Repo.insert()
     end

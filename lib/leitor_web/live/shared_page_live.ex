@@ -402,7 +402,7 @@ defmodule LeitorWeb.SharedPageLive do
       |> assign(
         access: access,
         page_title: access.page.title,
-        document: PageDocument.prepare(access.page.body),
+        document: PageDocument.for_text(access.page),
         version: version,
         more_comments: comments.more?
       )

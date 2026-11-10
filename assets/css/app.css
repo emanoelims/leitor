@@ -2631,6 +2631,7 @@ audio {
 .page-prose th,.page-prose td { padding:.5em .8em; border:1px solid var(--line); vertical-align:top; text-align:left; }
 .page-prose th { background:var(--soft); font-weight:600; }
 .page-prose td .page-block-number,.page-prose th .page-block-number { display:none; }
+.page-prose img { display:block; max-width:100%; height:auto; margin:1.2em auto; border-radius:3px; }
 .page-prose figure { margin:1.4em 0; }.page-prose figcaption { color:var(--muted); font-size:.8em; margin-top:.5em; }
 .page-prose aside { margin:1.4em 0; padding:.4em 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); color:var(--muted); font-size:.88em; }
 .page-prose [id] { scroll-margin-top:120px; }

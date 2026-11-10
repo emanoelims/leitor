@@ -10,12 +10,17 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
   headings, emphasis, lists, quotes, tables and internal links, with a table of
   contents, previous/next navigation and a shelf card that resumes where you stopped.
   Highlights, notes, AI help, the word jar and sharing work on every chapter.
-  Chapters are sanitized to a small allowlist (no scripts, styles, forms, images or
-  remote content); images and covers are not imported yet.
+  Chapters are sanitized to a small allowlist (no scripts, styles, forms or remote
+  content).
+- EPUB images and covers: PNG, JPEG, GIF and WebP images the chapters show are stored
+  with the book and served only to its readers or through a share link for a shared
+  chapter. The cover appears on the shelf and on the book page. Images that are
+  too large, mislabelled, remote or SVG are left out and counted in the import message.
 
 ### Changed
 
 - EPUB files no longer flatten into a single 300,000-byte text, so whole books import.
+- EPUB uploads may be up to 30 MB; other formats stay at 10 MB.
 
 ## [0.6.0] - 2026-10-18
 

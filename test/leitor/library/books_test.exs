@@ -115,4 +115,66 @@ defmodule Leitor.Library.BooksTest do
       assert {:ok, _} = Library.delete_book(scope, Library.get_book!(scope, book.id))
     end
   end
+
+  describe "images" do
+    @png Leitor.EpubFixtures.png()
+
+    defp with_assets(id \\ Ecto.UUID.generate(version: 7)) do
+      asset = %{
+        id: id,
+        content_type: "image/png",
+        byte_size: byte_size(@png),
+        digest: :crypto.hash(:sha256, @png),
+        data: @png
+      }
+
+      Map.merge(extracted(), %{assets: [asset], cover_asset_id: id})
+    end
+
+    test "create_book/2 stores the assets and the cover with the book" do
+      scope = user_scope_fixture()
+      id = Ecto.UUID.generate(version: 7)
+
+      assert {:ok, %Book{cover_asset_id: ^id} = book} = Library.create_book(scope, with_assets(id))
+      assert {:ok, %{id: ^id, content_type: "image/png", data: @png}} = Library.get_book_asset(scope, id)
+      assert [%Book{cover_asset_id: ^id}] = Library.list_books(scope)
+      assert book.user_id == scope.user.id
+    end
+
+    test "create_book/2 ignores a cover that was not stored" do
+      scope = user_scope_fixture()
+      extracted = %{with_assets() | cover_asset_id: Ecto.UUID.generate(version: 7)}
+
+      assert {:ok, %Book{cover_asset_id: nil}} = Library.create_book(scope, extracted)
+    end
+
+    test "a failed chapter rolls back the stored assets" do
+      scope = user_scope_fixture()
+      id = Ecto.UUID.generate(version: 7)
+      bad = [%{id: Ecto.UUID.generate(version: 7), title: String.duplicate("t", 300), depth: 0, body: "<p>x</p>"}]
+
+      assert {:error, %Ecto.Changeset{}} = Library.create_book(scope, %{with_assets(id) | chapters: bad})
+      assert Library.get_book_asset(scope, id) == :error
+    end
+
+    test "get_book_asset/2 serves only the owner's images" do
+      owner = user_scope_fixture()
+      id = Ecto.UUID.generate(version: 7)
+      {:ok, _} = Library.create_book(owner, with_assets(id))
+
+      assert {:ok, _} = Library.get_book_asset(owner, id)
+      assert Library.get_book_asset(user_scope_fixture(), id) == :error
+      assert Library.get_book_asset(owner, "not-a-uuid") == :error
+      assert Library.get_book_asset(owner, Ecto.UUID.generate()) == :error
+    end
+
+    test "delete_book/2 removes the images" do
+      scope = user_scope_fixture()
+      id = Ecto.UUID.generate(version: 7)
+      {:ok, book} = Library.create_book(scope, with_assets(id))
+
+      assert {:ok, _} = Library.delete_book(scope, book)
+      assert Library.get_book_asset(scope, id) == :error
+    end
+  end
 end

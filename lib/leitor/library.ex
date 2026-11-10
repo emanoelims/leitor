@@ -7,6 +7,7 @@ defmodule Leitor.Library do
 
   alias Leitor.Accounts.Scope
   alias Leitor.Library.Book
+  alias Leitor.Library.BookAsset
   alias Leitor.Library.Epub
   alias Leitor.Library.Note
   alias Leitor.Library.Reading
@@ -193,8 +194,8 @@ defmodule Leitor.Library do
   @doc """
   Creates a book and all of its chapters atomically from an extracted EPUB.
 
-  Each chapter becomes a read-only text of source `"epub"` ordered by position. If any chapter is invalid the
-  whole book is rolled back.
+  Each chapter becomes a read-only text of source `"epub"` ordered by position, and the images the chapters
+  show are stored with the book. If any part is invalid the whole book is rolled back.
   """
   @spec create_book(Scope.t(), Epub.book()) :: {:ok, Book.t()} | {:error, Ecto.Changeset.t()}
   def create_book(%Scope{} = scope, %{chapters: chapters} = extracted) when chapters != [] do
@@ -203,10 +204,13 @@ defmodule Leitor.Library do
     }
 
     attrs = extracted |> Map.take([:title, :author, :language, :identifier]) |> Map.put(:toc, toc)
+    assets = Map.get(extracted, :assets, [])
+    cover = extracted |> Map.get(:cover_asset_id) |> then(&if(&1 in Enum.map(assets, fn a -> a.id end), do: &1))
 
     result =
       Repo.transact(fn ->
-        with {:ok, book} <- %Book{} |> Book.changeset(attrs, scope) |> Repo.insert(),
+        with {:ok, book} <- %Book{cover_asset_id: cover} |> Book.changeset(attrs, scope) |> Repo.insert(),
+             :ok <- insert_assets(book, assets),
              :ok <- insert_chapters(scope, book, chapters) do
           {:ok, book}
         end
@@ -216,6 +220,23 @@ defmodule Leitor.Library do
       broadcast_text(scope, {:book_created, book})
       {:ok, book}
     end
+  end
+
+  defp insert_assets(book, assets) do
+    now = DateTime.utc_now(:second)
+
+    assets
+    |> Enum.chunk_every(25)
+    |> Enum.each(fn chunk ->
+      rows =
+        Enum.map(chunk, fn asset ->
+          asset
+          |> Map.take([:id, :content_type, :byte_size, :digest, :data])
+          |> Map.merge(%{book_id: book.id, inserted_at: now})
+        end)
+
+      Repo.insert_all(BookAsset, rows, log: false)
+    end)
   end
 
   defp insert_chapters(scope, book, chapters) do
@@ -282,6 +303,26 @@ defmodule Leitor.Library do
       previous: if(index > 0, do: Enum.at(chapters, index - 1)),
       next: Enum.at(chapters, index + 1)
     }
+  end
+
+  @doc """
+  Fetches an image of a caller-owned book. Returns `:error` for unknown, malformed or other readers' images.
+  """
+  @spec get_book_asset(Scope.t(), term()) :: {:ok, BookAsset.t()} | :error
+  def get_book_asset(%Scope{} = scope, id) do
+    with {:ok, id} <- Ecto.UUID.cast(id),
+         %BookAsset{} = asset <-
+           Repo.one(
+             from a in BookAsset,
+               join: b in Book,
+               on: b.id == a.book_id,
+               where: a.id == ^id and b.user_id == ^scope.user.id,
+               select: struct(a, [:id, :content_type, :digest, :data])
+           ) do
+      {:ok, asset}
+    else
+      _ -> :error
+    end
   end
 
   @doc "Remembers the chapter a book was last read at, which also moves the book to the top of the shelf."

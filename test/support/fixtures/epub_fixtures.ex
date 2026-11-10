@@ -4,12 +4,21 @@ defmodule Leitor.EpubFixtures do
 
   Chapters are maps with a `:file` name, a `:title` for the table of contents and an HTML `:body`. The table of
   contents is an EPUB 3 navigation document (`:nav`), an EPUB 2 NCX (`:ncx`) or absent (`:none`).
+
+  `:images` lists `%{file: "img/a.png", data: binary}` maps stored beside the chapters, and `:cover` is
+  `{:property, file}` (EPUB 3) or `{:meta, file}` (EPUB 2) naming the cover among them.
   """
 
   @default_chapters [
     %{file: "one.xhtml", title: "The Beginning", body: "<h1>The Beginning</h1><p>First <em>chapter</em> text.</p>"},
     %{file: "two.xhtml", title: "The Middle", body: "<h1>The Middle</h1><p>Second chapter text.</p>"}
   ]
+
+  @png Base.decode64!("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+
+  @doc "A valid one-pixel PNG."
+  @spec png() :: binary()
+  def png, do: @png
 
   @doc "Writes an EPUB to `path` and returns the path. Options: `:chapters`, `:toc`, `:title`, `:author`, `:language`."
   @spec write!(Path.t(), keyword()) :: Path.t()
@@ -23,13 +32,17 @@ defmodule Leitor.EpubFixtures do
   def binary!(opts \\ []) do
     chapters = Keyword.get(opts, :chapters, @default_chapters)
     toc = Keyword.get(opts, :toc, :nav)
+    images = Keyword.get(opts, :images, [])
 
     entries =
       [
         {~c"mimetype", "application/epub+zip"},
         {~c"META-INF/container.xml", container()},
         {~c"OEBPS/content.opf", package(chapters, toc, opts)}
-      ] ++ toc_entries(chapters, toc) ++ Enum.map(chapters, &{String.to_charlist("OEBPS/" <> &1.file), document(&1)})
+      ] ++
+        toc_entries(chapters, toc) ++
+        Enum.map(chapters, &{String.to_charlist("OEBPS/" <> &1.file), document(&1)}) ++
+        Enum.map(images, &{String.to_charlist("OEBPS/" <> &1.file), &1.data})
 
     {:ok, {_name, data}} = :zip.create(~c"book.epub", entries, [:memory])
     data
@@ -51,6 +64,21 @@ defmodule Leitor.EpubFixtures do
       end)
 
     refs = Enum.map_join(chapters, "\n", &~s(<itemref idref="#{id(&1)}"/>))
+    images = Keyword.get(opts, :images, [])
+    cover = Keyword.get(opts, :cover)
+
+    image_items =
+      Enum.map_join(images, "\n", fn image ->
+        properties = if cover == {:property, image.file}, do: ~s( properties="cover-image"), else: ""
+        type = Map.get(image, :type, media_type(image.file))
+        ~s(<item id="#{image_id(image)}" href="#{image.file}" media-type="#{type}"#{properties}/>)
+      end)
+
+    legacy_cover =
+      case cover do
+        {:meta, file} -> ~s(<meta name="cover" content="#{image_id(%{file: file})}"/>)
+        _ -> ""
+      end
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -60,10 +88,12 @@ defmodule Leitor.EpubFixtures do
         <dc:title>#{Keyword.get(opts, :title, "A Small Book")}</dc:title>
         <dc:creator>#{Keyword.get(opts, :author, "Ada Writer")}</dc:creator>
         <dc:language>#{Keyword.get(opts, :language, "pt-BR")}</dc:language>
+        #{legacy_cover}
       </metadata>
       <manifest>
         #{toc_manifest(toc)}
         #{items}
+        #{image_items}
       </manifest>
       <spine#{if toc == :ncx, do: ~s( toc="ncx")}>
         #{refs}
@@ -127,4 +157,16 @@ defmodule Leitor.EpubFixtures do
   end
 
   defp id(chapter), do: "c-" <> Path.rootname(chapter.file)
+
+  defp image_id(image), do: "i-" <> String.replace(image.file, ~r/[^A-Za-z0-9]/, "-")
+
+  defp media_type(file) do
+    case Path.extname(file) do
+      ".png" -> "image/png"
+      ".jpg" -> "image/jpeg"
+      ".gif" -> "image/gif"
+      ".webp" -> "image/webp"
+      ".svg" -> "image/svg+xml"
+    end
+  end
 end

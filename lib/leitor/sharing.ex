@@ -4,6 +4,7 @@ defmodule Leitor.Sharing do
 
   alias Leitor.Accounts.Scope
   alias Leitor.Figures.Artifact
+  alias Leitor.Library.BookAsset
   alias Leitor.Library.Text
   alias Leitor.PageDocument
   alias Leitor.Pages
@@ -323,6 +324,24 @@ defmodule Leitor.Sharing do
                }
            ) do
       {:ok, %{payload | custom_style: payload.custom_style || ""}}
+    else
+      _ -> {:error, :unavailable}
+    end
+  end
+
+  @doc "Fetches an image of the book behind an accessible shared chapter. Images of other books are never returned."
+  @spec book_asset(Scope.t() | nil, String.t(), term()) :: {:ok, BookAsset.t()} | {:error, :unavailable}
+  def book_asset(scope, token, id) do
+    with {:ok, access} <- resolve(scope, token),
+         book_id when not is_nil(book_id) <- access.page.book_id,
+         {:ok, id} <- Ecto.UUID.cast(id),
+         %BookAsset{} = asset <-
+           Repo.one(
+             from a in BookAsset,
+               where: a.id == ^id and a.book_id == ^book_id,
+               select: struct(a, [:id, :content_type, :digest, :data])
+           ) do
+      {:ok, asset}
     else
       _ -> {:error, :unavailable}
     end

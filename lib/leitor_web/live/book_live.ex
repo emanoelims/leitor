@@ -43,12 +43,22 @@ defmodule LeitorWeb.BookLive do
       class="workspace-page book-workspace"
     >
       <header class="workspace-heading">
-        <div>
-          <p class="workspace-eyebrow">{@book.author || gettext("Book")}</p>
-          <h1 id="book-title">{@book.title}</h1>
-          <p class="workspace-description">
-            {ngettext("%{count} chapter", "%{count} chapters", length(@chapters))}
-          </p>
+        <div class="book-heading">
+          <img
+            :if={@book.cover_asset_id}
+            id="book-cover"
+            class="book-cover"
+            src={~p"/book-assets/#{@book.cover_asset_id}"}
+            alt={gettext("Cover of %{title}", title: @book.title)}
+            decoding="async"
+          />
+          <div>
+            <p class="workspace-eyebrow">{@book.author || gettext("Book")}</p>
+            <h1 id="book-title">{@book.title}</h1>
+            <p class="workspace-description">
+              {ngettext("%{count} chapter", "%{count} chapters", length(@chapters))}
+            </p>
+          </div>
         </div>
         <div class="workspace-heading-actions">
           <.link

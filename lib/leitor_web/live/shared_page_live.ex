@@ -402,7 +402,7 @@ defmodule LeitorWeb.SharedPageLive do
       |> assign(
         access: access,
         page_title: access.page.title,
-        document: PageDocument.for_text(access.page),
+        document: PageDocument.for_text(access.page, asset_prefix: "/s/#{socket.assigns.token}/book-assets/"),
         version: version,
         more_comments: comments.more?
       )

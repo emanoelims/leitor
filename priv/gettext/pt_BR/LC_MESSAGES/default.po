@@ -14,7 +14,7 @@ msgstr "A"
 msgid "A few helpful keys"
 msgstr "Alguns atalhos úteis"
 
-#: lib/leitor_web/live/library_live.ex:308
+#: lib/leitor_web/live/library_live.ex:311
 #, elixir-autogen, elixir-format
 msgid "A fresh page. A familiar passage. A little more to discover."
 msgstr "Uma nova página. Um trecho conhecido. Mais um pouco para descobrir."
@@ -35,7 +35,7 @@ msgid "A little space for a curious mind"
 msgstr "Um pequeno espaço para uma mente curiosa"
 
 #: lib/leitor_web/live/book_live.ex:102
-#: lib/leitor_web/live/library_live.ex:411
+#: lib/leitor_web/live/library_live.ex:414
 #, elixir-autogen, elixir-format
 msgid "A little space. All yours."
 msgstr "Um pequeno espaço. Todo seu."
@@ -45,7 +45,7 @@ msgstr "Um pequeno espaço. Todo seu."
 msgid "A margin for your thoughts"
 msgstr "Uma margem para suas ideias"
 
-#: lib/leitor_web/live/library_live.ex:418
+#: lib/leitor_web/live/library_live.ex:421
 #, elixir-autogen, elixir-format
 msgid "A new chapter."
 msgstr "Um novo capítulo."
@@ -221,7 +221,7 @@ msgstr "Já conhecidas"
 msgid "An explicit language request takes priority."
 msgstr "Um idioma pedido explicitamente tem prioridade."
 
-#: lib/leitor_web/live/library_live.ex:399
+#: lib/leitor_web/live/library_live.ex:402
 #, elixir-autogen, elixir-format
 msgid "An open page, waiting for your next thought."
 msgstr "Uma página aberta, esperando sua próxima ideia."
@@ -314,12 +314,12 @@ msgstr "Tipos de bloco"
 
 #: lib/leitor_web/i18n.ex:281
 #: lib/leitor_web/live/book_live.ex:56
-#: lib/leitor_web/live/library_live.ex:343
+#: lib/leitor_web/live/library_live.ex:346
 #, elixir-autogen, elixir-format
 msgid "Book"
 msgstr "Livro"
 
-#: lib/leitor_web/live/library_live.ex:334
+#: lib/leitor_web/live/library_live.ex:337
 #, elixir-autogen, elixir-format
 msgid "Bring a text you love, or start with a thought of your own."
 msgstr "Traga um texto que você gosta ou comece com uma ideia sua."
@@ -354,7 +354,7 @@ msgstr "Lista de tarefas"
 msgid "Choose a Markdown, TXT, PDF, EPUB or DOCX file."
 msgstr "Escolha um arquivo Markdown, TXT, PDF, EPUB ou DOCX."
 
-#: lib/leitor_web/live/library_live.ex:445
+#: lib/leitor_web/live/library_live.ex:448
 #, elixir-autogen, elixir-format
 msgid "Choose a file"
 msgstr "Escolher arquivo"
@@ -679,7 +679,7 @@ msgstr "Filtros aplicados"
 msgid "Find a collected word"
 msgstr "Buscar palavra guardada"
 
-#: lib/leitor_web/live/library_live.ex:245
+#: lib/leitor_web/live/library_live.ex:248
 #, elixir-autogen, elixir-format
 msgid "Find a page"
 msgstr "Buscar página"
@@ -690,12 +690,12 @@ msgstr "Buscar página"
 msgid "Find a page to read"
 msgstr "Buscar uma página para ler"
 
-#: lib/leitor_web/live/library_live.ex:252
+#: lib/leitor_web/live/library_live.ex:255
 #, elixir-autogen, elixir-format
 msgid "Find a text"
 msgstr "Buscar texto"
 
-#: lib/leitor_web/live/library_live.ex:253
+#: lib/leitor_web/live/library_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "Find a title…"
 msgstr "Buscar título…"
@@ -720,7 +720,7 @@ msgstr "Modo foco · Pressione F ou Esc para sair"
 msgid "Follow the request"
 msgstr "Seguir o pedido"
 
-#: lib/leitor_web/live/library_live.ex:386
+#: lib/leitor_web/live/library_live.ex:389
 #, elixir-autogen, elixir-format
 msgid "From your shelf"
 msgstr "Da sua coleção"
@@ -778,8 +778,8 @@ msgstr "Já conheço"
 msgid "Import one document at a time."
 msgstr "Importe um documento por vez."
 
-#: lib/leitor_web/live/library_live.ex:297
-#: lib/leitor_web/live/library_live.ex:471
+#: lib/leitor_web/live/library_live.ex:300
+#: lib/leitor_web/live/library_live.ex:474
 #, elixir-autogen, elixir-format
 msgid "Import text"
 msgstr "Importar texto"
@@ -789,7 +789,7 @@ msgstr "Importar texto"
 msgid "Imported"
 msgstr "Importadas"
 
-#: lib/leitor_web/live/library_live.ex:471
+#: lib/leitor_web/live/library_live.ex:474
 #, elixir-autogen, elixir-format
 msgid "Importing…"
 msgstr "Importando…"
@@ -927,7 +927,7 @@ msgid "Look"
 msgstr "Aparência"
 
 #: lib/leitor_web/i18n.ex:220
-#: lib/leitor_web/live/library_live.ex:448
+#: lib/leitor_web/live/library_live.ex:451
 #, elixir-autogen, elixir-format
 msgid "MD, TXT, PDF, EPUB, DOCX"
 msgstr "MD, TXT, PDF, EPUB, DOCX"
@@ -1020,7 +1020,7 @@ msgstr "Nenhuma anotação encontrada"
 msgid "No matching blocks"
 msgstr "Nenhum bloco encontrado"
 
-#: lib/leitor_web/live/library_live.ex:330
+#: lib/leitor_web/live/library_live.ex:333
 #, elixir-autogen, elixir-format
 msgid "No pages found."
 msgstr "Nenhuma página encontrada."
@@ -1104,7 +1104,7 @@ msgstr "Em um dispositivo compartilhado, escolha entrar só desta vez."
 msgid "Only filled jars"
 msgstr "Só potes com palavras"
 
-#: lib/leitor_web/live/library_live.ex:337
+#: lib/leitor_web/live/library_live.ex:340
 #, elixir-autogen, elixir-format
 msgid "Open a new page"
 msgstr "Abrir nova página"
@@ -1119,7 +1119,7 @@ msgstr "Abrir ou fechar seu caderno"
 msgid "Open the source passage"
 msgstr "Abrir trecho de origem"
 
-#: lib/leitor_web/live/library_live.ex:264
+#: lib/leitor_web/live/library_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Order pages"
 msgstr "Ordenar páginas"
@@ -1155,7 +1155,7 @@ msgstr "Página salva. Pronta para ler."
 msgid "Page title"
 msgstr "Título da página"
 
-#: lib/leitor_web/live/library_live.ex:226
+#: lib/leitor_web/live/library_live.ex:229
 #, elixir-autogen, elixir-format
 msgid "Page types"
 msgstr "Tipos de página"
@@ -1186,12 +1186,12 @@ msgstr "Estilo dos parágrafos"
 msgid "Paragraphs"
 msgstr "Parágrafos"
 
-#: lib/leitor_web/live/library_live.ex:422
+#: lib/leitor_web/live/library_live.ex:425
 #, elixir-autogen, elixir-format
 msgid "Paste a text or bring a document. We’ll find its title."
 msgstr "Cole um texto ou traga um documento. Encontramos o título para você."
 
-#: lib/leitor_web/live/library_live.ex:438
+#: lib/leitor_web/live/library_live.ex:441
 #, elixir-autogen, elixir-format
 msgid "Paste your text or Markdown here…\n\n    You can also drop a document."
 msgstr "Cole seu texto ou Markdown aqui…\n\n    Você também pode arrastar um documento."
@@ -1301,7 +1301,7 @@ msgid "Reading your passage…"
 msgstr "Lendo seu trecho…"
 
 #: lib/leitor_web/i18n.ex:349
-#: lib/leitor_web/live/library_live.ex:265
+#: lib/leitor_web/live/library_live.ex:268
 #, elixir-autogen, elixir-format
 msgid "Recently updated"
 msgstr "Atualizadas recentemente"
@@ -1485,7 +1485,7 @@ msgstr "Compacto"
 msgid "Something went wrong!"
 msgstr "Algo deu errado!"
 
-#: lib/leitor_web/live/library_live.ex:322
+#: lib/leitor_web/live/library_live.ex:325
 #, elixir-autogen, elixir-format
 msgid "Something worth coming back to."
 msgstr "Algo que vale a pena revisitar."
@@ -1551,7 +1551,7 @@ msgstr "Texto gerado pelo menu /."
 msgid "Text size"
 msgstr "Tamanho do texto"
 
-#: lib/leitor_web/live/library_live.ex:436
+#: lib/leitor_web/live/library_live.ex:439
 #, elixir-autogen, elixir-format
 msgid "Text to import"
 msgstr "Texto para importar"
@@ -1587,7 +1587,7 @@ msgid "This page is too long to add more text. Shorten it and try again."
 msgstr "Esta página está muito longa. Reduza o texto e tente novamente."
 
 #: lib/leitor_web/i18n.ex:370
-#: lib/leitor_web/live/library_live.ex:265
+#: lib/leitor_web/live/library_live.ex:268
 #, elixir-autogen, elixir-format
 msgid "Title A–Z"
 msgstr "Título A–Z"
@@ -1602,7 +1602,7 @@ msgstr "Navegar pelo mapa de rolagem"
 msgid "Try again"
 msgstr "Tentar novamente"
 
-#: lib/leitor_web/live/library_live.ex:335
+#: lib/leitor_web/live/library_live.ex:338
 #, elixir-autogen, elixir-format
 msgid "Try another title or choose a different page type."
 msgstr "Tente outro título ou escolha outro tipo de página."
@@ -1632,7 +1632,7 @@ msgstr "Use um título de até 180 caracteres e uma página de até 300.000 cara
 msgid "Verbs"
 msgstr "Verbos"
 
-#: lib/leitor_web/live/library_live.ex:413
+#: lib/leitor_web/live/library_live.ex:416
 #, elixir-autogen, elixir-format
 msgid "Visit your notebook"
 msgstr "Abrir seu caderno"
@@ -1734,7 +1734,7 @@ msgstr "Confirme sua identidade para continuar. Enviaremos um link por e-mail."
 msgid "Your account"
 msgstr "Sua conta"
 
-#: lib/leitor_web/live/library_live.ex:329
+#: lib/leitor_web/live/library_live.ex:332
 #, elixir-autogen, elixir-format
 msgid "Your first page starts here."
 msgstr "Sua primeira página começa aqui."
@@ -1770,7 +1770,7 @@ msgstr "Seu caderno."
 msgid "Your own little corner"
 msgstr "Seu cantinho"
 
-#: lib/leitor_web/live/library_live.ex:304
+#: lib/leitor_web/live/library_live.ex:307
 #, elixir-autogen, elixir-format
 msgid "Your own reading room"
 msgstr "Seu espaço de leitura"
@@ -1780,7 +1780,7 @@ msgstr "Seu espaço de leitura"
 msgid "Your page text"
 msgstr "Texto da sua página"
 
-#: lib/leitor_web/live/library_live.ex:305
+#: lib/leitor_web/live/library_live.ex:308
 #, elixir-autogen, elixir-format
 msgid "Your pages."
 msgstr "Suas páginas."
@@ -1790,7 +1790,7 @@ msgstr "Suas páginas."
 msgid "Your pages. Your notes. A space of your own."
 msgstr "Suas páginas. Suas notas. Um espaço só seu."
 
-#: lib/leitor_web/live/library_live.ex:385
+#: lib/leitor_web/live/library_live.ex:388
 #, elixir-autogen, elixir-format
 msgid "Your writing"
 msgstr "Sua escrita"
@@ -1838,12 +1838,12 @@ msgstr "significado."
 msgid "of"
 msgstr "de"
 
-#: lib/leitor_web/live/library_live.ex:314
+#: lib/leitor_web/live/library_live.ex:317
 #, elixir-autogen, elixir-format
 msgid "page"
 msgstr "página"
 
-#: lib/leitor_web/live/library_live.ex:314
+#: lib/leitor_web/live/library_live.ex:317
 #, elixir-autogen, elixir-format
 msgid "pages"
 msgstr "páginas"
@@ -1867,7 +1867,7 @@ msgid "↑↓ to choose · Enter to insert · Esc to close"
 msgstr "↑↓ para escolher · Enter para inserir · Esc para fechar"
 
 #: lib/leitor_web/i18n.ex:241
-#: lib/leitor_web/live/library_live.ex:317
+#: lib/leitor_web/live/library_live.ex:320
 #, elixir-autogen, elixir-format
 msgid " of %{count}"
 msgstr " de %{count}"
@@ -1895,13 +1895,13 @@ msgstr[0] "%{count} anotação salva"
 msgstr[1] "%{count} anotações salvas"
 
 #: lib/leitor_web/i18n.ex:236
-#: lib/leitor_web/live/library_live.ex:208
+#: lib/leitor_web/live/library_live.ex:211
 #, elixir-autogen, elixir-format
 msgid "%{minutes} min read"
 msgstr "%{minutes} min de leitura"
 
 #: lib/leitor_web/i18n.ex:235
-#: lib/leitor_web/live/library_live.ex:207
+#: lib/leitor_web/live/library_live.ex:210
 #, elixir-autogen, elixir-format
 msgid "A blank page"
 msgstr "Uma página em branco"
@@ -1924,14 +1924,14 @@ msgstr "Correções para revisitar"
 
 #: lib/leitor_web/i18n.ex:237
 #: lib/leitor_web/live/book_live.ex:79
-#: lib/leitor_web/live/library_live.ex:347
-#: lib/leitor_web/live/library_live.ex:390
+#: lib/leitor_web/live/library_live.ex:350
+#: lib/leitor_web/live/library_live.ex:393
 #, elixir-autogen, elixir-format
 msgid "Delete %{title}"
 msgstr "Excluir %{title}"
 
 #: lib/leitor_web/i18n.ex:238
-#: lib/leitor_web/live/library_live.ex:393
+#: lib/leitor_web/live/library_live.ex:396
 #, elixir-autogen, elixir-format
 msgid "Delete this reading? Your vocabulary will be kept."
 msgstr "Excluir esta leitura? Seu vocabulário será mantido."
@@ -2069,7 +2069,7 @@ msgstr "Você saiu da sua conta."
 msgid "Magic link is invalid or it has expired."
 msgstr "O link de acesso é inválido ou expirou."
 
-#: lib/leitor_web/live/library_live.ex:457
+#: lib/leitor_web/live/library_live.ex:460
 #, elixir-autogen, elixir-format
 msgid "Remove %{filename}"
 msgstr "Remover %{filename}"
@@ -2094,7 +2094,7 @@ msgstr "Conta confirmada com sucesso."
 msgid "Welcome back!"
 msgstr "Bem-vindo de volta!"
 
-#: lib/leitor_web/live/library_live.ex:177
+#: lib/leitor_web/live/library_live.ex:180
 #, elixir-autogen, elixir-format
 msgid "Your pages"
 msgstr "Suas páginas"
@@ -2109,13 +2109,13 @@ msgstr "Caneta %{color}"
 msgid "Remove this word?"
 msgstr "Remover esta palavra?"
 
-#: lib/leitor_web/live/library_live.ex:271
-#: lib/leitor_web/live/library_live.ex:277
+#: lib/leitor_web/live/library_live.ex:274
+#: lib/leitor_web/live/library_live.ex:280
 #, elixir-autogen, elixir-format
 msgid "Add page"
 msgstr "Adicionar página"
 
-#: lib/leitor_web/live/library_live.ex:283
+#: lib/leitor_web/live/library_live.ex:286
 #, elixir-autogen, elixir-format
 msgid "Blank page"
 msgstr "Página em branco"
@@ -3245,7 +3245,7 @@ msgstr[0] "%{count} bloco"
 msgstr[1] "%{count} blocos"
 
 #: lib/leitor_web/live/book_live.ex:59
-#: lib/leitor_web/live/library_live.ex:371
+#: lib/leitor_web/live/library_live.ex:374
 #, elixir-autogen, elixir-format
 msgid "%{count} chapter"
 msgid_plural "%{count} chapters"
@@ -3267,8 +3267,8 @@ msgstr "Capítulos de livros não podem ser editados."
 msgid "Book deleted."
 msgstr "Livro excluído."
 
-#: lib/leitor_web/live/library_live.ex:136
 #: lib/leitor_web/live/library_live.ex:139
+#: lib/leitor_web/live/library_live.ex:142
 #, elixir-autogen, elixir-format
 msgid "Book saved. Ready to read."
 msgstr "Livro salvo. Pronto para ler."
@@ -3295,7 +3295,7 @@ msgid "Couldn't delete this book. Try again."
 msgstr "Não foi possível excluir este livro. Tente novamente."
 
 #: lib/leitor_web/live/book_live.ex:81
-#: lib/leitor_web/live/library_live.ex:351
+#: lib/leitor_web/live/library_live.ex:354
 #, elixir-autogen, elixir-format
 msgid "Delete this book and all of its chapters, notes and highlights?"
 msgstr "Excluir este livro e todos os seus capítulos, notas e destaques?"
@@ -3320,12 +3320,12 @@ msgstr "Capítulo anterior: %{title}"
 msgid "Start reading"
 msgstr "Começar a ler"
 
-#: lib/leitor_web/live/library_live.ex:116
+#: lib/leitor_web/live/library_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "We couldn't save this book. Check its chapters and try again."
 msgstr "Não foi possível salvar este livro. Verifique os capítulos e tente novamente."
 
-#: lib/leitor_web/live/library_live.ex:140
+#: lib/leitor_web/live/library_live.ex:143
 #, elixir-autogen, elixir-format
 msgid "%{count} image couldn't be imported."
 msgid_plural "%{count} images couldn't be imported."
@@ -3333,7 +3333,7 @@ msgstr[0] "%{count} imagem não pôde ser importada."
 msgstr[1] "%{count} imagens não puderam ser importadas."
 
 #: lib/leitor_web/i18n.ex:285
-#: lib/leitor_web/live/library_live.ex:150
+#: lib/leitor_web/live/library_live.ex:153
 #, elixir-autogen, elixir-format
 msgid "Choose a file smaller than 10 MB (30 MB for EPUB books)."
 msgstr "Escolha um arquivo menor que 10 MB (30 MB para livros EPUB)."
@@ -3343,7 +3343,12 @@ msgstr "Escolha um arquivo menor que 10 MB (30 MB para livros EPUB)."
 msgid "Cover of %{title}"
 msgstr "Capa de %{title}"
 
-#: lib/leitor_web/live/library_live.ex:470
+#: lib/leitor_web/live/library_live.ex:473
 #, elixir-autogen, elixir-format
 msgid "Private to you · Up to 10 MB (EPUB books up to 30 MB)"
 msgstr "Só para você · Até 10 MB (livros EPUB até 30 MB)"
+
+#: lib/leitor_web/live/library_live.ex:116
+#, elixir-autogen, elixir-format
+msgid "We couldn't store this book's images. Try again in a moment."
+msgstr "Não foi possível guardar as imagens deste livro. Tente novamente em instantes."

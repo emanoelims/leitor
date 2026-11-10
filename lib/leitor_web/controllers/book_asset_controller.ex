@@ -31,6 +31,13 @@ defmodule LeitorWeb.BookAssetController do
   # Ids never change what they point to, so browsers may keep the bytes; `sandbox` stops a directly opened
   # image from running anything.
   defp send_image(conn, asset) do
+    case Library.asset_data(asset) do
+      {:ok, data} -> send_image_data(conn, asset, data)
+      {:error, :unavailable} -> conn |> put_resp_header("cache-control", "no-store") |> send_resp(503, "Unavailable")
+    end
+  end
+
+  defp send_image_data(conn, asset, data) do
     conn
     |> put_resp_content_type(asset.content_type, nil)
     |> put_resp_header("cache-control", "private, max-age=31536000, immutable")
@@ -38,6 +45,6 @@ defmodule LeitorWeb.BookAssetController do
     |> put_resp_header("content-security-policy", "default-src 'none'; sandbox")
     |> put_resp_header("referrer-policy", "no-referrer")
     |> put_resp_header("etag", ~s("#{Base.encode16(asset.digest, case: :lower)}"))
-    |> send_resp(200, asset.data)
+    |> send_resp(200, data)
   end
 end

@@ -3,6 +3,7 @@ defmodule LeitorWeb.BookLiveTest do
 
   import ExUnit.CaptureLog
   import Leitor.AccountsFixtures
+  import Leitor.StorageFixtures
   import Phoenix.LiveViewTest
 
   alias Leitor.EpubFixtures
@@ -337,6 +338,35 @@ defmodule LeitorWeb.BookLiveTest do
 
       assert has_element?(view, "#page-import-dialog")
       assert Library.list_texts(scope) == []
+    end
+  end
+
+  describe "with object storage" do
+    @describetag :capture_log
+    @png EpubFixtures.png()
+    @pictured [%{file: "one.xhtml", title: "One", body: ~S|<p>Text <img src="img/a.png"></p>|}]
+
+    setup do
+      configure_storage!()
+      :ok
+    end
+
+    test "importing keeps the images in the store", %{conn: conn, scope: scope} do
+      store = start_object_store!()
+      import_book(conn, chapters: @pictured, images: [%{file: "img/a.png", data: @png}])
+
+      assert [%{id: _}] = Library.list_books(scope)
+      assert [{@png, "image/png"}] = Map.values(objects(store))
+    end
+
+    test "a store failure keeps the importer open and saves nothing", %{conn: conn, scope: scope} do
+      store = start_object_store!(fail: fn {method, _key} -> if method == "PUT", do: 503 end)
+      view = import_book(conn, chapters: @pictured, images: [%{file: "img/a.png", data: @png}])
+
+      assert has_element?(view, "#page-import-dialog")
+      assert render(view) =~ "couldn&#39;t store this book&#39;s images"
+      assert Library.list_books(scope) == []
+      assert objects(store) == %{}
     end
   end
 end

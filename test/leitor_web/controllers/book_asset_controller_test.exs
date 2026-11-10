@@ -2,6 +2,7 @@ defmodule LeitorWeb.BookAssetControllerTest do
   use LeitorWeb.ConnCase
 
   import Leitor.AccountsFixtures
+  import Leitor.StorageFixtures
 
   alias Leitor.EpubFixtures
   alias Leitor.Library
@@ -95,6 +96,49 @@ defmodule LeitorWeb.BookAssetControllerTest do
       {:ok, page} = Leitor.Pages.create_page(scope, %{"title" => "Own page", "body" => "Text."})
       {:ok, share} = Sharing.set_link(scope, page.id, %{"link_role" => "view"})
       assert build_conn() |> get(~p"/s/#{share.token}/book-assets/#{id}") |> response(404)
+    end
+  end
+
+  describe "with object storage" do
+    @describetag :capture_log
+    setup %{scope: scope} do
+      configure_storage!()
+      store = start_object_store!()
+      {book, id, chapter} = book_with_image(scope)
+      {:ok, share} = Sharing.set_link(scope, chapter, %{"link_role" => "view"})
+      %{store: store, book: book, asset_id: id, share: share}
+    end
+
+    test "serves an image kept in the store", %{conn: conn, store: store, asset_id: id} do
+      assert Map.has_key?(objects(store), "book-assets/#{id}")
+
+      conn = get(conn, ~p"/book-assets/#{id}")
+      assert response(conn, 200) == @png
+      assert get_resp_header(conn, "content-type") == ["image/png"]
+      assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+    end
+
+    test "serves it through a share link too", %{share: share, asset_id: id} do
+      assert build_conn() |> get(~p"/s/#{share.token}/book-assets/#{id}") |> response(200) == @png
+    end
+
+    test "answers 503 without caching when the store is unavailable", %{conn: conn, share: share, asset_id: id} do
+      start_object_store!(fail: fn _ -> 503 end)
+
+      conn = get(conn, ~p"/book-assets/#{id}")
+      assert response(conn, 503)
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      assert build_conn() |> get(~p"/s/#{share.token}/book-assets/#{id}") |> response(503)
+    end
+
+    test "never serves altered bytes", %{conn: conn, store: store, asset_id: id} do
+      tamper!(store, "book-assets/#{id}", "<script>alert(1)</script>")
+      assert conn |> get(~p"/book-assets/#{id}") |> response(503)
+    end
+
+    test "does not reveal other readers' images even when the object exists", %{conn: conn, asset_id: id} do
+      other = log_in_user(conn, user_scope_fixture().user)
+      assert other |> get(~p"/book-assets/#{id}") |> response(404)
     end
   end
 end

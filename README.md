@@ -147,10 +147,13 @@ authentication flows. The former sentence reader, writing, lessons, exercises,
 review, progress, rooms, resource-management screens, and component gallery
 have been removed. Their database records remain intact.
 
-The shelf accepts Markdown (.md/.markdown), TXT, EPUB, DOCX, and text-based PDF files (up to 10 MB).
+The shelf accepts Markdown (.md/.markdown), TXT, EPUB (up to 30 MB), DOCX, and text-based PDF files (up to 10 MB).
 An EPUB becomes a book at `/books/:id`: one read-only chapter per reading-order document,
-titled from its navigation document or NCX, rendered from sanitized HTML. Images, covers and
-fixed-layout books are not imported; chapters over 250 KB are split between elements.
+titled from its navigation document or NCX, rendered from sanitized HTML. PNG, JPEG, GIF and WebP
+images (up to 8 MB each) and the cover are stored with the book and served only to its readers,
+or through a share link for a shared chapter; SVG, remote, mislabelled and oversized images are left
+out and counted in the import message. EPUB uploads may be up to 30 MB. Fixed-layout books are not
+supported; chapters over 250 KB are split between elements.
 DOCX title metadata is read locally. Optional `pdfinfo` supplies PDF titles.
 PDF extraction requires `pdftotext` (`brew install poppler` on macOS). Missing
 tools or unreadable files produce a recoverable import error. Other formats are

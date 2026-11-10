@@ -24,7 +24,7 @@ defmodule LeitorWeb.LibraryLive do
      |> stream(:texts, [])
      |> allow_upload(:material,
        accept: ~w(.md .markdown .txt .pdf .epub .docx),
-       max_file_size: 10_000_000,
+       max_file_size: 30_000_000,
        max_entries: 1
      )}
   end
@@ -82,7 +82,7 @@ defmodule LeitorWeb.LibraryLive do
   def handle_event("import", %{"material" => params}, socket) do
     result =
       consume_uploaded_entries(socket, :material, fn %{path: path}, entry ->
-        {:ok, read_upload(path, entry.client_name)}
+        {:ok, read_upload(path, entry.client_name, entry.client_size)}
       end)
 
     body =
@@ -109,7 +109,7 @@ defmodule LeitorWeb.LibraryLive do
         {:noreply,
          socket
          |> assign(import_open: false, form: to_form(%{"body" => ""}, as: "material"))
-         |> put_flash(:info, gettext("Book saved. Ready to read."))
+         |> put_flash(:info, book_saved_message(book.skipped_images))
          |> push_navigate(to: ~p"/pages/#{hd(book.chapters).id}")}
 
       {:error, _changeset} ->
@@ -133,12 +133,24 @@ defmodule LeitorWeb.LibraryLive do
     end
   end
 
-  # An EPUB becomes a book with chapters; everything else is read as a single text.
-  defp read_upload(path, name) do
-    if String.downcase(Path.extname(name)) == ".epub" do
-      with {:ok, book} <- Epub.extract_book(path), do: {:ok, {:book, book}}
-    else
-      with {:ok, document} <- Import.extract_document(path, name), do: {:ok, {:text, document}}
+  defp book_saved_message(0), do: gettext("Book saved. Ready to read.")
+
+  defp book_saved_message(skipped) do
+    gettext("Book saved. Ready to read.") <>
+      " " <> ngettext("%{count} image couldn't be imported.", "%{count} images couldn't be imported.", skipped)
+  end
+
+  # An EPUB becomes a book with chapters and may be larger than other documents, which are read as one text.
+  defp read_upload(path, name, size) do
+    cond do
+      String.downcase(Path.extname(name)) == ".epub" ->
+        with {:ok, book} <- Epub.extract_book(path), do: {:ok, {:book, book}}
+
+      size > 10_000_000 ->
+        {:error, gettext("Choose a file smaller than 10 MB (30 MB for EPUB books).")}
+
+      true ->
+        with {:ok, document} <- Import.extract_document(path, name), do: {:ok, {:text, document}}
     end
   end
 
@@ -196,7 +208,7 @@ defmodule LeitorWeb.LibraryLive do
       else: gettext("%{minutes} min read", minutes: max(div(length(String.split(body)) + 219, 220), 1))
   end
 
-  defp upload_error(:too_large), do: "Choose a file smaller than 10 MB."
+  defp upload_error(:too_large), do: "Choose a file smaller than 10 MB (30 MB for EPUB books)."
   defp upload_error(:not_accepted), do: "Choose a Markdown, TXT, PDF, EPUB or DOCX file."
   defp upload_error(:too_many_files), do: "Import one document at a time."
   defp upload_error(:external_client_failure), do: "The upload failed. Remove the file and try again."
@@ -341,8 +353,20 @@ defmodule LeitorWeb.LibraryLive do
               ><.icon name="lucide-thin-trash-2" class="size-4" /></button>
             </div>
             <.link navigate={book_path(item)} class="shelf-card-reading" id={"book-#{item.id}-open"}>
-              <h2>{item.title}</h2>
-              <p :if={item.author}>{item.author}</p>
+              <div class="book-card-head">
+                <div class="book-card-title">
+                  <h2>{item.title}</h2>
+                  <p :if={item.author}>{item.author}</p>
+                </div>
+                <img
+                  :if={item.cover_asset_id}
+                  class="book-card-cover"
+                  src={~p"/book-assets/#{item.cover_asset_id}"}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
               <div class="shelf-card-footer">
                 <span>{ngettext("%{count} chapter", "%{count} chapters", item.chapter_count)}</span><span>{LeitorWeb.I18n.date(
                   item.updated_at
@@ -443,7 +467,7 @@ defmodule LeitorWeb.LibraryLive do
             </p>
           </div>
           <div class="import-footer">
-            <p>{gettext("Private to you · Up to 10 MB")}</p>
+            <p>{gettext("Private to you · Up to 10 MB (EPUB books up to 30 MB)")}</p>
             <.button id="save-material" variant="primary" phx-disable-with={gettext("Importing…")}>{gettext(
               "Import text"
             )}

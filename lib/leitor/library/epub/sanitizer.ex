@@ -20,11 +20,13 @@ defmodule Leitor.Library.Epub.Sanitizer do
   @max_depth 64
   @max_nodes 200_000
   @drop ~w(head script style svg math iframe object embed form noscript template title rt rp audio video canvas select textarea button)
-  @keep ~w(p h1 h2 h3 h4 h5 h6 blockquote ul ol li dl dt dd pre code em strong i b u s sub sup small br hr table thead tbody tfoot tr th td figure figcaption a span section aside)
+  @keep ~w(p h1 h2 h3 h4 h5 h6 blockquote ul ol li dl dt dd pre code em strong i b u s sub sup small br hr table thead tbody tfoot tr th td figure figcaption a span section aside img)
   @void ~w(area base br col embed hr img input link meta source track wbr)
   @identifier ~r/^epub-[A-Za-z0-9_.:-]{1,200}$/
   @page_link ~r|^/pages/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(#epub-[A-Za-z0-9_.:-]{1,200})?$|
   @fragment_link ~r/^#epub-[A-Za-z0-9_.:-]{1,200}$/
+  @asset_path ~r|^/book-assets/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$|
+  @default_asset_prefix "/book-assets/"
   @external_link ~r{^(https?://|mailto:)[^\s<>"'\x00-\x1f]+$}i
 
   @doc """
@@ -34,7 +36,11 @@ defmodule Leitor.Library.Epub.Sanitizer do
 
     * `:import?` - rewrite identifiers and links (default `false`).
     * `:links` - map from absolute archive paths to chapter ids, used with `:import?`.
-    * `:path` - absolute archive path of the document, used to resolve relative links.
+    * `:path` - absolute archive path of the document, used to resolve relative links and images.
+    * `:assets` - map from absolute archive paths to image ids, used with `:import?`. Images that are not
+      listed are removed, so nothing remote or unknown is ever referenced.
+    * `:asset_prefix` - path prefix written before image ids (default `"/book-assets/"`), so shared pages can
+      serve images from a token-scoped route.
   """
   @spec tree(String.t(), keyword()) :: {:ok, [html_node()]} | {:error, :invalid_html}
   def tree(html, opts \\ [])
@@ -43,6 +49,8 @@ defmodule Leitor.Library.Epub.Sanitizer do
     context = %{
       import?: Keyword.get(opts, :import?, false),
       links: Keyword.get(opts, :links, %{}),
+      assets: Keyword.get(opts, :assets, %{}),
+      asset_prefix: Keyword.get(opts, :asset_prefix, @default_asset_prefix),
       directory: opts |> Keyword.get(:path, "/") |> Path.dirname(),
       pre?: false
     }
@@ -130,9 +138,11 @@ defmodule Leitor.Library.Epub.Sanitizer do
     attrs = attributes(tag, attrs, context)
     children = clean(children, %{context | pre?: context.pre? or tag == "pre"}, depth + 1)
 
-    if tag in ~w(span a) and not List.keymember?(attrs, "id", 0) and not List.keymember?(attrs, "href", 0),
-      do: children,
-      else: [{tag, attrs, children}]
+    cond do
+      tag == "img" -> if List.keymember?(attrs, "src", 0), do: [{tag, attrs, []}], else: []
+      tag in ~w(span a) and not List.keymember?(attrs, "id", 0) and not List.keymember?(attrs, "href", 0) -> children
+      true -> [{tag, attrs, children}]
+    end
   end
 
   defp attributes(tag, attrs, context) do
@@ -144,6 +154,15 @@ defmodule Leitor.Library.Epub.Sanitizer do
 
   defp attribute(_tag, {"id", value}, %{import?: true}), do: [{"id", "epub-" <> identifier(value)}]
   defp attribute(_tag, {"id", value}, _context), do: if(Regex.match?(@identifier, value), do: [{"id", value}], else: [])
+
+  defp attribute("img", {"src", value}, context) do
+    case image(String.trim(value), context) do
+      nil -> []
+      src -> [{"src", src}]
+    end
+  end
+
+  defp attribute("img", {"alt", value}, _context), do: [{"alt", String.slice(value, 0, 500)}]
 
   defp attribute("a", {"href", value}, context) do
     case link(String.trim(value), context) do
@@ -188,6 +207,24 @@ defmodule Leitor.Library.Epub.Sanitizer do
   defp link(href, _context) do
     if Regex.match?(@fragment_link, href) or Regex.match?(@page_link, href) or Regex.match?(@external_link, href),
       do: href
+  end
+
+  defp image(src, %{import?: true} = context) do
+    with false <- src == "" or String.starts_with?(src, "//") or Regex.match?(~r/^[A-Za-z][A-Za-z0-9+.-]*:/, src),
+         [file | _] <- String.split(src, "#"),
+         path = file |> String.split("?") |> hd() |> Package.safe_decode() |> Path.expand(context.directory),
+         {:ok, id} <- Map.fetch(context.assets, path) do
+      context.asset_prefix <> id
+    else
+      _ -> nil
+    end
+  end
+
+  defp image(src, context) do
+    case Regex.run(@asset_path, src) do
+      [_, id] -> context.asset_prefix <> id
+      nil -> nil
+    end
   end
 
   defp validated_external(href), do: if(Regex.match?(@external_link, href), do: href)

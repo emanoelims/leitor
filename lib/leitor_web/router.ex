@@ -28,6 +28,14 @@ defmodule LeitorWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Images are requested by `<img>` tags, whose Accept header names no HTML or JSON type.
+  pipeline :asset do
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_secure_browser_headers
+    plug :fetch_current_scope_for_user
+  end
+
   # Fly readiness checks do not use browser sessions or authentication.
   scope "/", LeitorWeb do
     pipe_through :api
@@ -59,6 +67,16 @@ defmodule LeitorWeb.Router do
   scope "/", LeitorWeb do
     pipe_through :artifact
     get "/s/:token/figures/:id", SharedFigureController, :show
+  end
+
+  scope "/", LeitorWeb do
+    pipe_through [:asset, :require_authenticated_user]
+    get "/book-assets/:id", BookAssetController, :show
+  end
+
+  scope "/", LeitorWeb do
+    pipe_through :asset
+    get "/s/:token/book-assets/:id", BookAssetController, :shared
   end
 
   ## Authentication routes

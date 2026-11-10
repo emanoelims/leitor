@@ -24,7 +24,9 @@ defmodule Leitor.HtmlDocument do
   @doc """
   Sanitises stored chapter HTML again and renders it as selectable blocks.
 
-  Markup that cannot be sanitised renders as an empty document.
+  Markup that cannot be sanitised renders as an empty document. A paragraph that holds only an image is kept
+  without a block, since there is no text to select. Pass `:asset_prefix` to serve images from another route,
+  as shared pages do.
 
   ## Examples
 
@@ -34,9 +36,9 @@ defmodule Leitor.HtmlDocument do
       iex> document.text
       "Title\\n\\nOne two"
   """
-  @spec prepare(String.t()) :: Leitor.PageDocument.t()
-  def prepare(html) when is_binary(html) do
-    case Sanitizer.tree(html) do
+  @spec prepare(String.t(), keyword()) :: Leitor.PageDocument.t()
+  def prepare(html, opts \\ []) when is_binary(html) do
+    case Sanitizer.tree(html, Keyword.take(opts, [:asset_prefix])) do
       {:ok, tree} ->
         {parts, state} = render_children(tree, :flow, %{blocks: [], count: 0})
         blocks = Enum.reverse(state.blocks)
@@ -92,8 +94,17 @@ defmodule Leitor.HtmlDocument do
   defp leaf({tag, attrs, children}, state) do
     children = if tag == "pre", do: children, else: trim(children)
     html = Sanitizer.to_html([{tag, attrs, children}])
-    block(html, html, state)
+
+    case block(html, html, state) do
+      {[], _state} -> if image?(children), do: {html, state}, else: {[], state}
+      block -> block
+    end
   end
+
+  defp image?(nodes) when is_list(nodes), do: Enum.any?(nodes, &image?/1)
+  defp image?({"img", _attrs, _children}), do: true
+  defp image?({_tag, _attrs, children}), do: image?(children)
+  defp image?(_text), do: false
 
   defp inline_leaf({tag, attrs, children}, state) do
     inner = children |> trim() |> Sanitizer.to_html()
@@ -143,7 +154,8 @@ defmodule Leitor.HtmlDocument do
     end
   end
 
-  defp trim_first([{"br", _attrs, _children} | _rest] = nodes, _side), do: nodes
+  # Void elements have no children to trim and must never be mistaken for an empty wrapper.
+  defp trim_first([{tag, _attrs, _children} | _rest] = nodes, _side) when tag in ["br", "img"], do: nodes
 
   defp trim_first([{tag, attrs, children} | rest], side) do
     case trim(children, side) do

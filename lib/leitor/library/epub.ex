@@ -11,37 +11,53 @@ defmodule Leitor.Library.Epub do
 
   @max_part 250_000
   @max_chapters 1_000
+  @max_size 30_000_000
   @failure "We couldn't read this EPUB. Try exporting it again or paste its text."
   @empty "No readable text found in this EPUB."
   @too_large "A chapter of this EPUB is too large to import. Split it into smaller sections."
 
   @typedoc "A chapter ready to be stored as a text: its identifier, title, table-of-contents depth and sanitised HTML."
   @type chapter() :: %{id: Ecto.UUID.t(), title: String.t(), depth: non_neg_integer(), body: String.t()}
+  @typedoc "An image the chapters reference, ready to be stored."
+  @type asset() :: %{
+          id: Ecto.UUID.t(),
+          content_type: String.t(),
+          byte_size: pos_integer(),
+          digest: binary(),
+          data: binary()
+        }
   @typedoc "A book read from an EPUB archive."
   @type book() :: %{
           title: String.t(),
           author: String.t() | nil,
           language: String.t() | nil,
           identifier: String.t() | nil,
-          chapters: [chapter()]
+          chapters: [chapter()],
+          assets: [asset()],
+          cover_asset_id: Ecto.UUID.t() | nil,
+          skipped_images: non_neg_integer()
         }
 
   @doc """
   Extracts a book from an EPUB file.
 
-  Chapters follow the reading order. Titles come from the table of contents (EPUB 3 navigation document or
+  Chapters follow the reading order. PNG, JPEG, GIF and WebP images referenced by the chapters, and the cover,
+  are returned as assets; images that are too large, mislabelled, remote or unreferenced are left out and
+  counted in `:skipped_images`. Titles come from the table of contents (EPUB 3 navigation document or
   EPUB 2 NCX), then the chapter's first heading, then a numbered fallback. A chapter larger than the text limit
   is split between top-level elements. Failures return a message that is safe to show.
   """
   @spec extract_book(Path.t()) :: {:ok, book()} | {:error, String.t()}
   def extract_book(path) do
-    with {:ok, files} <- Package.read(path),
+    with {:ok, files} <- Package.read(path, @max_size),
          {:ok, package} <- Package.parse(files),
          {:ok, documents} <- Package.documents(files, package),
          true <- length(documents) <= @max_chapters,
-         {:ok, chapters} <- chapters(documents, toc(files, package)),
+         images = Package.images(path, package),
+         ids = Map.new(images, fn {image_path, _image} -> {image_path, new_id()} end),
+         {:ok, chapters} <- chapters(documents, toc(files, package), ids),
          [_ | _] <- chapters do
-      {:ok, book(package.xml, chapters)}
+      {:ok, package |> book(chapters, images, ids) |> Map.put(:skipped_images, skipped_images(documents, chapters))}
     else
       [] -> {:error, @empty}
       {:error, message} when is_binary(message) -> {:error, message}
@@ -49,14 +65,42 @@ defmodule Leitor.Library.Epub do
     end
   end
 
-  defp book(xml, chapters) do
+  defp book(%{xml: xml} = package, chapters, images, ids) do
+    cover_id = ids[package.cover]
+
     %{
       title: metadata(xml, "title") || hd(chapters).title,
       author: metadata(xml, "creator"),
       language: metadata(xml, "language"),
       identifier: metadata(xml, "identifier"),
-      chapters: chapters
+      chapters: chapters,
+      assets: assets(chapters, cover_id, images, ids),
+      cover_asset_id: cover_id
     }
+  end
+
+  # Images the documents mention that no chapter shows: too large, mislabelled, remote, or in a dropped document.
+  defp skipped_images(documents, chapters) do
+    mentioned = documents |> Enum.map(fn {_item, source} -> length(Regex.scan(~r/<img\b/i, source)) end) |> Enum.sum()
+    shown = chapters |> Enum.map(fn chapter -> length(Regex.scan(~r/<img\b/, chapter.body)) end) |> Enum.sum()
+    max(mentioned - shown, 0)
+  end
+
+  # Only images a chapter shows, and the cover, are stored.
+  defp assets(chapters, cover_id, images, ids) do
+    referenced =
+      chapters
+      |> Enum.flat_map(&Regex.scan(~r|src="/book-assets/([0-9a-f-]{36})"|, &1.body, capture: :all_but_first))
+      |> List.flatten()
+      |> MapSet.new()
+      |> MapSet.put(cover_id)
+
+    for_result =
+      for {path, id} <- ids, id in referenced, %{content_type: type, data: data} = images[path] do
+        %{id: id, content_type: type, byte_size: byte_size(data), digest: :crypto.hash(:sha256, data), data: data}
+      end
+
+    Enum.sort_by(for_result, & &1.id)
   end
 
   defp metadata(xml, name) do
@@ -79,19 +123,19 @@ defmodule Leitor.Library.Epub do
   end
 
   # Documents without readable text are dropped before links are rewritten, so no link can point at a missing page.
-  defp chapters(documents, toc) do
+  defp chapters(documents, toc, assets) do
     ids = Map.new(documents, fn {item, _source} -> {item.path, new_id()} end)
 
-    with {:ok, sanitized} <- sanitize(documents, ids),
-         {:ok, readable} <- drop_unreadable(sanitized, documents, ids) do
+    with {:ok, sanitized} <- sanitize(documents, ids, assets),
+         {:ok, readable} <- drop_unreadable(sanitized, documents, ids, assets) do
       readable |> Enum.with_index(1) |> split_all(ids, toc)
     end
   end
 
-  defp drop_unreadable(sanitized, documents, ids) do
+  defp drop_unreadable(sanitized, documents, ids, assets) do
     case for {item, nodes} <- sanitized, blank?(nodes), do: item.path do
       [] -> {:ok, sanitized}
-      empty -> documents |> Enum.reject(&(elem(&1, 0).path in empty)) |> sanitize(Map.drop(ids, empty))
+      empty -> documents |> Enum.reject(&(elem(&1, 0).path in empty)) |> sanitize(Map.drop(ids, empty), assets)
     end
   end
 
@@ -104,10 +148,10 @@ defmodule Leitor.Library.Epub do
     end
   end
 
-  defp sanitize(documents, ids) do
+  defp sanitize(documents, ids, assets) do
     documents
     |> Enum.reduce_while({:ok, []}, fn {item, source}, {:ok, acc} ->
-      case Sanitizer.tree(source, import?: true, path: item.path, links: ids) do
+      case Sanitizer.tree(source, import?: true, path: item.path, links: ids, assets: assets) do
         {:ok, nodes} -> {:cont, {:ok, [{item, unwrap(nodes)} | acc]}}
         {:error, _} -> {:halt, {:error, @failure}}
       end

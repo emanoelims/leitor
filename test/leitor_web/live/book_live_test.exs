@@ -227,4 +227,116 @@ defmodule LeitorWeb.BookLiveTest do
       assert {:ok, %{entries: [%{quote: "wonderful"}]}} = Sharing.comments(nil, share.token)
     end
   end
+
+  describe "images" do
+    @png EpubFixtures.png()
+
+    @illustrated [
+      %{
+        file: "one.xhtml",
+        title: "Plates",
+        body: ~S|<h1>Plates</h1><p>Look at this.</p><p><img src="img/plate.png" alt="A plate"></p><p>After the plate.</p>|
+      }
+    ]
+
+    defp illustrated_book(scope) do
+      path =
+        EpubFixtures.write!(Path.join(System.tmp_dir!(), "plates-#{System.unique_integer([:positive])}.epub"),
+          chapters: @illustrated,
+          images: [%{file: "img/plate.png", data: @png}, %{file: "img/cover.png", data: @png}],
+          cover: {:property, "img/cover.png"}
+        )
+
+      {:ok, extracted} = Library.Epub.extract_book(path)
+      {:ok, book} = Library.create_book(scope, extracted)
+      {Library.get_book!(scope, book.id), hd(Library.book_chapters(scope, book))}
+    end
+
+    test "the shelf card and the book page show the cover", %{conn: conn, scope: scope} do
+      {book, _chapter} = illustrated_book(scope)
+      cover = ~s([src="/book-assets/#{book.cover_asset_id}"])
+
+      {:ok, shelf, _} = live(conn, ~p"/pages")
+      assert has_element?(shelf, "#library-texts img.book-card-cover#{cover}")
+
+      {:ok, page, _} = live(conn, ~p"/books/#{book.id}")
+      assert has_element?(page, "#book-cover#{cover}")
+    end
+
+    test "a chapter shows its image and keeps text anchors", %{conn: conn, scope: scope} do
+      {_book, chapter} = illustrated_book(scope)
+      {:ok, view, _} = live(conn, ~p"/pages/#{chapter.id}")
+
+      assert has_element?(view, ~s(#page-reading img[alt="A plate"][src^="/book-assets/"]))
+      assert has_element?(view, "#page-reading [data-page-block]", "After the plate.")
+
+      # Blocks: 0 heading, 1 "Look at this.", 2 "After the plate." (the image has no block).
+      render_hook(view, "select", %{"start_block" => 2, "end_block" => 2, "start_offset" => 0, "end_offset" => 5})
+      view |> element("#selection-highlight") |> render_click()
+      assert [%{quote: "After", block_index: 2}] = Pages.list_marks(scope, chapter.id)
+    end
+
+    test "a shared chapter serves its images through the link", %{scope: scope} do
+      {_book, chapter} = illustrated_book(scope)
+      {:ok, share} = Sharing.set_link(scope, chapter.id, %{"link_role" => "view"})
+
+      {:ok, visitor, _} = live(build_conn(), ~p"/s/#{share.token}")
+      assert has_element?(visitor, ~s(#page-reading img[src^="/s/#{share.token}/book-assets/"]))
+      refute has_element?(visitor, ~s(#page-reading img[src^="/book-assets/"]))
+    end
+
+    test "importing an EPUB stores its images and cover", %{conn: conn, scope: scope} do
+      import_book(conn,
+        chapters: @illustrated,
+        images: [%{file: "img/plate.png", data: @png}, %{file: "img/cover.png", data: @png}],
+        cover: {:meta, "img/cover.png"}
+      )
+
+      assert [%{cover_asset_id: cover}] = Library.list_books(scope)
+      assert {:ok, %{data: @png}} = Library.get_book_asset(scope, cover)
+    end
+
+    test "tells the reader how many images could not be imported", %{conn: conn} do
+      chapters = [
+        %{file: "one.xhtml", title: "One", body: ~S|<p>Text <img src="img/a.png"><img src="https://x.test/y.png"></p>|}
+      ]
+
+      view = import_book(conn, chapters: chapters, images: [%{file: "img/a.png", data: @png}])
+      {_path, flash} = assert_redirect(view)
+      assert flash["info"] =~ "1 image couldn't be imported"
+    end
+
+    test "says nothing about images when all were imported", %{conn: conn} do
+      view = import_book(conn)
+      {_path, flash} = assert_redirect(view)
+      refute flash["info"] =~ "image"
+    end
+
+    test "accepts an EPUB over 10 MB", %{conn: conn, scope: scope} do
+      png = fn -> <<0x89, "PNG\r\n", 0x1A, "\n">> <> :crypto.strong_rand_bytes(7_000_000) end
+      chapters = [%{file: "one.xhtml", title: "Big", body: ~S|<p>Text <img src="img/a.png"><img src="img/b.png"></p>|}]
+
+      import_book(conn,
+        chapters: chapters,
+        images: [%{file: "img/a.png", data: png.()}, %{file: "img/b.png", data: png.()}]
+      )
+
+      assert [%{chapter_count: 1}] = Library.list_books(scope)
+    end
+
+    test "still refuses other documents over 10 MB", %{conn: conn, scope: scope} do
+      {:ok, view, _} = live(conn, ~p"/pages")
+      view |> element("#open-page-import") |> render_click()
+      content = "# Heavy\n\n" <> String.duplicate("a", 10_000_001)
+
+      upload =
+        file_input(view, "#material-form", :material, [%{name: "heavy.md", content: content, type: "text/markdown"}])
+
+      render_upload(upload, "heavy.md")
+      view |> form("#material-form", material: %{body: ""}) |> render_submit()
+
+      assert has_element?(view, "#page-import-dialog")
+      assert Library.list_texts(scope) == []
+    end
+  end
 end

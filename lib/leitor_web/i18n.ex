@@ -282,7 +282,7 @@ defmodule LeitorWeb.I18n do
     gettext_noop("Bullet list"),
     gettext_noop("Checklist"),
     gettext_noop("Choose a Markdown, TXT, PDF, EPUB or DOCX file."),
-    gettext_noop("Choose a file smaller than 10 MB."),
+    gettext_noop("Choose a file smaller than 10 MB (30 MB for EPUB books)."),
     gettext_noop("Clipboard unavailable. Use Download instead."),
     gettext_noop("Clipboard unavailable. You can select and copy the text."),
     gettext_noop("Close a popup"),

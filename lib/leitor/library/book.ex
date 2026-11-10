@@ -14,6 +14,7 @@ defmodule Leitor.Library.Book do
     field :toc, :map, default: %{"entries" => []}
     field :user_id, :binary_id
     field :last_text_id, :binary_id
+    field :cover_asset_id, :binary_id
     field :chapter_count, :integer, virtual: true
     field :first_text_id, :binary_id, virtual: true
 

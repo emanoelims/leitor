@@ -121,6 +121,50 @@ defmodule Leitor.HtmlDocumentTest do
     end
   end
 
+  describe "images" do
+    @id "01a1c346-e158-72a8-a4ca-04cb869ac2cf"
+
+    test "keeps an image-only paragraph without making it a block" do
+      document = HtmlDocument.prepare(~s(<p>Before.</p><p><img src="/book-assets/#{@id}" alt="Plate"></p><p>After.</p>))
+
+      assert Enum.map(document.blocks, & &1.text) == ["Before.", "After."]
+      assert document.html =~ ~s(<p><img src="/book-assets/#{@id}" alt="Plate"/></p>)
+      assert document.text == "Before.\n\nAfter."
+    end
+
+    test "keeps images beside text without changing the text" do
+      document = HtmlDocument.prepare(~s(<p>Look <img src="/book-assets/#{@id}"> here.</p>))
+
+      assert [%{id: 0, text: "Look  here."}] = document.blocks
+      assert rendered_text(document, 0) == "Look  here."
+    end
+
+    test "keeps figures with their captions and numbers only the caption" do
+      document =
+        HtmlDocument.prepare(~s(<figure><img src="/book-assets/#{@id}"><figcaption>A caption</figcaption></figure>))
+
+      assert Enum.map(document.blocks, & &1.text) == ["A caption"]
+      assert document.html =~ "<img"
+    end
+
+    test "serves images from another route when asked" do
+      document =
+        HtmlDocument.prepare(~s(<p>Text <img src="/book-assets/#{@id}"></p>), asset_prefix: "/s/token/book-assets/")
+
+      assert document.html =~ ~s(src="/s/token/book-assets/#{@id}")
+      refute document.html =~ ~s(src="/book-assets/)
+    end
+
+    test "drops anything that is not one of the book's own images" do
+      document =
+        HtmlDocument.prepare(
+          ~s(<p>Text <img src="https://tracker.test/p.png"><img src="/book-assets/../../etc/passwd"><img src="data:image/png;base64,AA"></p>)
+        )
+
+      refute document.html =~ "<img"
+    end
+  end
+
   test "PageDocument dispatches by source" do
     assert PageDocument.for_text(%{source: "epub", body: "<p>Html</p>"}).text == "Html"
     assert PageDocument.for_text(%{source: "page", body: "# Markdown"}).text == "Markdown"

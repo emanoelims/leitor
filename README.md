@@ -239,6 +239,11 @@ note, inflected forms, two bilingual examples and up to three other senses.
   without another model call.
 - Completed cards are stored in `dictionary_cards`, keyed by model, prompt
   version, selection and paragraph, so repeating a lookup costs nothing.
+- The margin card shows the meaning with the pronunciation hint beside it, then
+  the explanation and usage note; examples, forms and other senses stay folded
+  until the reader opens them. The structured card is kept on the annotation
+  (`page_marks.card`); its Markdown body remains for copying, exports and
+  annotations saved before cards were stored.
 
 Lookups are reading help: each one goes through
 `Leitor.AI.prepare/2` like Define and Explain, so it uses the shared model

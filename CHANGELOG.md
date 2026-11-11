@@ -4,6 +4,24 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+### Changed
+
+- Dictionary cards lead with the meaning and the pronunciation hint side by side,
+  followed by the explanation and usage note; examples, forms and other senses
+  are folded until opened. Card labels follow the interface language, and the
+  collapsed card summarizes the meaning. Shared pages use the same card.
+- The pronunciation hint of an expression capitalizes its stressed word
+  (`pull off` → `pul ÓF`), and parts of speech are always written in Portuguese.
+
+### Fixed
+
+- A failed dictionary lookup offers Try again for the same selection.
+
+### Migration
+
+One additive migration adds the nullable `page_marks.card` column for the
+structured dictionary card. Existing annotations keep their Markdown body.
+
 ## [0.7.0] - 2026-11-10
 
 ### Added

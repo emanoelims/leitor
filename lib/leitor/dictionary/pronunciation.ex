@@ -84,7 +84,9 @@ defmodule Leitor.Dictionary.Pronunciation do
 
   @doc """
   Respells an IPA transcription (with or without slashes). Each word of a
-  multiword transcription is respelled separately. Unknown symbols are ignored.
+  multiword transcription is respelled separately; a one-syllable word carrying
+  the primary stress mark (`ˈ`) is capitalized, so the stressed word of a phrase
+  stands out. Unknown symbols are ignored.
 
   ## Examples
 
@@ -102,6 +104,9 @@ defmodule Leitor.Dictionary.Pronunciation do
 
       iex> Leitor.Dictionary.Pronunciation.respell("ɪn wɑnt ʌv")
       "in uánt âv"
+
+      iex> Leitor.Dictionary.Pronunciation.respell("ˌpʊl ˈɔf")
+      "pul ÓF"
 
       iex> Leitor.Dictionary.Pronunciation.respell("")
       ""
@@ -126,7 +131,10 @@ defmodule Leitor.Dictionary.Pronunciation do
       end)
 
     joined = Enum.join(parts, "-")
-    if length(sylls) == 1 and not multiword?, do: String.upcase(joined), else: joined
+
+    if length(sylls) == 1 and (not multiword? or String.contains?(word, "ˈ")),
+      do: String.upcase(joined),
+      else: joined
   end
 
   defp tokens(word) do

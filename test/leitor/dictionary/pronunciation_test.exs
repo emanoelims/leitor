@@ -40,6 +40,6 @@ defmodule Leitor.Dictionary.PronunciationTest do
     assert Pronunciation.respell("[ˈwɔːtə(r)]") == "UÓ-râr"
     assert Pronunciation.respell("/sti:l/") == "STIL"
     assert Pronunciation.respell("ʃʊd") == "CHUD"
-    assert Pronunciation.respell("ˌpʊl ˈɔf") == "pul óf"
+    assert Pronunciation.respell("ˌpʊl ˈɔf") == "pul ÓF"
   end
 end

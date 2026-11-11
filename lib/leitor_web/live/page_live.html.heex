@@ -269,7 +269,16 @@
             {gettext("Define it, mark it, or keep a thought here.")}
           </p>
         </div>
-        <p :if={@error} id="page-help-error" role="alert" class="notice">{t(@error)}</p>
+        <div :if={@error} id="page-help-error" role="alert" class="notice">
+          <p>{t(@error)}</p>
+          <button
+            :if={@dictionary_retry}
+            id="page-dictionary-retry"
+            type="button"
+            class="notice-action"
+            phx-click="retry-dictionary"
+          ><.icon name="lucide-rotate-ccw" class="size-3.5" />{gettext("Try again")}</button>
+        </div>
 
         <article
           :if={@busy && @pending && is_nil(@pending.mark_id)}
@@ -289,8 +298,18 @@
             ><.icon name="lucide-square" class="size-3" /></button>
           </header>
           <blockquote>{@pending.quote}</blockquote>
+          <DictionaryComponents.meaning_preview
+            :if={
+              @help_stream && @help_stream.answer != "" &&
+                Map.get(@help_stream, :field) == "meaning"
+            }
+            meaning={@help_stream.answer}
+          />
           <div
-            :if={@help_stream && @help_stream.answer != ""}
+            :if={
+              @help_stream && @help_stream.answer != "" &&
+                Map.get(@help_stream, :field) != "meaning"
+            }
             class="page-answer page-stream-answer"
           >
             {answer_html(@help_stream.answer, @document)}
@@ -319,7 +338,9 @@
             >
               <span><strong>{t(mark_title(mark))}</strong> “{mark.quote}”</span><span class="page-cite">¶{mark.block_index +
                 1}</span>
-              <small>{answer_summary(mark.body)}</small>
+              <small>{if is_map(mark.card),
+                do: mark.card["meaning"],
+                else: answer_summary(mark.body)}</small>
             </button>
             <div :if={@active_mark_id == mark.id} class="page-card-expanded">
               <header>
@@ -342,16 +363,28 @@
               </header>
               <blockquote>{mark.quote}</blockquote>
               <h3 :if={mark.kind == "answer" && mark_title(mark) == "Ask"}>{mark.question}</h3>
-              <div class="page-answer">
-                {answer_html(
-                  if(
-                    @busy && @pending && @pending.mark_id == mark.id && @pending.action == "retry" &&
-                      @help_stream && @help_stream.answer != "",
-                    do: @help_stream.answer,
-                    else: mark.body
-                  ),
-                  @document
-                )}
+              <% retrying =
+                @busy && @pending && @pending.mark_id == mark.id && @pending.action == "retry" &&
+                  @help_stream &&
+                  @help_stream.answer != "" %>
+              <DictionaryComponents.meaning_preview
+                :if={retrying && Map.get(@help_stream, :field) == "meaning"}
+                meaning={@help_stream.answer}
+              />
+              <DictionaryComponents.card
+                :if={!retrying && is_map(mark.card)}
+                id={"#{id}-dictionary"}
+                card={mark.card}
+                quote={mark.quote}
+              />
+              <div
+                :if={
+                  (retrying && Map.get(@help_stream, :field) != "meaning") ||
+                    (!retrying && !is_map(mark.card))
+                }
+                class="page-answer"
+              >
+                {answer_html(if(retrying, do: @help_stream.answer, else: mark.body), @document)}
               </div>
               <div
                 :for={reply <- mark.replies}
@@ -599,7 +632,12 @@
           mark.question
         }>
           {mark.question}
-        </h3><div :if={mark.body != ""} class="page-answer">
+        </h3><DictionaryComponents.card
+          :if={is_map(mark.card)}
+          id={"#{id}-dictionary"}
+          card={mark.card}
+          quote={mark.quote}
+        /><div :if={!is_map(mark.card) and mark.body != ""} class="page-answer">
           {answer_html(mark.body, @document)}
         </div>
         <div :for={reply <- mark.replies} id={"#{id}-reply-#{reply.id}"} class="page-follow-turn">

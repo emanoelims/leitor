@@ -268,7 +268,13 @@
                 ><.icon name="lucide-trash-2" class="size-4" /></button>
               </header>
               <blockquote class={"highlight-#{mark.color}"}>{mark.quote}</blockquote>
-              <div :if={mark.body != ""} class="page-answer">
+              <DictionaryComponents.card
+                :if={is_map(mark.card)}
+                id={"#{dom_id}-dictionary"}
+                card={mark.card}
+                quote={mark.quote}
+              />
+              <div :if={!is_map(mark.card) and mark.body != ""} class="page-answer">
                 {Phoenix.HTML.raw(PageDocument.render_answer(mark.body))}
               </div>
             </article>

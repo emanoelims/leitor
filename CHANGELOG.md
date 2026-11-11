@@ -4,6 +4,8 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-11
+
 ### Changed
 
 - Dictionary cards lead with the meaning and the pronunciation hint side by side,

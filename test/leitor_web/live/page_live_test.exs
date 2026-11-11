@@ -671,14 +671,20 @@ defmodule LeitorWeb.PageLiveTest do
     assert [%{kind: "definition", question: "Dictionary", meaning: "maravilhoso", category: "adj"} = mark] =
              Pages.list_marks(scope, page.id)
 
-    card = "#margin_marks-#{mark.id}"
-    assert has_element?(view, "#{card} .page-answer strong", "maravilhoso")
-    assert has_element?(view, "#{card} .page-answer", "/ˈwʌndərfəl/")
-    assert has_element?(view, "#{card} .page-answer", "UÂN-dâr-fâl")
-    assert has_element?(view, "#{card} .page-answer li", "What a wonderful day.")
-    assert has_element?(view, "#{card} footer", "Claude")
+    assert %{"meaning" => "maravilhoso", "ipa" => "ˈwʌndərfəl"} = mark.card
+    assert mark.body =~ "**maravilhoso**"
 
-    view |> element("#{card} .page-collect-word") |> render_click()
+    card = "#margin_marks-#{mark.id}-dictionary"
+    assert has_element?(view, "#{card} .dictionary-meaning", "maravilhoso")
+    assert has_element?(view, "#{card} .dictionary-hint", "UÂN-dâr-fâl")
+    assert has_element?(view, "#{card} .dictionary-ipa", "/ˈwʌndərfəl/")
+    assert has_element?(view, "#{card} .dictionary-explanation", "Aqui descreve uma frase muito boa.")
+    assert has_element?(view, "#{card} details.dictionary-more li", "What a wonderful day.")
+    refute has_element?(view, "#{card} .dictionary-meta", "wonderful")
+    refute has_element?(view, "#margin_marks-#{mark.id} .page-answer")
+    assert has_element?(view, "#margin_marks-#{mark.id} footer", "Claude")
+
+    view |> element("#margin_marks-#{mark.id} .page-collect-word") |> render_click()
     assert has_element?(view, "#selection-pot-form input[name='pot[meaning]'][value='maravilhoso']")
     render_submit(view, "save-pot", %{"pot" => %{"meaning" => "maravilhoso", "category" => "adj"}})
     assert [%{term: "wonderful", meaning: "maravilhoso", category: "adj"}] = Learning.list_entries(scope)
@@ -692,6 +698,7 @@ defmodule LeitorWeb.PageLiveTest do
     send(task, {:complete, {:error, :unavailable}})
     render_async(view)
     assert has_element?(view, "#page-help-error", "dictionary is unavailable")
+    refute has_element?(view, "#page-dictionary-retry")
     assert [%{meaning: "maravilhoso"}] = Pages.list_marks(scope, page.id)
   end
 
@@ -714,12 +721,20 @@ defmodule LeitorWeb.PageLiveTest do
     assert_receive {:language_started, task}
 
     reading_fragment(view, task, ~s({"meaning": "conduzia", "headw))
-    assert has_element?(view, "#page-pending-card .page-answer strong", "conduzia")
+    assert has_element?(view, "#page-pending-card .dictionary-meaning", "conduzia")
 
     send(task, {:complete, {:error, :invalid_response}})
     render_async(view)
     assert has_element?(view, "#page-help-error", "dictionary is unavailable")
     assert Pages.list_marks(scope, page.id) == []
+
+    view |> element("#page-dictionary-retry") |> render_click()
+    assert_receive {:language_settings, "anthropic:claude-opus-5-5", %ReqLLM.Context{}}
+    assert_receive {:language_started, retry}
+    refute has_element?(view, "#page-dictionary-retry")
+    send(retry, {:complete, {:error, :invalid_response}})
+    render_async(view)
+    assert has_element?(view, "#page-dictionary-retry")
   end
 
   test "margin cards open from the source, collapse, keep follow-ups and export the conversation", %{

@@ -18,6 +18,7 @@ defmodule Leitor.Pages.Mark do
     field :meaning, :string, default: ""
     field :category, :string, default: "word"
     field :question, :string
+    field :card, :map
     embeds_many :replies, Leitor.Pages.Reply, on_replace: :delete
     belongs_to :user, Leitor.Accounts.User
     belongs_to :text, Leitor.Library.Text
@@ -31,7 +32,7 @@ defmodule Leitor.Pages.Mark do
   @spec changeset(t(), map()) :: Ecto.Changeset.t(t())
   def changeset(mark, attrs) do
     mark
-    |> cast(attrs, [:kind, :color, :body, :meaning, :category, :question], empty_values: [])
+    |> cast(attrs, [:kind, :color, :body, :meaning, :category, :question, :card], empty_values: [])
     |> validate_required([:quote, :kind, :color, :category])
     |> validate_inclusion(:kind, ~w(highlight note definition answer))
     |> validate_inclusion(:color, ~w(yellow green blue rose))

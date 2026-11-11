@@ -17,6 +17,7 @@ defmodule LeitorWeb.PageLive do
   alias Leitor.Sharing
   alias Leitor.Sharing.Notifier
   alias Leitor.WritingDocument
+  alias LeitorWeb.DictionaryComponents
   alias LeitorWeb.ReaderComponents
   alias LeitorWeb.ReadingPreferences
   alias LeitorWeb.WritingComponents
@@ -71,6 +72,7 @@ defmodule LeitorWeb.PageLive do
        generation_recovery: Generations.latest(socket.assigns.current_scope, nil),
        generation_applied: false,
        help_lease_id: nil,
+       dictionary_retry: nil,
        generation_preview: %{text: "", timer: nil, limit: 12_000},
        error: nil,
        form: to_form(%{"title" => "Untitled", "body" => ""}, as: "page"),
@@ -679,6 +681,16 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
+  def handle_event(
+        "retry-dictionary",
+        _params,
+        %{assigns: %{dictionary_retry: %{anchor: anchor, selection: selection}}} = socket
+      ),
+      do:
+        handle_event("help", %{"action" => "dictionary"}, assign(socket, selection: selection, selection_anchor: anchor))
+
+  def handle_event("retry-dictionary", _params, socket), do: {:noreply, socket}
+
   def handle_event("help", %{"action" => action} = params, socket)
       when action in ~w(define explain simplify ask dictionary) do
     question = String.trim(get_in(params, ["question", "question"]) || "")
@@ -702,12 +714,14 @@ defmodule LeitorWeb.PageLive do
            active_mark_id: nil,
            pending: %{
              anchor: socket.assigns.selection_anchor,
+             selection: selection,
              action: action,
              question: question,
              quote: selection.quote,
              block_index: selection.block_index,
              mark_id: nil
            },
+           dictionary_retry: nil,
            error: nil
          )
          |> refresh_marks()
@@ -826,6 +840,7 @@ defmodule LeitorWeb.PageLive do
       body: data["answer"],
       meaning: data["meaning"],
       category: data["category"],
+      card: data["card"],
       question: if(pending.question == "", do: String.capitalize(pending.action), else: pending.question)
     }
 
@@ -841,7 +856,8 @@ defmodule LeitorWeb.PageLive do
           Pages.update_mark(socket.assigns.current_scope, pending.mark_id, %{
             body: data["answer"],
             meaning: data["meaning"],
-            category: data["category"]
+            category: data["category"],
+            card: data["card"]
           })
 
         _ ->
@@ -864,7 +880,15 @@ defmodule LeitorWeb.PageLive do
         do: "Select a word or expression up to 200 characters to look it up.",
         else: "The dictionary is unavailable right now. Try again in a moment."
 
-    socket = socket |> reset_help_stream(:failed) |> assign(busy: false, pending: nil, error: error)
+    retry =
+      if reason != :invalid_input and pending.action == "dictionary",
+        do: %{anchor: pending.anchor, selection: pending.selection}
+
+    socket =
+      socket
+      |> reset_help_stream(:failed)
+      |> assign(busy: false, pending: nil, error: error, dictionary_retry: retry)
+
     {:noreply, refresh_marks(socket)}
   end
 
@@ -900,7 +924,12 @@ defmodule LeitorWeb.PageLive do
   defp dictionary_answer(request, options, on_fragment) do
     with {:ok, card} <- Dictionary.lookup(request, options, on_fragment) do
       {:ok,
-       %{"answer" => Dictionary.markdown(card), "meaning" => card["meaning"], "category" => Dictionary.jar_category(card)}}
+       %{
+         "answer" => Dictionary.markdown(card),
+         "meaning" => card["meaning"],
+         "category" => Dictionary.jar_category(card),
+         "card" => card
+       }}
     end
   end
 
@@ -951,11 +980,11 @@ defmodule LeitorWeb.PageLive do
     end
   end
 
-  # Dictionary cards stream their meaning first; other answers stream their Markdown answer.
+  # Dictionary cards stream their plain meaning first; other answers stream their Markdown answer.
   defp stream_preview(%{field: "meaning", raw: raw}) do
     case AnswerStream.preview(raw, "meaning") do
       "" -> ""
-      meaning -> "**" <> String.slice(meaning, 0, 200) <> "**"
+      meaning -> String.slice(meaning, 0, 200)
     end
   end
 

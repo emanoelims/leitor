@@ -10,6 +10,7 @@ defmodule LeitorWeb.SharedPageLive do
   alias Leitor.Pages
   alias Leitor.Pages.Mark
   alias Leitor.Sharing
+  alias LeitorWeb.DictionaryComponents
   alias LeitorWeb.ReaderComponents
   alias LeitorWeb.ReadingPreferences
 
@@ -357,6 +358,7 @@ defmodule LeitorWeb.SharedPageLive do
         body: data["answer"],
         meaning: data["meaning"],
         category: data["category"],
+        card: data["card"],
         question: if(pending.question == "", do: String.capitalize(pending.action), else: pending.question)
       })
 
@@ -463,7 +465,8 @@ defmodule LeitorWeb.SharedPageLive do
                 %{
                   "answer" => Leitor.Dictionary.markdown(card),
                   "meaning" => card["meaning"],
-                  "category" => Leitor.Dictionary.jar_category(card)
+                  "category" => Leitor.Dictionary.jar_category(card),
+                  "card" => card
                 }}
 
              error ->

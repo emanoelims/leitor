@@ -101,6 +101,17 @@ if config_env() != :test do
   }
 end
 
+# Book images go to object storage when a bucket is set (`fly storage create` sets these variables for Tigris);
+# otherwise they stay in the database.
+if config_env() != :test and System.get_env("BUCKET_NAME") do
+  config :leitor, Leitor.Library.Storage,
+    bucket: System.fetch_env!("BUCKET_NAME"),
+    access_key_id: System.fetch_env!("AWS_ACCESS_KEY_ID"),
+    secret_access_key: System.fetch_env!("AWS_SECRET_ACCESS_KEY"),
+    endpoint: System.get_env("AWS_ENDPOINT_URL_S3", "https://t3.storage.dev"),
+    region: System.get_env("AWS_REGION", "auto")
+end
+
 if secret = System.get_env("AI_ENCRYPTION_SECRET") do
   if byte_size(secret) < 32, do: raise("AI_ENCRYPTION_SECRET must contain at least 32 bytes")
   config :leitor, :ai_encryption_secret, secret

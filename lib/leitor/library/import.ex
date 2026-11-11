@@ -1,6 +1,8 @@
 defmodule Leitor.Library.Import do
   @moduledoc "Extracts bounded text from uploaded Markdown, TXT, EPUB, DOCX, text-based PDF documents, and photos through local OCR."
 
+  alias Leitor.Library.Epub.Package
+
   @typedoc "Imported text and a detected title, falling back to Untitled."
   @type document() :: %{title: String.t(), body: String.t()}
 
@@ -130,7 +132,7 @@ defmodule Leitor.Library.Import do
 
     with container when is_binary(container) <- files["/META-INF/container.xml"],
          [root] <- Regex.run(~r/<(?:[\w-]+:)?rootfile\b[^>]*>/i, container),
-         path when is_binary(path) <- attribute(root, "full-path") do
+         path when is_binary(path) <- Package.attribute(root, "full-path") do
       files[Path.expand(path, "/")]
     else
       _ -> nil
@@ -183,24 +185,31 @@ defmodule Leitor.Library.Import do
     end
   end
 
-  defp archive(path, format) do
-    with {:ok, entries} <- archive_contents(path, format),
-         {:ok, entries} <- reading_order(entries, format) do
-      text =
-        Enum.map_join(entries, "\n\n", fn {_name, data} ->
-          data
-          |> String.replace(~r{</(?:p|div|h[1-6]|w:p)>}i, "\n\n")
-          |> String.replace(~r/<[^>]+>/, " ")
-          |> String.replace("&amp;", "&")
-          |> String.replace("&lt;", "<")
-          |> String.replace("&gt;", ">")
-          |> String.replace("&nbsp;", " ")
-        end)
-
-      {:ok, text}
+  defp archive(path, :epub) do
+    with {:ok, files} <- Package.read(path),
+         {:ok, package} <- Package.parse(files),
+         {:ok, documents} <- Package.documents(files, package) do
+      {:ok, Enum.map_join(documents, "\n\n", fn {_item, data} -> markup_text(data) end)}
     else
       _ -> {:error, :invalid_archive}
     end
+  end
+
+  defp archive(path, :docx) do
+    case archive_contents(path, :docx) do
+      {:ok, entries} -> {:ok, Enum.map_join(entries, "\n\n", fn {_name, data} -> markup_text(data) end)}
+      _ -> {:error, :invalid_archive}
+    end
+  end
+
+  defp markup_text(data) do
+    data
+    |> String.replace(~r{</(?:p|div|h[1-6]|w:p)>}i, "\n\n")
+    |> String.replace(~r/<[^>]+>/, " ")
+    |> String.replace("&amp;", "&")
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+    |> String.replace("&nbsp;", " ")
   end
 
   defp archive_contents(path, format) do
@@ -219,49 +228,4 @@ defmodule Leitor.Library.Import do
   defp archive_entry?(name, format) when format in [:docx_metadata, :epub_metadata], do: metadata_entry?(name, format)
 
   defp archive_entry?(name, :docx), do: List.to_string(name) == "word/document.xml"
-
-  defp archive_entry?(name, :epub),
-    do: Regex.match?(~r/\.(xhtml|html|htm|opf)$|^META-INF\/container\.xml$/i, List.to_string(name))
-
-  defp reading_order(entries, :docx), do: {:ok, entries}
-
-  defp reading_order(entries, :epub) do
-    files = Map.new(entries, fn {name, data} -> {Path.expand(List.to_string(name), "/"), data} end)
-
-    with container when is_binary(container) <- files["/META-INF/container.xml"],
-         [root] <- Regex.run(~r/<(?:[\w-]+:)?rootfile\b[^>]*>/i, container),
-         package_path when is_binary(package_path) <- attribute(root, "full-path"),
-         package when is_binary(package) <- files[Path.expand(package_path, "/")],
-         [_, spine] <- Regex.run(~r/<(?:[\w-]+:)?spine\b[^>]*>(.*?)<\/(?:[\w-]+:)?spine>/is, package) do
-      manifest =
-        ~r/<(?:[\w-]+:)?item\b[^>]*>/i
-        |> Regex.scan(package)
-        |> Map.new(fn [item] -> {attribute(item, "id"), attribute(item, "href")} end)
-
-      chapters =
-        ~r/<(?:[\w-]+:)?itemref\b[^>]*>/i
-        |> Regex.scan(spine)
-        |> Enum.reject(fn [item] -> attribute(item, "linear") == "no" end)
-        |> Enum.map(&chapter(&1, manifest, package_path, files))
-
-      if chapters != [] and Enum.all?(chapters, & &1), do: {:ok, chapters}, else: {:error, :invalid_spine}
-    else
-      _ -> {:error, :invalid_package}
-    end
-  end
-
-  defp chapter([item], manifest, package_path, files) do
-    with href when is_binary(href) <- manifest[attribute(item, "idref")],
-         path = href |> String.split("#") |> hd() |> URI.decode() |> Path.expand(Path.dirname("/" <> package_path)),
-         data when is_binary(data) <- files[path] do
-      {path, data}
-    end
-  end
-
-  defp attribute(tag, name) do
-    case Regex.run(Regex.compile!("\\b" <> name <> "\\s*=\\s*[\"']([^\"']*)[\"']", "i"), tag) do
-      [_, value] -> value |> String.replace("&amp;", "&") |> String.replace("&quot;", "\"")
-      nil -> nil
-    end
-  end
 end

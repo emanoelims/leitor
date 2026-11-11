@@ -25,6 +25,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/leitor"
 import {PageEditor} from "./page_editor"
+import {SharedReader} from "./shared_reader"
 import {PageReader, PagePopup, PageCitations, PageMargin, PageRail, preserveMarginPlacement} from "./page_reader"
 import {Floating} from "./floating"
 import {Select} from "./select"
@@ -46,7 +47,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: () => ({_csrf_token: csrfToken, reading_preferences: readingPreferences(), locale: document.body.dataset.locale || 'en'}),
   dom: {onBeforeElUpdated: preserveMarginPlacement},
-  hooks: {...colocatedHooks, PageEditor, PageReader, PagePopup, PageCitations, PageMargin, PageRail, Floating, Select, ReadingAppearance},
+  hooks: {...colocatedHooks, SharedReader, PageEditor, PageReader, PagePopup, PageCitations, PageMargin, PageRail, Floating, Select, ReadingAppearance},
 })
 
 // Show progress bar on live navigation and form submits

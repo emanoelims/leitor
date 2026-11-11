@@ -11,8 +11,11 @@ defmodule LeitorWeb.PageLive do
   alias Leitor.Language
   alias Leitor.Language.AnswerStream
   alias Leitor.Learning
+  alias Leitor.Library
   alias Leitor.PageDocument
   alias Leitor.Pages
+  alias Leitor.Sharing
+  alias Leitor.Sharing.Notifier
   alias Leitor.WritingDocument
   alias LeitorWeb.ReaderComponents
   alias LeitorWeb.ReadingPreferences
@@ -42,10 +45,18 @@ defmodule LeitorWeb.PageLive do
        appearance: Map.put(ReadingPreferences.normalize(preferences), "focus", false),
        marker_color: if(preferences["marker"] in ~w(yellow green blue rose), do: preferences["marker"], else: "yellow"),
        document: PageDocument.prepare(""),
+       chapter: nil,
        selection: nil,
        selection_anchor: nil,
        selection_mode: "actions",
        editing_mark_id: nil,
+       editing_highlight_id: nil,
+       editing_highlight_color: nil,
+       sharing_open: false,
+       sharing_share: nil,
+       sharing_url: "",
+       sharing_form: to_form(%{}, as: "share"),
+       invite_form: to_form(%{"email" => "", "role" => "comment"}, as: "invite"),
        notebook_open: false,
        notebook_filter: "all",
        mark_count: 0,
@@ -69,13 +80,16 @@ defmodule LeitorWeb.PageLive do
        marks_json: "[]",
        notebook_markdown: ""
      )
+     |> stream(:page_collaborators, [])
      |> stream(:margin_marks, [])
      |> stream(:notebook_marks, [])}
   end
 
   @impl true
   def handle_params(%{"id" => id} = params, _, socket) do
-    text = Pages.get_page!(socket.assigns.current_scope, id)
+    scope = socket.assigns.current_scope
+    text = Pages.get_page!(scope, id)
+    if connected?(socket), do: Library.touch_book_progress(scope, text)
 
     {:noreply,
      socket
@@ -83,6 +97,7 @@ defmodule LeitorWeb.PageLive do
      |> detach_page_generation()
      |> assign(
        text: text,
+       editing_highlight_id: nil,
        active_mark_id: nil,
        page_title: text.title,
        editing: text.body == "",
@@ -93,7 +108,8 @@ defmodule LeitorWeb.PageLive do
        pending: nil,
        form: to_form(%{"title" => text.title, "body" => text.body}, as: "page"),
        appearance: Map.put(socket.assigns.appearance, "focus", false),
-       document: PageDocument.prepare(text.body),
+       document: PageDocument.for_text(text),
+       chapter: Library.chapter_context(scope, text),
        generation_applied: false
      )
      |> assign(generation_recovery: Generations.latest(socket.assigns.current_scope, text.id))
@@ -103,6 +119,71 @@ defmodule LeitorWeb.PageLive do
   def handle_params(_, _, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_event("share-page", _, %{assigns: %{text: nil}} = socket), do: {:noreply, socket}
+
+  def handle_event("share-page", _, socket),
+    do: {:noreply, socket |> assign(sharing_open: !socket.assigns.sharing_open) |> load_sharing()}
+
+  def handle_event("set-link-access", %{"share" => attrs}, socket) do
+    case Sharing.set_link(socket.assigns.current_scope, socket.assigns.text.id, attrs) do
+      {:ok, _} -> {:noreply, load_sharing(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Choose a valid sharing permission."))}
+    end
+  end
+
+  def handle_event("renew-share-link", _, socket) do
+    Sharing.rotate(socket.assigns.current_scope, socket.assigns.text.id)
+
+    {:noreply,
+     socket |> load_sharing() |> put_flash(:info, gettext("Link renewed. Older links no longer open this page."))}
+  end
+
+  def handle_event("invite-collaborator", %{"invite" => attrs}, socket) do
+    scope = socket.assigns.current_scope
+
+    case Sharing.invite(scope, socket.assigns.text.id, attrs) do
+      {:ok, member} ->
+        share = Sharing.ensure(scope, socket.assigns.text.id)
+        result = Notifier.invite(member.email, socket.assigns.page_title, url(~p"/s/#{share.token}"))
+
+        message =
+          case result do
+            {:ok, _} -> gettext("Invitation sent.")
+            {:error, _} -> gettext("Access saved, but the email could not be sent. Copy the link instead.")
+          end
+
+        {:noreply,
+         socket
+         |> assign(invite_form: to_form(%{"email" => "", "role" => "comment"}, as: "invite"))
+         |> load_sharing()
+         |> put_flash(:info, message)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, invite_form: to_form(changeset, as: "invite", action: :insert))}
+
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, gettext("This page has reached its invitation limit."))}
+    end
+  end
+
+  def handle_event("collaborator-role", %{"id" => id, "collaborator" => %{"role" => role}}, socket) do
+    scope = socket.assigns.current_scope
+
+    case Enum.find(Sharing.collaborators(scope, socket.assigns.text.id), &(&1.id == id)) do
+      nil ->
+        {:noreply, socket}
+
+      member ->
+        Sharing.invite(scope, socket.assigns.text.id, %{"email" => member.email, "role" => role})
+        {:noreply, load_sharing(socket)}
+    end
+  end
+
+  def handle_event("remove-collaborator", %{"id" => id}, socket) do
+    Sharing.remove_collaborator(socket.assigns.current_scope, socket.assigns.text.id, id)
+    {:noreply, load_sharing(socket)}
+  end
+
   def handle_event("preview-artwork", %{"source" => source, "language" => language}, socket)
       when is_binary(source) and byte_size(source) <= 98_304 do
     html = if language in Leitor.Illustration.languages(), do: Leitor.Illustration.render(source, language), else: ""
@@ -247,6 +328,8 @@ defmodule LeitorWeb.PageLive do
     {:noreply, socket |> cancel_page_generation() |> push_event("page-ai-stopped", %{request_id: id})}
   end
 
+  def handle_event("edit", _, %{assigns: %{text: %{source: "epub"}}} = socket), do: {:noreply, socket}
+
   def handle_event("edit", _, socket), do: {:noreply, socket |> stop_page_help() |> assign(editing: true, selection: nil)}
 
   def handle_event("save", %{"page" => attrs}, socket) do
@@ -274,6 +357,9 @@ defmodule LeitorWeb.PageLive do
          |> push_patch(to: ~p"/pages/#{text.id}")
          |> push_event("page-read-start", %{})}
 
+      {:error, :read_only} ->
+        {:noreply, put_flash(socket, :error, gettext("Book chapters can't be edited."))}
+
       {:error, changeset} ->
         {:noreply,
          assign(socket,
@@ -286,9 +372,13 @@ defmodule LeitorWeb.PageLive do
   def handle_event("select", anchor, socket) do
     case PageDocument.selection(socket.assigns.document, anchor) do
       {:ok, selection} ->
+        highlight = selected_highlight(socket, anchor, selection)
+
         {:noreply,
          assign(socket,
            selection: selection,
+           editing_highlight_id: highlight && highlight.id,
+           editing_highlight_color: highlight && highlight.color,
            editing_mark_id: nil,
            selection_anchor: anchor,
            selection_mode: "actions",
@@ -306,7 +396,7 @@ defmodule LeitorWeb.PageLive do
     do:
       {:noreply,
        socket
-       |> assign(selection: nil, editing_mark_id: nil)
+       |> assign(selection: nil, editing_mark_id: nil, editing_highlight_id: nil)
        |> push_event("page-clear-selection", %{version: params["version"]})}
 
   def handle_event("reading-face", %{"face" => face}, socket) when face in ~w(serif book sans legible) do
@@ -461,7 +551,15 @@ defmodule LeitorWeb.PageLive do
 
   def handle_event("highlight", %{"color" => color}, socket) when color in ~w(yellow green blue rose) do
     socket = socket |> assign(marker_color: color) |> push_event("reading-preference", %{key: "marker", value: color})
-    keep_mark(socket, %{kind: "highlight", color: color})
+
+    case socket.assigns.editing_highlight_id do
+      nil ->
+        keep_mark(socket, %{kind: "highlight", color: color})
+
+      id ->
+        {:ok, _} = Pages.update_mark(socket.assigns.current_scope, id, %{color: color})
+        {:noreply, socket |> assign(selection: nil, editing_highlight_id: nil) |> refresh_marks()}
+    end
   end
 
   def handle_event("note", %{"note" => attrs}, %{assigns: %{editing_mark_id: id}} = socket) when not is_nil(id) do
@@ -516,6 +614,12 @@ defmodule LeitorWeb.PageLive do
 
       {:ok, _} = Pages.delete_mark(socket.assigns.current_scope, id)
       socket = if socket.assigns.active_mark_id == id, do: assign(socket, active_mark_id: nil), else: socket
+
+      socket =
+        if socket.assigns.editing_highlight_id == id,
+          do: assign(socket, selection: nil, editing_highlight_id: nil),
+          else: socket
+
       {:noreply, refresh_marks(socket)}
     else
       {:noreply, socket}
@@ -949,12 +1053,27 @@ defmodule LeitorWeb.PageLive do
   defp jar_category(category) when category in ~w(noun verb adj adv pron prep expression), do: category
   defp jar_category(_), do: "word"
 
+  defp selected_highlight(socket, %{"highlight_id" => id}, selection) when is_binary(id) do
+    socket.assigns.current_scope
+    |> Pages.list_marks(socket.assigns.text.id)
+    |> Enum.find_value(fn mark ->
+      if mark.id == id and mark.kind == "highlight" and PageDocument.locate(socket.assigns.document, mark) == selection,
+        do: mark
+    end)
+  end
+
+  defp selected_highlight(_socket, _anchor, _selection), do: nil
+
   defp keep_mark(%{assigns: %{selection_anchor: nil}} = socket, _attrs), do: {:noreply, socket}
 
   defp keep_mark(socket, attrs) do
     case Pages.create_mark(socket.assigns.current_scope, socket.assigns.text.id, socket.assigns.selection_anchor, attrs) do
-      {:ok, mark} -> {:noreply, socket |> assign(selection: nil, error: nil, active_mark_id: mark.id) |> refresh_marks()}
-      {:error, _} -> {:noreply, assign(socket, error: "Write a note between 1 and 4,000 characters.")}
+      {:ok, mark} ->
+        active_id = if mark.kind == "highlight", do: nil, else: mark.id
+        {:noreply, socket |> assign(selection: nil, error: nil, active_mark_id: active_id) |> refresh_marks()}
+
+      {:error, _} ->
+        {:noreply, assign(socket, error: "Write a note between 1 and 4,000 characters.")}
     end
   end
 
@@ -998,6 +1117,21 @@ defmodule LeitorWeb.PageLive do
     if Enum.any?(mapped, &(&1.id == jump_id && &1.block != nil)),
       do: push_event(socket, "page-jump", %{id: jump_id}),
       else: socket
+  end
+
+  defp load_sharing(%{assigns: %{sharing_open: false}} = socket), do: socket
+
+  defp load_sharing(socket) do
+    scope = socket.assigns.current_scope
+    share = Sharing.ensure(scope, socket.assigns.text.id)
+
+    socket
+    |> assign(
+      sharing_share: share,
+      sharing_url: url(~p"/s/#{share.token}"),
+      sharing_form: to_form(%{"link_role" => share.link_role}, as: "share")
+    )
+    |> stream(:page_collaborators, Sharing.collaborators(scope, socket.assigns.text.id), reset: true)
   end
 
   defp mark_title(%{kind: "note"}), do: "Note"

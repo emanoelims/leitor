@@ -47,7 +47,7 @@ defmodule Leitor.Pages do
 
     total = Repo.aggregate(query, :count)
     page = min(page, max(div(total + @notebook_page_size - 1, @notebook_page_size), 1))
-    sources = from t in Text, select: [:id, :title]
+    sources = from t in Text, select: [:id, :title, :user_id]
 
     entries =
       Repo.all(
@@ -83,10 +83,17 @@ defmodule Leitor.Pages do
   @spec get_page!(Scope.t(), Ecto.UUID.t()) :: Text.t()
   def get_page!(%Scope{} = scope, id), do: Library.get_text!(scope, id)
 
-  @doc "Updates title and Markdown without replacing the page or its annotations."
-  @spec update_page(Scope.t(), Text.t(), map()) :: {:ok, Text.t()} | {:error, Ecto.Changeset.t()}
-  def update_page(%Scope{} = scope, text, attrs),
-    do: Library.update_text(scope, text, attrs |> Map.take(["title", "body"]) |> Map.put("source", "page"))
+  @doc "Updates title and Markdown without replacing the page or its annotations. EPUB chapters are read only."
+  @spec update_page(Scope.t(), Text.t(), map()) :: {:ok, Text.t()} | {:error, Ecto.Changeset.t() | :read_only}
+  def update_page(%Scope{}, %Text{source: "epub"}, _attrs), do: {:error, :read_only}
+
+  def update_page(%Scope{} = scope, text, attrs) do
+    with {:ok, updated} <-
+           Library.update_text(scope, text, attrs |> Map.take(["title", "body"]) |> Map.put("source", "page")) do
+      Leitor.Sharing.page_changed(updated.id)
+      {:ok, updated}
+    end
+  end
 
   @doc "Lists caller-owned annotations in reading order."
   @spec list_marks(Scope.t(), Ecto.UUID.t()) :: [Mark.t()]
@@ -95,7 +102,7 @@ defmodule Leitor.Pages do
       from m in Mark,
         join: t in Text,
         on: t.id == m.text_id,
-        where: t.user_id == ^scope.user.id and t.id == ^id,
+        where: m.user_id == ^scope.user.id and t.id == ^id,
         order_by: [asc: m.from_offset, asc: m.inserted_at, asc: m.id]
     )
   end
@@ -106,8 +113,8 @@ defmodule Leitor.Pages do
   def create_mark(%Scope{} = scope, id, anchor, attrs) do
     text = get_page!(scope, id)
 
-    with {:ok, selection} <- PageDocument.selection(PageDocument.prepare(text.body), anchor) do
-      mark = struct!(Mark, Map.put(selection, :text_id, text.id))
+    with {:ok, selection} <- PageDocument.selection(PageDocument.for_text(text), anchor) do
+      mark = struct!(Mark, Map.merge(selection, %{text_id: text.id, user_id: scope.user.id}))
       mark |> Mark.changeset(attrs) |> Repo.insert()
     end
   end
@@ -142,7 +149,7 @@ defmodule Leitor.Pages do
     Repo.one!(from m in owned_marks(scope), where: m.id == ^id)
   end
 
-  defp owned_marks(scope), do: from(m in Mark, join: t in Text, on: t.id == m.text_id, where: t.user_id == ^scope.user.id)
+  defp owned_marks(scope), do: from(m in Mark, join: t in Text, on: t.id == m.text_id, where: m.user_id == ^scope.user.id)
 
   defp notebook_kind(query, "all"), do: query
   defp notebook_kind(query, kind), do: where(query, [m], m.kind == ^kind)

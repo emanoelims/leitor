@@ -5,7 +5,32 @@ defmodule Leitor.PagesTest do
 
   alias Leitor.PageDocument
   alias Leitor.Pages
+  alias Leitor.Pages.Mark
   alias Leitor.Pages.Reply
+
+  test "legacy annotation inserts retain ownership during rollout without replacing explicit reader authors" do
+    owner = user_scope_fixture()
+    reader = user_scope_fixture()
+    {:ok, page} = Pages.create_page(owner, %{"title" => "Rollout", "body" => "A passage."})
+
+    for author <- [nil, reader.user.id] do
+      legacy = %Mark{
+        text_id: page.id,
+        user_id: author,
+        kind: "highlight",
+        quote: "passage",
+        block_index: 0,
+        from_offset: 2,
+        to_offset: 9
+      }
+
+      inserted = Repo.insert!(legacy)
+      stored = Repo.get!(Mark, inserted.id)
+      expected = author || owner.user.id
+      assert stored.user_id == expected
+      assert Pages.get_mark!(if(author, do: reader, else: owner), stored.id).id == stored.id
+    end
+  end
 
   test "the global notebook filters owned annotations and only preloads source titles" do
     scope = user_scope_fixture()

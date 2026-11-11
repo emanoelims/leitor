@@ -10,6 +10,7 @@ defmodule Leitor.Pages.Mark do
     field :from_offset, :integer
     field :to_offset, :integer
     field :block_index, :integer
+    field :import_key, Ecto.UUID
     field :quote, :string
     field :kind, :string
     field :color, :string, default: "yellow"
@@ -18,6 +19,7 @@ defmodule Leitor.Pages.Mark do
     field :category, :string, default: "word"
     field :question, :string
     embeds_many :replies, Leitor.Pages.Reply, on_replace: :delete
+    belongs_to :user, Leitor.Accounts.User
     belongs_to :text, Leitor.Library.Text
     timestamps(type: :utc_datetime)
   end

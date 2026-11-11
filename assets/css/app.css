@@ -3,6 +3,7 @@
 @import "./figures.css";
 @import "./fonts.css";
 @import "./gloss_reader.css";
+@import "./sharing.css";
 @import "./components.css";
 @import "./auth.css";
 @import "./workspace.css";
@@ -2622,6 +2623,18 @@ audio {
 .page-prose code { font-family:var(--font-mono); font-size:.65em; padding:2px 5px; border-radius:4px; background:var(--soft); }
 .page-prose pre { padding:22px; margin:1em 0; border:1px solid var(--line); border-radius:8px; background:var(--card); overflow:auto; line-height:1.5; }
 .page-prose pre code { padding:0; background:none; font-size:14px; }.page-prose hr { border:0; border-top:1px solid var(--line); margin:2em 0; }
+.page-prose h4,.page-prose h5,.page-prose h6 { font-family:"Newsreader",Georgia,serif; font-size:1em; line-height:1.25; font-weight:500; letter-spacing:-.01em; margin:1.2em 0 .5em; }
+.page-prose h5,.page-prose h6 { font-style:italic; }
+.page-prose sub,.page-prose sup { font-size:.7em; line-height:0; }.page-prose small { font-size:.8em; }
+.page-prose dl { margin:1em 0; }.page-prose dt { font-weight:600; margin-top:.8em; }.page-prose dd { margin:.2em 0 0 1.4em; }
+.page-prose table { display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; margin:1.2em 0; font-size:.82em; line-height:1.45; }
+.page-prose th,.page-prose td { padding:.5em .8em; border:1px solid var(--line); vertical-align:top; text-align:left; }
+.page-prose th { background:var(--soft); font-weight:600; }
+.page-prose td .page-block-number,.page-prose th .page-block-number { display:none; }
+.page-prose img { display:block; max-width:100%; height:auto; margin:1.2em auto; border-radius:3px; }
+.page-prose figure { margin:1.4em 0; }.page-prose figcaption { color:var(--muted); font-size:.8em; margin-top:.5em; }
+.page-prose aside { margin:1.4em 0; padding:.4em 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); color:var(--muted); font-size:.88em; }
+.page-prose [id] { scroll-margin-top:120px; }
 .page-prose-block { position:relative; scroll-margin-top:120px; }
 .page-block-number { position:absolute; top:.6em; right:calc(100% + 20px); font-family:var(--font-sans); font-size:10px; color:var(--muted); opacity:.5; }
 .page-end { display:flex; align-items:center; gap:12px; color:var(--muted); font-size:11px; margin:44px 0 0; }
@@ -2635,13 +2648,11 @@ audio {
 .page-collect-word { display:inline-flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--muted); font-size:11px; padding:0; margin-top:14px; cursor:pointer; }.page-collect-word:hover { color:var(--ink); }
 .page-help-status { color:var(--muted); padding:12px 0; }
 .page-mark { background:transparent; color:inherit; border-radius:2px; padding:.02em 0; cursor:pointer; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
-.highlight-yellow { background:#ead7a2; color:#332c1c; }.highlight-green { background:#c9dbb7; color:#283222; }.highlight-blue { background:#c1d7e9; color:#20313e; }.highlight-rose { background:#e6c2c1; color:#3b2424; }
 .page-mark-note { text-decoration:underline; text-decoration-color:#b77357; text-underline-offset:5px; text-decoration-thickness:1px; }
 .page-selection { position:fixed; z-index:70; max-width:calc(100vw - 28px); border:1px solid var(--line); border-radius:12px; background:var(--card); box-shadow:0 10px 40px #0002; padding:5px; }
 .selection-tools { display:flex; align-items:center; gap:2px; overflow-x:auto; }
 .selection-tools>button { display:flex; align-items:center; justify-content:center; flex-shrink:0; height:32px; padding:0 10px; border:0; border-radius:7px; background:transparent; color:var(--ink); cursor:pointer; font-size:12px; }
 .selection-tools>button:hover { background:var(--soft); }.selection-tools>.selection-marker { width:15px; height:15px; min-width:15px; padding:0; border-radius:50%; margin:0 4px; }
-.selection-tools>.highlight-yellow { background:#ead7a2; }.selection-tools>.highlight-green { background:#c9dbb7; }.selection-tools>.highlight-blue { background:#c1d7e9; }.selection-tools>.highlight-rose { background:#e6c2c1; }
 .selection-divider { width:1px; height:18px; background:var(--line); margin:0 4px; flex-shrink:0; }
 .page-selection-expanded { width:min(400px,calc(100vw - 28px)); padding:18px; }.page-selection-expanded form>button { display:flex; align-items:center; gap:8px; background:var(--ink); color:var(--inverse); border:0; border-radius:8px; padding:9px 14px; cursor:pointer; font-size:12px; }
 .page-selection-expanded input,.page-selection-expanded textarea,.page-selection-expanded select { font-size:13px; }.page-selection-expanded textarea { min-height:80px; }.selection-quote { font-family:"Newsreader",Georgia,serif; font-size:21px; margin-bottom:16px; }

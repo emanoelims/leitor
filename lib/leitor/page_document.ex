@@ -21,6 +21,12 @@ defmodule Leitor.PageDocument do
     %{html: html, blocks: blocks, text: Enum.map_join(blocks, "\n\n", & &1.text)}
   end
 
+  @doc "Prepares a stored page for reading: EPUB chapters hold sanitised HTML, every other page holds Markdown. `:asset_prefix` moves chapter images to another route."
+  @spec for_text(Leitor.Library.Text.t(), keyword()) :: t()
+  def for_text(text, opts \\ [])
+  def for_text(%{source: "epub", body: html}, opts), do: Leitor.HtmlDocument.prepare(html, opts)
+  def for_text(%{body: markdown}, _opts), do: prepare(markdown)
+
   @doc "Renders safe annotation Markdown. With a paragraph count, valid ¶ references become local source links; code and existing links are preserved."
   @spec render_answer(String.t()) :: String.t()
   @spec render_answer(String.t(), non_neg_integer()) :: String.t()

@@ -9,6 +9,7 @@ defmodule LeitorWeb.Router do
     plug :put_root_layout, html: {LeitorWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug LeitorWeb.SharingSession
     plug :fetch_current_scope_for_user
     plug LeitorWeb.Locale
   end
@@ -25,6 +26,14 @@ defmodule LeitorWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+  end
+
+  # Images are requested by `<img>` tags, whose Accept header names no HTML or JSON type.
+  pipeline :asset do
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_secure_browser_headers
+    plug :fetch_current_scope_for_user
   end
 
   # Fly readiness checks do not use browser sessions or authentication.
@@ -55,6 +64,21 @@ defmodule LeitorWeb.Router do
     get "/figures/:id", FigureController, :show
   end
 
+  scope "/", LeitorWeb do
+    pipe_through :artifact
+    get "/s/:token/figures/:id", SharedFigureController, :show
+  end
+
+  scope "/", LeitorWeb do
+    pipe_through [:asset, :require_authenticated_user]
+    get "/book-assets/:id", BookAssetController, :show
+  end
+
+  scope "/", LeitorWeb do
+    pipe_through :asset
+    get "/s/:token/book-assets/:id", BookAssetController, :shared
+  end
+
   ## Authentication routes
 
   scope "/", LeitorWeb do
@@ -68,6 +92,7 @@ defmodule LeitorWeb.Router do
       live "/pages", LibraryLive, :index
       live "/pages/new", PageLive, :new
       live "/pages/:id", PageLive, :show
+      live "/books/:id", BookLive, :show
       live "/notebook", NotebookLive, :index
       live "/settings", PreferencesLive, :index
       live "/users/settings", UserLive.Settings, :edit
@@ -80,11 +105,13 @@ defmodule LeitorWeb.Router do
 
     live_session :current_user,
       on_mount: [{LeitorWeb.UserAuth, :mount_current_scope}, {LeitorWeb.Locale, :default}] do
+      live "/s/:token", SharedPageLive, :show
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
       live "/users/log-in/:token", UserLive.Confirmation, :new
     end
 
+    get "/s/:token/sign-in", SharedFigureController, :sign_in
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end

@@ -105,8 +105,15 @@ and explanations call Anthropic only on request. The notebook opens as a right-h
 sheet and filters highlights, notes, definitions and questions. Its entries link
 back to the source and can be sent to a grammatical word jar with an explicit meaning.
 The corner minimap uses Gloss’s paragraph lines, vermilion annotation dots and
-viewport outline, with clicking, dragging and keyboard travel. Notes and existing
-highlights persist per account. Color highlighting is absent from the selection toolbar. Unique quotations are reanchored after edits; removed
+viewport outline, with clicking, dragging and keyboard travel. Notes and
+highlights persist per account. The selection toolbar's highlighter applies the last chosen color on click.
+Hover or keyboard focus reveals yellow, green, blue and rose swatches inline,
+using Gloss's width transition; touch devices keep the swatches visible.
+The marker sweep and saved highlight share Gloss’s translucent ink, with 46%
+opacity on light themes and 24% on dark themes, and preserve the surrounding text color.
+Click an existing highlight to recolor it or erase it from the toolbar. Highlights
+appear in the notebooks and minimap and can also be removed from the notebook.
+Unique quotations are reanchored after edits; removed
 or ambiguous passages are retained in the notebook without pointing to another text.
 The bottom question toolbar is absent from this workspace.
 
@@ -135,16 +142,43 @@ selection survives card updates, and the selection lens follows Gloss sizing,
 theme colors, and contextual word/passage actions.
 
 The product routes are `/` and `/pages` (the page library), `/pages/new`,
-`/pages/:id`, and `/notebook`, plus account and
+`/pages/:id`, `/books/:id`, and `/notebook`, plus account and
 authentication flows. The former sentence reader, writing, lessons, exercises,
 review, progress, rooms, resource-management screens, and component gallery
 have been removed. Their database records remain intact.
 
-The shelf accepts Markdown (.md/.markdown), TXT, EPUB, DOCX, and text-based PDF files (up to 10 MB).
-EPUB and DOCX title metadata are read locally. Optional `pdfinfo` supplies PDF titles.
+The shelf accepts Markdown (.md/.markdown), TXT, EPUB (up to 30 MB), DOCX, and text-based PDF files (up to 10 MB).
+An EPUB becomes a book at `/books/:id`: one read-only chapter per reading-order document,
+titled from its navigation document or NCX, rendered from sanitized HTML. PNG, JPEG, GIF and WebP
+images (up to 8 MB each) and the cover are stored with the book and served only to its readers,
+or through a share link for a shared chapter; SVG, remote, mislabelled and oversized images are left
+out and counted in the import message. Images are kept in object storage (Tigris) when a bucket is
+configured, otherwise in the database; see [Object storage](#object-storage). EPUB uploads may be up to 30 MB. Fixed-layout books are not
+supported; chapters over 250 KB are split between elements.
+DOCX title metadata is read locally. Optional `pdfinfo` supplies PDF titles.
 PDF extraction requires `pdftotext` (`brew install poppler` on macOS). Missing
-tools or unreadable files produce a recoverable import error. Import chapters
-separately: extracted text is limited to 300,000 bytes and PDF import to 200 pages.
+tools or unreadable files produce a recoverable import error. Other formats are
+limited to 300,000 bytes of extracted text, and PDF import to 200 pages.
+
+## Object storage
+
+Book images go to an S3-compatible bucket, Tigris on Fly.io, when these variables are set; without
+`BUCKET_NAME` they stay in the database, which is what development and tests use. Existing database
+images keep working after a bucket is configured.
+
+```sh
+fly storage create -a leitor -n <bucket-name> -y   # sets the variables below as secrets
+```
+
+| Variable | Purpose |
+| --- | --- |
+| `BUCKET_NAME` | Bucket name; enables object storage |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Bucket credentials |
+| `AWS_ENDPOINT_URL_S3` | Endpoint, `https://t3.storage.dev` by default |
+| `AWS_REGION` | Region, `auto` by default |
+
+The bucket must stay private: images are served only by the app, which checks access on every request.
+Deleting a book removes its objects; a failure while removing is logged and leaves an unreferenced object.
 
 ## Language tutor
 
@@ -435,3 +469,23 @@ attempt; it does not run as part of tests.
 Leitor is MIT licensed; see [LICENSE](LICENSE). Third-party code and fonts retain
 their own notices. The bundled Anatomy kit is MIT licensed, with its upstream
 notice and pinned provenance in `assets/vendor/anatomy/`.
+
+### Sharing a page
+
+The reader's Share button opens page-level permissions and email invitations.
+Sharing starts restricted. A general link can allow viewing or commenting; an
+individual invitation requires signing in with its confirmed email. Renewing the
+link invalidates older URLs. Removing an individual invitation does not override
+access granted by a general link. Only owners manage permissions; collaborative
+text editing is intentionally outside this delivery.
+
+Shared comments and replies appear to readers with page access. Personal highlights,
+notes and AI answers stay private and belong to each reader, including in the global
+notebook. Guests can comment with an unverified display name when the general link
+allows it; their personal drafts live only in that browser tab. AI and word jars
+require login and use the reader's own allowance and credentials. Shared figures
+expose only ready artifacts actually embedded in that owner's page.
+
+See [the authentication contracts](guides/authentication-contracts.md) for access,
+revocation and privacy boundaries, and run the sharing browser test with
+`npm --prefix assets run test:browser -- sharing.spec.mjs` against the local server.

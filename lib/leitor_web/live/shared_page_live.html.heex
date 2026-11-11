@@ -1,0 +1,331 @@
+<Layouts.app
+  flash={@flash}
+  current_scope={@current_scope}
+  header_mode="reader"
+  context_title={@page_title}
+  context_detail="Shared page"
+  class={[
+    "free-page shared-reader page-face-#{@face} page-size-#{@font_size}",
+    !@show_numbers && "hide-paragraph-numbers",
+    !@appearance["rail"] && "hide-page-map",
+    @appearance["focus"] && "page-focus-mode",
+    "page-leading-#{@appearance["leading"]} page-width-#{@appearance["width"]}",
+    "page-align-#{@appearance["align"]} page-paras-#{@appearance["paras"]}"
+  ]}
+  style={"--page-text-size:#{@font_size}px"}
+>
+  <:tools>
+    <ReaderComponents.appearance
+      :if={@access}
+      face={@face}
+      font_size={@font_size}
+      numbers={@show_numbers}
+      tab={@appearance_tab}
+      preferences={@appearance}
+    />
+    <button
+      :if={@access}
+      id="shared-notebook"
+      class="layer-button"
+      type="button"
+      phx-click="notebook"
+      aria-label={gettext("Comments and personal notes")}
+      title={gettext("Comments and personal notes")}
+    ><.icon name="lucide-thin-notebook-pen" class="size-[18px]" /></button>
+    <.link
+      :if={!@current_scope}
+      id="shared-sign-in"
+      href={~p"/s/#{@token}/sign-in"}
+      class="workspace-header-action"
+    >{gettext("Sign in")}</.link>
+    <.link
+      :if={@access && @access.role == "owner"}
+      id="shared-owner-page"
+      navigate={~p"/pages/#{@access.page.id}"}
+      class="workspace-header-action"
+    >{gettext("Your page")}</.link>
+  </:tools>
+  <%= if @access do %>
+    <div class={["shared-reader-layout", !@panel_open && "shared-panel-closed"]}>
+      <article class="free-page-document" id={"shared-document-#{@version}"}>
+        <header class="free-page-heading">
+          <p class="eyebrow">{gettext("Shared with you")}</p><h1>{@page_title}</h1><p>
+            {if @access.role in ~w(owner comment),
+              do: gettext("You can comment"),
+              else: gettext("View access")}
+          </p>
+        </header>
+        <div id="page-reading" data-marks={@marks_json}>
+          <div
+            id={"shared-prose-#{@version}"}
+            phx-hook="PageReader"
+            phx-update="ignore"
+            data-marks={@marks_json}
+            data-reading-key={"shared:#{if @current_scope, do: @current_scope.user.id, else: @visitor_id}:#{@access.page.id}"}
+            data-reading-version={@version}
+            data-shared-figures={"#{~p"/s/#{@token}"}/figures"}
+            class="page-prose"
+          >
+            {Phoenix.HTML.raw(@document.html)}
+          </div>
+        </div>
+        <p class="page-end">{gettext("End of this page")} <span aria-hidden="true">✦</span></p>
+      </article>
+      <aside
+        :if={@panel_open}
+        class="shared-sidebar"
+        aria-label={gettext("Comments and personal notes")}
+      >
+        <div class="shared-sidebar-tabs" role="tablist" aria-label={gettext("Notes visibility")}>
+          <button
+            type="button"
+            id="shared-tab"
+            role="tab"
+            aria-selected={to_string(@panel == "shared")}
+            phx-click="panel"
+            phx-value-panel="shared"
+          >{gettext("Shared")}</button>
+          <button
+            type="button"
+            id="personal-tab"
+            role="tab"
+            aria-selected={to_string(@panel == "personal")}
+            phx-click="panel"
+            phx-value-panel="personal"
+          ><.icon name="lucide-user-round" class="size-3.5" />{gettext("Personal")}</button>
+        </div>
+        <p :if={@error} class="notice" id="shared-action-error" role="alert">{@error}</p>
+        <div hidden={@panel != "shared"}>
+          <p class="shared-panel-hint">
+            {gettext(
+              "Comments here are visible to everyone with access. Personal notes stay private."
+            )}
+          </p>
+          <%= if @access.role in ~w(owner comment) do %>
+            <%= if @comment_anchor || @reply_id do %>
+              <.form
+                for={@comment_form}
+                id="shared-comment-form"
+                phx-submit="comment"
+                class="shared-comment-form"
+              >
+                <p class="shared-comment-context">
+                  {if @reply_id,
+                    do: gettext("Reply to comment"),
+                    else: gettext("Comment on the selected passage")}
+                </p>
+                <.input
+                  field={@comment_form[:author_name]}
+                  id="comment-display-name"
+                  label={gettext("Display name")}
+                  placeholder={gettext("Your name")}
+                  maxlength="60"
+                  required
+                />
+                <p :if={!@current_scope} class="muted sharing-help">
+                  {gettext(
+                    "You are commenting as a visitor. This name is not a verified identity."
+                  )}
+                </p>
+                <.input
+                  field={@comment_form[:body]}
+                  id="shared-comment-body"
+                  type="textarea"
+                  label={gettext("Comment")}
+                  maxlength="4000"
+                  required
+                />
+                <div class="row">
+                  <button
+                    type="submit"
+                    class="action action-primary"
+                    phx-disable-with={gettext("Posting…")}
+                  >{gettext("Post comment")}</button><button
+                    type="button"
+                    class="action"
+                    phx-click="cancel-comment"
+                  >{gettext("Cancel")}</button>
+                </div>
+              </.form>
+            <% else %>
+              <p class="shared-panel-hint">
+                {gettext("Select a passage and choose Comment to start a conversation.")}
+              </p>
+            <% end %>
+          <% else %>
+            <p class="shared-panel-hint">{gettext("The owner has enabled viewing only.")}</p>
+          <% end %>
+          <div id="shared-comments" phx-update="stream">
+            <p id="shared-comments-empty" class="hidden only:block notebook-empty-state">
+              {gettext("No shared comments yet.")}
+            </p>
+            <article
+              :for={{dom_id, comment} <- @streams.comments}
+              id={dom_id}
+              class="shared-comment-card"
+            >
+              <header>
+                <strong>{comment.author_name}</strong><span class="muted">{if is_nil(
+                                                                                comment.user_id
+                                                                              ),
+                                                                              do:
+                                                                                gettext("Visitor"),
+                                                                              else:
+                                                                                gettext("Member")}</span>
+              </header>
+              <p :if={comment.parent_id} class="shared-reply-label">{gettext("Reply")}</p>
+              <button
+                type="button"
+                class="shared-quote"
+                phx-click="jump-comment"
+                phx-value-id={comment.id}
+              >“{comment.quote}” <span>¶{comment.block_index + 1}</span></button>
+              <p class="shared-comment-body">
+                {if comment.deleted_at, do: gettext("Comment removed"), else: comment.body}
+              </p>
+              <footer>
+                <button
+                  :if={!comment.deleted_at && @access.role in ~w(owner comment)}
+                  type="button"
+                  class="action"
+                  phx-click="reply"
+                  phx-value-id={comment.id}
+                >{gettext("Reply")}</button>
+                <button
+                  :if={
+                    !comment.deleted_at &&
+                      (@access.role == "owner" ||
+                         Sharing.author?(@current_scope, @visitor_id, comment))
+                  }
+                  type="button"
+                  class="icon-button"
+                  phx-click="remove-comment"
+                  phx-value-id={comment.id}
+                  aria-label={gettext("Remove comment")}
+                ><.icon name="lucide-trash-2" class="size-4" /></button>
+              </footer>
+            </article>
+          </div>
+          <div class="shared-pagination">
+            <button
+              :if={@comments_page > 1}
+              type="button"
+              class="action"
+              phx-click="comment-page"
+              phx-value-direction="previous"
+            >{gettext("Previous")}</button><button
+              :if={@more_comments}
+              type="button"
+              class="action"
+              phx-click="comment-page"
+              phx-value-direction="next"
+            >{gettext("Next")}</button>
+          </div>
+        </div>
+        <div hidden={@panel != "personal"}>
+          <button
+            :if={@import_available}
+            id="import-guest-notes"
+            type="button"
+            class="action action-primary"
+            phx-click="request-guest-import"
+          >{gettext("Save guest notes to my notebook")}</button>
+          <p class="shared-panel-hint">
+            {if @current_scope,
+              do:
+                gettext(
+                  "Only you can see these notes and AI conversations. They are saved in your notebook."
+                ),
+              else:
+                gettext(
+                  "Only you can see these notes. Guest notes stay in this browser tab; sign in to save notes to your account."
+                )}
+          </p>
+          <article :if={@busy} class="shared-comment-card" aria-busy="true" id="shared-ai-pending">
+            <blockquote>{@pending.quote}</blockquote><div
+              :if={@ai_preview != ""}
+              class="page-answer"
+            >
+              {Phoenix.HTML.raw(PageDocument.render_answer(@ai_preview))}
+            </div><LeitorWeb.WritingComponents.generating :if={@ai_preview == ""} />
+          </article>
+          <div id="shared-personal-notes" phx-update="stream">
+            <p id="shared-personal-empty" class="hidden only:block notebook-empty-state">
+              {gettext("Select text to highlight it, keep a note or ask AI.")}
+            </p>
+            <article
+              :for={{dom_id, mark} <- @streams.personal}
+              id={dom_id}
+              class="shared-comment-card"
+            >
+              <header>
+                <span>{t(String.capitalize(mark.kind))}</span><button
+                  type="button"
+                  class="icon-button"
+                  phx-click="remove-mark"
+                  phx-value-id={mark.id}
+                  aria-label={gettext("Remove personal note")}
+                ><.icon name="lucide-trash-2" class="size-4" /></button>
+              </header>
+              <blockquote class={"highlight-#{mark.color}"}>{mark.quote}</blockquote>
+              <div :if={mark.body != ""} class="page-answer">
+                {Phoenix.HTML.raw(PageDocument.render_answer(mark.body))}
+              </div>
+            </article>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div
+      id="page-scroll-rail"
+      phx-hook="PageRail"
+      phx-update="ignore"
+      role="slider"
+      aria-label={gettext("Position in the page")}
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      tabindex="0"
+    >
+      <div class="page-rail-bars" aria-hidden="true"></div>
+      <div class="page-rail-markers" aria-hidden="true"></div>
+      <div class="page-rail-viewport" aria-hidden="true"></div>
+    </div>
+    <span
+      id={"shared-reader-events-#{@version}"}
+      phx-hook="SharedReader"
+      phx-update="ignore"
+      data-draft-key={"#{@visitor_id}:#{@access.page.id}:#{@version}"}
+      data-guest={to_string(is_nil(@current_scope))}
+      hidden
+    ></span>
+    <LeitorWeb.SelectionComponents.selection
+      selection={@selection}
+      editing={@editing}
+      selection_mode={@selection_mode}
+      selection_anchor={@selection_anchor}
+      page_title={@page_title}
+      busy={@busy}
+      marker_color={@marker_color}
+      editing_highlight_id={@editing_highlight_id}
+      editing_highlight_color={@editing_highlight_color}
+      note_form={@note_form}
+      question_form={@question_form}
+      pot_form={@pot_form}
+      error={@error}
+      shared={@access.role in ~w(owner comment)}
+    />
+  <% else %>
+    <section id="shared-page-unavailable" class="shared-unavailable">
+      <.icon name="lucide-book-open" class="size-8" /><h1>
+        {gettext("This page is not available.")}
+      </h1><p>
+        {gettext(
+          "The link may have been disabled or renewed. If you were invited, sign in with the invited email address."
+        )}
+      </p><.link href={~p"/s/#{@token}/sign-in"} class="action action-primary">{gettext(
+        "Sign in with email"
+      )}</.link>
+    </section>
+  <% end %>
+</Layouts.app>

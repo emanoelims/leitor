@@ -4,6 +4,88 @@ Versions follow [SemVer](https://semver.org/). Entries are curated manually.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-10
+
+### Added
+
+- EPUB import as a book: each reading-order document becomes a read-only chapter
+  that keeps headings, emphasis, lists, quotes, tables and internal links, with a
+  table of contents, previous and next navigation, and a shelf card that resumes
+  where you stopped. Highlights, notes, AI help, the word jar and sharing work on
+  every chapter. Chapters are sanitized to a small allowlist: no scripts, styles,
+  forms or remote content.
+- EPUB images and covers. PNG, JPEG, GIF and WebP images that chapters show are
+  stored with the book and served only to its readers, or through a share link
+  for a shared chapter. The cover appears on the shelf and on the book page.
+  Images that are too large, mislabelled, remote or SVG are left out and counted
+  in the import message.
+- Book images can live in object storage (Tigris) instead of Postgres when
+  `BUCKET_NAME` and its credentials are set. Requests use `Req` with AWS
+  Signature V4, so there is no new dependency. Bytes that do not match the
+  recorded digest are never served.
+
+### Changed
+
+- EPUB files no longer flatten into one 300,000-byte text, so whole books import.
+- EPUB uploads may be up to 30 MB; other formats stay at 10 MB.
+- Update `bandit` to 1.14.1, `ecto` to 3.14.3, `phoenix` to 1.8.16, `phoenix_html`
+  to 4.4.0, `plug_crypto` to 2.2.1, `req_llm` to 1.30.0, `jsv` to 0.27.0,
+  `tidewave` to 0.9.2 and `websock_adapter` to 0.7.2, with `llm_db`,
+  `nimble_options`, `splode` and `zoi`.
+
+### Security
+
+- Resolve all 18 published advisories in `bandit`, `ecto`, `plug_crypto`,
+  `phoenix_html`, `req_llm`, `jsv` and `tidewave`, among them a critical one for
+  `req_llm` WebSocket sessions that did not verify TLS certificates. `mix
+  hex.audit` now reports none.
+
+### Migration
+
+Five additive migrations create books and their images, link texts to books, add
+the cover reference, and let an image's bytes live in its row or in an object,
+exactly one of the two, enforced by a check constraint. No data is backfilled and
+existing pages and imports are unchanged. Release 0.6.0 does not use these tables,
+so a rollout or image recovery stays compatible, but it would list book chapters
+as separate pages. Images already in the database keep being served after a
+bucket is configured. Object storage is optional: `BUCKET_NAME`,
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3` and
+`AWS_REGION` come from `fly storage create`, and without `BUCKET_NAME` images stay
+in the database. The production bucket `leitor-books` is private and its secrets
+are already set.
+
+## [0.6.0] - 2026-10-18
+
+### Added
+
+- Page sharing through restricted email invitations or revocable links with view
+  and comment permissions. Comment access lets visitors discuss selected passages
+  using a display name; verified email invitations require the matching account.
+- Private reader highlights, notes and AI answers on shared pages, with explicit,
+  idempotent import of guest drafts after signing in. AI and word jars use the
+  current reader's account and allowance. Shared embedded figures keep their
+  interaction and sandbox restrictions.
+- Link renewal and access revocation update open shared readers immediately.
+
+### Fixed
+
+- Restore the inline highlight palette, recoloring and erasing, matching the
+  reference's colors before and after reloading in every theme.
+- Restore missing selection icons and the word-jar action label.
+
+### Changed
+
+- Update `req_llm` to 1.28.0 and `jsv` to 0.26.1.
+
+### Migration
+
+Three migrations add sharing permissions and comments, backfill annotation authors,
+and add guest import keys. A compatibility trigger assigns the source owner only
+when an older application inserts an annotation without its author; explicit
+reader ownership is preserved. This keeps old-version inserts working during
+rollout and recovery. All pages start restricted. No new secrets are required.
+Collaborative source editing is outside this release.
+
 ## [0.5.2] - 2026-10-18
 
 Release 0.5.1 was tagged before its version bump, so its deployment stopped at
